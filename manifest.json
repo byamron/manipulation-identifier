@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Manipulation Identifier",
+  "version": "1.0",
+  "description": "Highlights manipulative text on websites.",
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_title": "Manipulation Identifier"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}
