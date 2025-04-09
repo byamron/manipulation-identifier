@@ -1,28 +1,48 @@
-console.log("Manipulation Identifier content script loaded.");
+// Define the tactic and its keywords
+const tactic = {
+  name: 'Emotional Language',
+  keywords: ['fear', 'outrage', 'hate', 'love', 'anger', 'shocking', 'devastating', 'destruction'],
+  description: 'This text uses emotionally charged language, designed to elicit strong feelings.'
+};
 
-const manipulativePhrases = [
-  "everyone knows that",
-  "only an idiot would",
-  "clearly",
-  "it's obvious that"
-];
-
-// Function to wrap found phrases in a highlight span
-function highlightManipulativePhrases(node) {
+// Function to recursively check text content in the DOM and highlight matches, excluding links
+function highlightTextInNodes(node) {
   if (node.nodeType === Node.TEXT_NODE) {
-    let text = node.textContent;
-    manipulativePhrases.forEach(phrase => {
-      const regex = new RegExp(`\\b(${phrase})\\b`, "gi");
-      if (regex.test(text)) {
-        const span = document.createElement("span");
-        span.innerHTML = text.replace(regex, `<mark style="background: orange; color: black;">$1</mark>`);
-        node.replaceWith(span);
+    // Ensure that we're not modifying text within links
+    if (node.parentNode && node.parentNode.tagName !== 'A') {
+      let newText = node.textContent;
+      tactic.keywords.forEach(keyword => {
+        const regex = new RegExp(`(${keyword})`, 'gi');
+        if (regex.test(newText)) {
+          console.log("Matching text found: ", newText); // Log matching text
+
+          // Split the text content based on the keyword and wrap only the keyword in <span>
+          newText = newText.replace(regex, (match) => {
+            return `<span class="highlighted" title="${tactic.description}">${match}</span>`;
+          });
+
+          // Ensure parentNode exists and is a valid parent for text replacement
+          if (node.parentNode && node.parentNode.nodeType === Node.ELEMENT_NODE) {
+            const span = document.createElement('span');
+            span.innerHTML = newText;
+
+            // Only replace if the parentNode is valid
+            if (node.parentNode) {
+              node.parentNode.replaceChild(span, node);
+            }
+          }
+        }
+      });
+    }
+  } else if (node.nodeType === Node.ELEMENT_NODE) {
+    // Only continue for elements that can contain text, avoid unnecessary checks on script/style elements
+    if (node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE') {
+      for (let childNode of node.childNodes) {
+        highlightTextInNodes(childNode);
       }
-    });
-  } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== "SCRIPT" && node.tagName !== "STYLE") {
-    node.childNodes.forEach(highlightManipulativePhrases);
+    }
   }
 }
 
-// Start scanning from the body
-highlightManipulativePhrases(document.body);
+// Start the highlighting process from the body of the document
+highlightTextInNodes(document.body);

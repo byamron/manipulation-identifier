@@ -1,0 +1,7 @@
+.highlighted {
+    background-color: yellow;
+    color: red;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
