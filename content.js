@@ -1,13 +1,7 @@
-// Define manipulation tactics (expandable in future)
-const tactics = [
-  {
-    name: 'Emotional Language',
-    keywords: ['fear', 'outrage', 'hate', 'love', 'anger', 'shocking', 'devastating', 'destruction'],
-    description: 'This text uses emotionally charged language, designed to elicit strong feelings.'
-  }
-];
+// Import the tactics array from tactics.js
+import { tactics } from './tactics.js';
 
-// Escape HTML to prevent DOM injection issues
+// Function to escape HTML to prevent DOM injection issues
 function escapeHTML(str) {
   return str.replace(/[&<>"']/g, match =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match])

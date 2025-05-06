@@ -67,10 +67,10 @@ export const tactics = [
     },
     {
       name: "Fake Experts",
-      definition: "Individuals who speak in a way that conveys the impression of expertise on a topic while possessing little to no relevant expertise. They are often deployed to elicit support for miracle cures, unproven arguments, or to cast doubt on established expert consensus and may leverage entirely fabricated institutions that sound legitimate to add to their guise of credibility."
+      definition: "Individuals who speak in a way that conveys the impression of expertise on a topic while possessing little to no relevant expertise. They are often deployed to elicit support for miracle cures, unproven arguments, or to cast doubt on established expert consensus and may leverage entirely fabricated institutions that sound legitimate to add to their guise of credibility.",
       alsoKnownAs: [
         "False, alleged, or irrelevant authority"
-      ]
+      ],
       examples: ["An influencer wearing a white doctor’s coat giving advice about brain cancer",
         "Nutrition advice from a fitness influencer who lost 50 pounds",
         "A philosopher who asserts claims about climate change and emphasizes their doctorate degree, but has not studied climate science",
@@ -83,19 +83,7 @@ export const tactics = [
         "Be on the lookout for experts who appeal to their own authority while contradicting the consensus of others in the field (e.g.: “Trust me, I’m a doctor”)",
         "Investigate an expert’s background and expertise. Have they studied the specific subject they are commenting on? Have they released peer reviewed research?",
         "Evaluate the institution they work for, including its sources of funding."
-      ]
-    },
-    {
-      name: "Red Herring",
-      definition: 
-      alsoKnownAs: [
-
       ],
-      examples: [
-        
-      ],
-      why: 
-      whatToDo: 
     },
     {
       name: "Red Herring",
@@ -110,7 +98,7 @@ export const tactics = [
       why: [
         "When subtlety isn’t an option, a red herring may be employed to confuse the audience. By pivoting to an entirely unrelated, outrageous, and highly charged topic, a speaker can make the audience forget the original discussion.",
         "Some red herrings will subtly switch contexts, retaining superficial similarity between the new and original topic to minimize people’s ability to detect a context switch."
-      ]
+      ],
       whatToDo: [
         "Be skeptical when someone responds to a controversial question by calling attention to another charged or polarized topic without actually answering the original question.",
         "Ask yourself: Does this answer the question? Red herrings are meant to distract from the original topic; it could be worth re-asking the question."
@@ -127,7 +115,7 @@ export const tactics = [
       ],
       why: [
         "Scapegoating drastically simplifies a complicated issue by diverting attention somewhere else. It allows the perpetrator to redirect attention off themselves and toward another group or person."
-      ]
+      ],
       whatToDo: [
         "Be skeptical of arguments that cast blame on a person or group.",
         "Be wary when you see a serious/complex problem reduced to the fault of an individual or a single group of individuals."
@@ -144,7 +132,7 @@ export const tactics = [
       why: [
         "Ad hominem attacks are arguments that use emotional appeal rather than logic. They’re used with the explicit intent of redirecting the listener away from the topic at hand, which might be hard to poke holes in, and towards the “flaws” of an individual or entity, which might be easier. ",
         "Ad hominem attacks work because once an individual agrees that the holder of the point of view is flawed, it can become harder for them to agree that their point of view is not."    
-      ]
+      ],
       whatToDo: [
         "Be skeptical of arguments that question (or attack) the shortcomings of a person or entity, rather than the merits of their argument.",
         "Watch out for attempts at downplaying an argument due to the person’s/entity’s negative characteristics or limitations."
@@ -162,7 +150,7 @@ export const tactics = [
       why: [
         "It preys on the tendency of people with strong beliefs to dislike and distrust those different from themselves.",
         "Hostile 'othering' language can reinforce biases, separating and dividing groups even further."
-      ]
+      ],
       whatToDo: [
         "Be skeptical of arguments that cast blame on a person or group.",
         "Be wary when you see a serious/complex problem reduced to blame on an individual or a single group of individuals."
@@ -179,7 +167,7 @@ export const tactics = [
       ],
       why: [
         "Impersonating someone else can provide a range of gains to a malicious actor, from financial gains to reputational damage."
-      ]
+      ],
       whatToDo: [
         "Strong digital security practices are a key first step to avoid being a target of impersonation. Two-factor authentication for account logins, strong password hygiene, and wariness of phishing or other social-engineering attacks can help prevent accounts from being compromised and allowing in impersonators.",
         "To avoid being manipulated by an impersonation (ie: where someone is pretending to be someone else) it is important to cross-check the source. Look to see if their current behavior matches their past behavior. Significant deviation can be a sign the account is an impersonation."
@@ -196,7 +184,7 @@ export const tactics = [
       ],
       why: [
         "Slippery slope arguments take advantage of the gray area between initial actions and their conclusions. They often rely on fear of grave – and unavoidable – consequences of any step taken and can bypass more critical evaluations of the arguments they present."
-      ]
+      ],
       whatToDo: [
         "Consider the emotional aspect of the argument. If the predicted consequences are portrayed as dire or frightening, it's possible someone may be trying to manipulate you.",
         "Evaluate the likelihood that consequences would inevitably follow from a first step. Consider the other events that would have to take place and whether or not other outcomes might be possible."
@@ -217,9 +205,11 @@ export const tactics = [
       why: [
         "Removing context from a piece of content can lead to people being misinformed and forming their opinions based on misleading information.",
         "It preys on the tendency of people to trust their eyes and ears, which often overrides the impulse to confirm or fact check with other sources."
-      ]
+      ],
       whatToDo: ["Be skeptical of arguments that rely on a highly inflammatory image or quote and always double check the source sharing the information: is it reputable and/or trustworthy?",
         "Review content shared online carefully to determine if the commentary surrounding it is accurate by seeing if others are sharing or refuting the information and/or searching for the original source of the image/video/story. Reverse Image Search is a great tool to find the origin point for images."
       ],
     },
   ];
+
+export default tactics;
