@@ -1,5 +1,17 @@
-// Import the tactics array from tactics.js
-import { tactics } from './tactics.js';
+// Import the tactics array using fetch
+let tactics = [];
+
+// Load tactics from JSON file
+async function loadTactics() {
+  try {
+    const response = await fetch(chrome.runtime.getURL('tactics.json'));
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    tactics = await response.json();
+    console.log('Tactics loaded successfully:', tactics);
+  } catch (error) {
+    console.error('Error loading tactics:', error);
+  }
+}
 
 // Function to escape HTML to prevent DOM injection issues
 function escapeHTML(str) {
@@ -27,8 +39,8 @@ const analyzeTextWithLLM = async (text) => {
   }
 };
 
-// Collect visible text and optionally highlight it in place
-function collectAndHighlightText(node, collected = []) {
+// Collect visible text and send it for analysis
+function collectTextForAnalysis(node, collected = []) {
   if (node.nodeType === Node.TEXT_NODE && node.parentNode) {
     const parentTag = node.parentNode.tagName;
     const trimmedText = node.textContent.trim();
@@ -40,38 +52,36 @@ function collectAndHighlightText(node, collected = []) {
       parentTag !== 'A'
     ) {
       collected.push(trimmedText);
-
-      // Only highlight the first matched tactic per node
-      for (let tactic of tactics) {
-        for (let keyword of tactic.keywords) {
-          const regex = new RegExp(`(${keyword})`, 'gi');
-          if (regex.test(trimmedText)) {
-            const newText = escapeHTML(trimmedText).replace(regex, (match) => {
-              return `<span class="highlighted" title="${tactic.description}">${match}</span>`;
-            });
-
-            const span = document.createElement('span');
-            span.innerHTML = newText;
-
-            node.parentNode.replaceChild(span, node);
-            return collected; // Stop after first match
-          }
-        }
-      }
     }
   } else if (node.nodeType === Node.ELEMENT_NODE && !['SCRIPT', 'STYLE'].includes(node.tagName)) {
     for (let child of node.childNodes) {
-      collectAndHighlightText(child, collected);
+      collectTextForAnalysis(child, collected);
     }
   }
 
   return collected;
 }
 
-// === Run everything on page load ===
-(() => {
-  const visibleTextArray = collectAndHighlightText(document.body);
+// Function to run the analysis
+function runAnalysis() {
+  console.log('Running content analysis');
+  const visibleTextArray = collectTextForAnalysis(document.body);
   const combinedText = visibleTextArray.join(' ').slice(0, 3000); // Trim to 3,000 chars for LLM
-
   analyzeTextWithLLM(combinedText);
+}
+
+// Listen for messages from the background script
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "analyze") {
+    runAnalysis();
+    sendResponse({ status: "Analysis started" });
+  }
+  return true; // Indicates we'll send a response asynchronously
+});
+
+// Initialize when the content script loads
+(async () => {
+  await loadTactics();
+  // We don't auto-run the analysis now, we wait for the extension button to be clicked
+  console.log('Content script initialized');
 })();

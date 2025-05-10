@@ -1,46 +1,41 @@
 import express from 'express';
-import dotenv from 'dotenv';
 import { OpenAI } from 'openai';
+import dotenv from 'dotenv';
+import { promptRoleSystem } from './prompts.js';  // Ensure this path is correct
 
 dotenv.config();
-const app = express();
-const port = 3000;
-
-// Middleware to parse JSON
-app.use(express.json());
 
 // Initialize OpenAI client with the API key from environment variables
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// POST route to process the page content and analyze it with the LLM
-app.post('/analyze', async (req, res) => {
-  const { text } = req.body;  // This is the text received from the frontend
+const app = express();
+const port = process.env.PORT || 3000;
 
-  if (!text) {
-    return res.status(400).json({ error: 'Text content is required' });
-  }
+app.use(express.json());
+
+app.post('/analyze-content', async (req, res) => {
+  const content = req.body.content;
 
   try {
-    // Send the text to OpenAI for analysis
     const response = await openai.chat.completions.create({
-      model: 'gpt-4.1',
+      model: 'gpt-4.1', // Ensure you use the model you're testing with
       messages: [
-        { role: 'system', content: 'You are an assistant trained to identify emotional manipulation tactics in text.' },
-        { role: 'user', content: `Please identify any emotional manipulation tactics (e.g., guilt-tripping, gaslighting) in the following text: ${text}` },
+        { role: 'system', content: promptRoleSystem },
+        { role: 'user', content: content },  // Send user content for analysis
       ],
     });
 
-    // Send back the LLM response to the frontend
-    res.json({ manipulationTactics: response.choices[0].message.content });
+    const manipulativeLanguage = response.choices[0].message.content;
+    
+    res.json({ manipulativeLanguage });
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Error analyzing content:', error);
+    res.status(500).json({ error: 'Failed to analyze content' });
   }
 });
 
-// Start the server
 app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+  console.log(`Server is running on port ${port}`);
 });

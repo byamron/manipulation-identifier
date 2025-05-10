@@ -87,7 +87,7 @@ export const tactics = [
     },
     {
       name: "Red Herring",
-      definition: "Diverting attention from a real issue by focusing on a topic with only a surface relevance to the original."
+      definition: "Diverting attention from a real issue by focusing on a topic with only a surface relevance to the original.",
       alsoKnownAs: [
         "Misdirection",
         "Diversion"
@@ -106,7 +106,7 @@ export const tactics = [
     },
     {
       name: "Scapegoating",
-      definition: "Singling out a person or group and placing unwarranted blame on them for a particular problem."
+      definition: "Singling out a person or group and placing unwarranted blame on them for a particular problem.",
       alsoKnownAs: [
       ],
       examples: [
@@ -123,7 +123,7 @@ export const tactics = [
     },
     {
       name: "Ad Hominem",
-      definition: "Attacking a person making an argument, instead of addressing the argument itself. Ad hominem attacks are commonly used to redirect the listener away from the subject at hand and towards an individual."
+      definition: "Attacking a person making an argument, instead of addressing the argument itself. Ad hominem attacks are commonly used to redirect the listener away from the subject at hand and towards an individual.",
       alsoKnownAs: [
       ],
       examples: ["During a political debate, one candidate claims no one should trust his opponent to lead a foreign policy because he failed a math class once.",
@@ -140,7 +140,7 @@ export const tactics = [
     },
     {
       name: "Polarization",
-      definition: "Dividing into two sharply contrasting groups or opinions. A state in which the opinions, beliefs, or interests of a group or society no longer range along a continuum but become concentrated at opposing extremes."
+      definition: "Dividing into two sharply contrasting groups or opinions. A state in which the opinions, beliefs, or interests of a group or society no longer range along a continuum but become concentrated at opposing extremes.",
       alsoKnownAs: [
       ],
       examples: [
@@ -158,7 +158,7 @@ export const tactics = [
     },
     {
       name: "Impersonation",
-      definition: "Deceiving an audience by assuming another person’s online persona. This can be done to harm the person’s reputation, inflict emotional harm, or to spread manipulation from a particular source."
+      definition: "Deceiving an audience by assuming another person’s online persona. This can be done to harm the person’s reputation, inflict emotional harm, or to spread manipulation from a particular source.",
       alsoKnownAs: [
         "Spoofing"
       ],
@@ -175,7 +175,7 @@ export const tactics = [
     },
     {
       name: "Slippery Slope",
-      definition: "Asserting that a first step taken will inevitably lead to major, often disastrous, consequences."
+      definition: "Asserting that a first step taken will inevitably lead to major, often disastrous, consequences.",
       alsoKnownAs: [
       ],
       examples: [
@@ -192,7 +192,7 @@ export const tactics = [
     },
     {
       name: "Decontextualization",
-      definition: "Intentionally showing text, audio, or visuals in a different context or removing important background information in order to change its meaning."
+      definition: "Intentionally showing text, audio, or visuals in a different context or removing important background information in order to change its meaning.",
       alsoKnownAs: [
         "Misrepresentation",
         "Taking out of context"
@@ -200,7 +200,6 @@ export const tactics = [
       examples: [
         "A photo of damage from a natural disaster posted with a misleading comment asserting the damage was caused by a recent protest",
         "Selectively edited audio or video of an individual that makes their comments appear to have a different meaning"
-      
       ],
       why: [
         "Removing context from a piece of content can lead to people being misinformed and forming their opinions based on misleading information.",
