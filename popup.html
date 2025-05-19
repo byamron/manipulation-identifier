@@ -1,10 +1,156 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Manipulation Identifier</title>
-  </head>
-  <body>
-    <h1>Manipulation Identifier</h1>
-    <p>Click the icon to scan this page for manipulation tactics.</p>
-  </body>
+<head>
+  <title>Manipulation Identifier</title>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      width: 320px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 15px;
+      margin: 0;
+      color: #333;
+      background-color: #fff;
+    }
+    
+    h1 {
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: #1a73e8;
+      text-align: center;
+    }
+    
+    .analyze-button {
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 15px;
+      transition: background-color 0.2s;
+    }
+    
+    .analyze-button:hover {
+      background-color: #185abc;
+    }
+    
+    .analyze-button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .status {
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    
+    .results-container {
+      margin-top: 15px;
+      border-top: 1px solid #eee;
+      padding-top: 15px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    
+    .tactic-item {
+      background-color: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .tactic-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #856404;
+    }
+    
+    .tactic-description {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    
+    .tactic-examples {
+      font-size: 11px;
+      color: #888;
+      font-style: italic;
+    }
+    
+    .no-results {
+      text-align: center;
+      color: #28a745;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .error {
+      color: #dc3545;
+      font-size: 12px;
+      text-align: center;
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
+      border-radius: 4px;
+      padding: 8px;
+      margin-bottom: 10px;
+    }
+    
+    .loading {
+      text-align: center;
+      color: #6c757d;
+    }
+    
+    .loading::after {
+      content: "";
+      animation: dots 1.5s steps(5, end) infinite;
+    }
+    
+    @keyframes dots {
+      0%, 20% {
+        color: rgba(0,0,0,0);
+        text-shadow:
+          .25em 0 0 rgba(0,0,0,0),
+          .5em 0 0 rgba(0,0,0,0);
+      }
+      40% {
+        color: #6c757d;
+        text-shadow:
+          .25em 0 0 rgba(0,0,0,0),
+          .5em 0 0 rgba(0,0,0,0);
+      }
+      60% {
+        text-shadow:
+          .25em 0 0 #6c757d,
+          .5em 0 0 rgba(0,0,0,0);
+      }
+      80%, 100% {
+        text-shadow:
+          .25em 0 0 #6c757d,
+          .5em 0 0 #6c757d;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Manipulation Identifier</h1>
+  
+  <button id="analyzeButton" class="analyze-button">
+    Analyze Current Page
+  </button>
+  
+  <div id="status" class="status"></div>
+  
+  <div id="results" class="results-container" style="display: none;">
+    <h3>Analysis Results:</h3>
+    <div id="resultsContent"></div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
 </html>
