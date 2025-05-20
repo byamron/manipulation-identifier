@@ -4,8 +4,12 @@
   "version": "1.0",
   "description": "Identifies manipulative language on web pages.",
   "permissions": [
+    "storage",
     "activeTab",
     "scripting"
+  ],
+  "host_permissions": [
+    "http://localhost:3000/*"
   ],
   "action": {
     "default_title": "Analyze This Page",
@@ -27,8 +31,5 @@
       "resources": ["tactics.json"],
       "matches": ["<all_urls>"]
     }
-  ],
-  "host_permissions": [
-    "http://localhost:3000/*"
   ]
 }

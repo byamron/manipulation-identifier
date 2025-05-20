@@ -45,13 +45,14 @@ const analyzeTextWithLLM = async (text) => {
     
     return detectedTactics;
   } catch (error) {
-    console.error('Error sending text to LLM:', error);
+    console.error('Error sending text to LLM:', error, error.message, error.name);
     chrome.runtime.sendMessage({
       action: "analysisError",
-      error: 'Failed to analyze content. Please ensure the server is running on localhost:3000.'
+      error: `Failed to analyze content. Server might be down or unreachable: ${error.message}`
     });
     throw error;
   }
+  
 };
 
 // Function to parse LLM response and extract tactics
@@ -120,17 +121,20 @@ async function runAnalysis() {
   await analyzeTextWithLLM(combinedText);
 }
 
-// Listen for messages from the background script and popup
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "analyze") {
-    runAnalysis().then(() => {
-      sendResponse({ status: "Analysis started" });
-    }).catch((error) => {
-      sendResponse({ status: "Analysis failed", error: error.message });
-    });
-    return true; // Indicates we'll send a response asynchronously
-  }
-});
+console.log('chrome.runtime:', chrome?.runtime);
+
+if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === "analyze") {
+      runAnalysis().then(() => {
+        sendResponse({ status: "Analysis started" });
+      }).catch((error) => {
+        sendResponse({ status: "Analysis failed", error: error.message });
+      });
+      return true; // Indicates we'll send a response asynchronously
+    }
+  });
+}
 
 // Initialize when the content script loads
 (async () => {

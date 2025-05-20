@@ -6,7 +6,6 @@ import { promptRoleSystem } from './prompts.js';  // Ensure this path is correct
 
 dotenv.config();
 
-// Initialize OpenAI client with the API key from environment variables
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -14,9 +13,22 @@ const openai = new OpenAI({
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Enable CORS for extension requests
+// CORS setup with dynamic origin whitelist for localhost and chrome-extension schemes
 app.use(cors({
-  origin: ['chrome-extension://*', 'http://localhost:*'],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like Postman or curl)
+    if (!origin) return callback(null, true);
+
+    if (/^http:\/\/localhost:\d+$/.test(origin)) {
+      return callback(null, true);
+    }
+
+    if (origin.startsWith('chrome-extension://')) {
+      return callback(null, true);
+    }
+
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 
@@ -31,7 +43,7 @@ app.post('/analyze-content', async (req, res) => {
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4', // Fixed model name - use 'gpt-4' or 'gpt-3.5-turbo'
+      model: 'gpt-4',
       messages: [
         { role: 'system', content: promptRoleSystem },
         { role: 'user', content: `Please analyze the following text for manipulation tactics: ${content}` },
@@ -41,12 +53,10 @@ app.post('/analyze-content', async (req, res) => {
     });
 
     const manipulativeLanguage = response.choices[0].message.content;
-    
     res.json({ manipulativeLanguage });
   } catch (error) {
     console.error('Error analyzing content:', error);
-    
-    // More specific error handling
+
     if (error.code === 'insufficient_quota') {
       res.status(402).json({ error: 'OpenAI API quota exceeded' });
     } else if (error.code === 'invalid_api_key') {
