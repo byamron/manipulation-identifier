@@ -2,28 +2,23 @@
   "manifest_version": 3,
   "name": "Manipulation Identifier",
   "version": "1.0",
-  "description": "Identifies manipulative language on web pages.",
+  "description": "Highlights emotionally manipulative language on web pages.",
   "permissions": [
-    "storage",
+    "scripting",
     "activeTab",
-    "scripting"
+    "storage"
   ],
   "host_permissions": [
-    "http://localhost:3000/*"
+    "<all_urls>"
   ],
-  "action": {
-    "default_title": "Analyze This Page",
-    "default_popup": "popup.html"
-  },
   "background": {
-    "service_worker": "background.js",
-    "type": "module"
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
       "js": ["content.js"],
-      "css": ["styles.css"]
+      "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
@@ -31,5 +26,9 @@
       "resources": ["tactics.json"],
       "matches": ["<all_urls>"]
     }
-  ]
-}
+  ],
+  "action": {
+    "default_title": "Analyze page",
+    "default_popup": "popup.html"
+    }
+  }

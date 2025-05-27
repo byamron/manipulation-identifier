@@ -1,11 +1,15 @@
-// Updated content.js
 let tactics = [];
 
-// Load tactics from JSON file
+// Load tactics from JSON file (with safeguard for chrome.runtime.getURL)
 async function loadTactics() {
   try {
+    if (!chrome.runtime?.getURL) {
+      throw new Error('chrome.runtime.getURL is not available. Content script may have been run outside of a Chrome extension context.');
+    }
+
     const response = await fetch(chrome.runtime.getURL('tactics.json'));
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
     tactics = await response.json();
     console.log('Tactics loaded successfully:', tactics);
   } catch (error) {
@@ -13,61 +17,101 @@ async function loadTactics() {
   }
 }
 
-// Function to escape HTML to prevent DOM injection issues
+// Escape HTML to prevent DOM injection issues
 function escapeHTML(str) {
   return str.replace(/[&<>"']/g, match =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match])
   );
 }
 
-// Function to send text to the server for LLM analysis
-const analyzeTextWithLLM = async (text) => {
-  try {
-    const response = await fetch('http://localhost:3000/analyze-content', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: text }),
-    });
+// Highlight detected manipulation tactics in page text
+function highlightManipulativeLanguage(detectedTactics, pageText) {
+  const style = document.createElement('style');
+  style.textContent = `
+    .manipulation-highlight {
+      background-color: yellow;
+      font-weight: bold;
+      border-radius: 2px;
+      padding: 0 2px;
+    }
+  `;
+  document.head.appendChild(style);
 
-    if (!response.ok) throw new Error(`Server error: ${response.status}`);
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
 
-    const data = await response.json();
-    console.log('LLM analysis result:', data);
-    
-    // Parse the LLM response and extract detected tactics
-    const detectedTactics = parseLLMResponse(data.manipulativeLanguage);
-    
-    // Send results back to popup
-    chrome.runtime.sendMessage({
-      action: "analysisComplete",
-      results: detectedTactics
-    });
-    
-    return detectedTactics;
-  } catch (error) {
-    console.error('Error sending text to LLM:', error, error.message, error.name);
-    chrome.runtime.sendMessage({
-      action: "analysisError",
-      error: `Failed to analyze content. Server might be down or unreachable: ${error.message}`
-    });
-    throw error;
+  const textNodes = [];
+  while (walker.nextNode()) {
+    textNodes.push(walker.currentNode);
   }
-  
+
+  textNodes.forEach(node => {
+    const parent = node.parentNode;
+    if (!parent || ['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(parent.tagName)) return;
+
+    let replaced = node.textContent;
+    detectedTactics.forEach(tactic => {
+      const keywords = [tactic.name, ...(tactic.alsoKnownAs || [])];
+      keywords.forEach(keyword => {
+        const regex = new RegExp(`\\b(${keyword})\\b`, 'gi');
+        replaced = replaced.replace(regex, '<span class="manipulation-highlight">$1</span>');
+      });
+    });
+
+    if (replaced !== node.textContent) {
+      const wrapper = document.createElement('span');
+      wrapper.innerHTML = replaced;
+      parent.replaceChild(wrapper, node);
+    }
+  });
+}
+
+// Send text to the server for LLM analysis via background script
+const analyzeTextWithLLM = (text) => {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({ action: "analyzeText", text }, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error('Message failed:', chrome.runtime.lastError.message);
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+
+      if (!response) {
+        reject(new Error('No response from background script'));
+        return;
+      }
+
+      if (response.success) {
+        const resultText = response.data.manipulativeLanguage;
+
+        console.log('LLM analysis result:', resultText);
+
+        const detectedTactics = tactics.filter(tactic =>
+          resultText.toLowerCase().includes(tactic.name.toLowerCase())
+        );
+
+        if (detectedTactics.length === 0) {
+          console.log('No tactics detected.');
+          chrome.runtime.sendMessage({ action: "showPopup", result: "No manipulation tactics were detected." });
+        } else {
+          highlightManipulativeLanguage(detectedTactics, text);
+          chrome.runtime.sendMessage({ action: "showPopup", result: resultText, tactics: detectedTactics });
+        }
+      }
+    });
+  });
 };
 
-// Function to parse LLM response and extract tactics
+// Parse LLM response and extract tactics
 function parseLLMResponse(llmResponse) {
   const detectedTactics = [];
-  
-  // Simple parsing - look for tactic names in the response
+
   tactics.forEach(tactic => {
     const tacticName = tactic.name.toLowerCase();
     const aliases = tactic.alsoKnownAs || [];
-    
-    // Check if this tactic is mentioned in the LLM response
+
     const isDetected = [tacticName, ...aliases.map(a => a.toLowerCase())]
       .some(name => llmResponse.toLowerCase().includes(name));
-    
+
     if (isDetected) {
       detectedTactics.push({
         tactic: tactic.name,
@@ -77,11 +121,11 @@ function parseLLMResponse(llmResponse) {
       });
     }
   });
-  
+
   return detectedTactics;
 }
 
-// Collect visible text and send it for analysis
+// Collect visible text from page
 function collectTextForAnalysis(node, collected = []) {
   if (node.nodeType === Node.TEXT_NODE && node.parentNode) {
     const parentTag = node.parentNode.tagName;
@@ -104,12 +148,13 @@ function collectTextForAnalysis(node, collected = []) {
   return collected;
 }
 
-// Function to run the analysis
+// Run the analysis process
 async function runAnalysis() {
   console.log('Running content analysis');
   const visibleTextArray = collectTextForAnalysis(document.body);
-  const combinedText = visibleTextArray.join(' ').slice(0, 3000); // Trim to 3,000 chars for LLM
-  
+  const combinedText = visibleTextArray.join(' ').slice(0, 3000);
+  console.log('Collected page content:', combinedText);
+
   if (combinedText.length < 50) {
     chrome.runtime.sendMessage({
       action: "analysisError",
@@ -117,12 +162,11 @@ async function runAnalysis() {
     });
     return;
   }
-  
+
   await analyzeTextWithLLM(combinedText);
 }
 
-console.log('chrome.runtime:', chrome?.runtime);
-
+// Handle incoming messages
 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "analyze") {
@@ -131,12 +175,12 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage)
       }).catch((error) => {
         sendResponse({ status: "Analysis failed", error: error.message });
       });
-      return true; // Indicates we'll send a response asynchronously
+      return true; // Keep message channel open
     }
   });
 }
 
-// Initialize when the content script loads
+// Init on load
 (async () => {
   await loadTactics();
   console.log('Content script initialized');
