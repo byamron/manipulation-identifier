@@ -1,76 +1,132 @@
+// Configuration
+const CONFIG = {
+  SERVER_URL: 'http://localhost:3000/analyze-content',
+  TIMEOUT_MS: 30000,
+  MAX_RETRIES: 3,
+  RETRY_DELAY_MS: 1000
+};
+
+// Utility function for delayed retry
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+// Utility function to handle message sending with storage fallback
+async function sendMessageWithFallback(payload) {
+  try {
+    await new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage(payload, response => {
+        if (chrome.runtime.lastError) {
+          console.warn("Popup not open. Saving to storage instead.");
+          chrome.storage.local.set({ pendingAnalysis: payload }, () => {
+            if (chrome.runtime.lastError) {
+              reject(new Error('Storage fallback failed'));
+            } else {
+              resolve();
+            }
+          });
+        } else {
+          console.log("Message delivered successfully");
+          resolve();
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Message delivery failed:', error);
+    throw error;
+  }
+}
+
+// Enhanced fetch with timeout and retry
+async function fetchWithRetry(url, options, retries = CONFIG.MAX_RETRIES) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), CONFIG.TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout');
+    }
+    if (retries > 0) {
+      console.log(`Retrying... ${retries} attempts remaining`);
+      await delay(CONFIG.RETRY_DELAY_MS);
+      return fetchWithRetry(url, options, retries - 1);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 // Log when extension is installed
 chrome.runtime.onInstalled.addListener(() => {
-    console.log('Extension installed');
-  });
-  
-  // Trigger analysis when extension icon is clicked
-  chrome.action.onClicked.addListener((tab) => {
-    chrome.tabs.sendMessage(tab.id, { action: "analyze" }, (response) => {
-      if (chrome.runtime.lastError) {
-        console.error('Error sending analyze message:', chrome.runtime.lastError.message);
-      } else {
-        console.log('Analyze message sent to content script');
-      }
+  console.log('Extension installed');
+  // Initialize any necessary storage
+  chrome.storage.local.set({ pendingAnalysis: null });
+});
+
+// Trigger analysis when extension icon is clicked
+chrome.action.onClicked.addListener(async (tab) => {
+  try {
+    await chrome.tabs.sendMessage(tab.id, { action: "analyze" });
+    console.log('Analyze message sent to content script');
+  } catch (error) {
+    console.error('Error sending analyze message:', error);
+    await sendMessageWithFallback({
+      action: "analysisError",
+      error: "Failed to initialize analysis"
     });
-  });
-  
-  // Listen for analysis requests from content.js
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === "analyzeText") {
-      console.log('Background received text for analysis');
-  
-      fetch('http://localhost:3000/analyze-content', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: message.text })
-      })
-      .then(response => {
-        if (!response.ok) throw new Error(`Server error: ${response.status}`);
-        return response.json();
-      })
-      .then(data => {
+  }
+});
+
+// Listen for analysis requests from content.js
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "analyzeText") {
+    console.log('Background received text for analysis');
+
+    (async () => {
+      try {
+        const data = await fetchWithRetry(CONFIG.SERVER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: message.text })
+        });
+
         console.log('LLM server responded:', data);
-  
+
+        // Ensure consistent response structure
         const payload = {
           action: "analysisComplete",
-          results: data.results,
-          llmResponse: data.llmResponse
-        };
-  
-        console.log("📤 background.js: attempting to send message to popup", payload);
-  
-        chrome.runtime.sendMessage(payload, (response) => {
-          if (chrome.runtime.lastError) {
-            console.warn("Popup not open. Saving analysis to chrome.storage.local instead.");
-            chrome.storage.local.set({ pendingAnalysis: payload });
-          } else {
-            console.log("Message delivered to popup successfully");
+          data: {
+            manipulativeLanguage: data.manipulativeLanguage,
+            results: data.results || []
           }
-        });
-  
-        sendResponse({ success: true });
-      })
-      .catch(error => {
-        console.error('Fetch to LLM server failed:', error);
-  
+        };
+
+        await sendMessageWithFallback(payload);
+        sendResponse({ success: true, data: payload.data });
+      } catch (error) {
+        console.error('Analysis failed:', error);
+        
         const errorPayload = {
           action: "analysisError",
           error: error.message
         };
-  
-        chrome.runtime.sendMessage(errorPayload, (response) => {
-          if (chrome.runtime.lastError) {
-            console.warn("Popup not open. Saving error to chrome.storage.local.");
-            chrome.storage.local.set({ pendingAnalysis: errorPayload });
-          } else {
-            console.log("Error message delivered to popup");
-          }
-        });
-  
+
+        await sendMessageWithFallback(errorPayload);
         sendResponse({ success: false, error: error.message });
-      });
-  
-      return true; // allow async sendResponse
-    }
-  });
+      }
+    })();
+
+    return true; // Keep message channel open for async response
+  }
+});
   

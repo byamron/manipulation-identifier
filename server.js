@@ -2,28 +2,71 @@ import express from 'express';
 import { OpenAI } from 'openai';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import { promptRoleSystem } from './prompts.js';  // Ensure this path is correct
+import { promptRoleSystem } from './prompts.js';
 
 dotenv.config();
 
+// Configuration
+const CONFIG = {
+  PORT: process.env.PORT || 3000,
+  CACHE_DURATION: 1000 * 60 * 60, // 1 hour
+  RATE_LIMIT: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // limit each IP to 100 requests per windowMs
+  },
+  MAX_CONTENT_LENGTH: 5000 // characters
+};
+
+// Simple in-memory cache
+const cache = new Map();
+
+// Utility to clean old cache entries
+function cleanCache() {
+  const now = Date.now();
+  for (const [key, value] of cache.entries()) {
+    if (now - value.timestamp > CONFIG.CACHE_DURATION) {
+      cache.delete(key);
+    }
+  }
+}
+
+// Clean cache periodically
+setInterval(cleanCache, CONFIG.CACHE_DURATION);
+
+// Initialize OpenAI
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 const app = express();
-const port = process.env.PORT || 3000;
 
-// CORS setup with dynamic origin whitelist for localhost and chrome-extension schemes
+// Request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`${req.method} ${req.url} ${res.statusCode} - ${duration}ms`);
+  });
+  next();
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+// CORS setup with dynamic origin whitelist
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like Postman or curl)
     if (!origin) return callback(null, true);
 
-    if (/^http:\/\/localhost:\d+$/.test(origin)) {
-      return callback(null, true);
-    }
+    const allowedOrigins = [
+      /^http:\/\/localhost:\d+$/,
+      /^chrome-extension:\/\//
+    ];
 
-    if (origin.startsWith('chrome-extension://')) {
+    if (allowedOrigins.some(pattern => pattern.test(origin))) {
       return callback(null, true);
     }
 
@@ -32,16 +75,44 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
-app.post('/analyze-content', async (req, res) => {
-  const content = req.body.content;
+// Content validation middleware
+function validateContent(req, res, next) {
+  const { content } = req.body;
 
-  if (!content || content.trim().length === 0) {
-    return res.status(400).json({ error: 'No content provided for analysis' });
+  if (!content || typeof content !== 'string') {
+    return res.status(400).json({ error: 'Content must be a non-empty string' });
   }
 
+  if (content.trim().length === 0) {
+    return res.status(400).json({ error: 'Content cannot be empty' });
+  }
+
+  if (content.length > CONFIG.MAX_CONTENT_LENGTH) {
+    return res.status(400).json({ 
+      error: `Content exceeds maximum length of ${CONFIG.MAX_CONTENT_LENGTH} characters` 
+    });
+  }
+
+  next();
+}
+
+app.post('/analyze-content', validateContent, async (req, res) => {
+  const { content } = req.body;
+  const cacheKey = content.trim();
+
   try {
+    // Check cache
+    if (cache.has(cacheKey)) {
+      const cached = cache.get(cacheKey);
+      if (Date.now() - cached.timestamp < CONFIG.CACHE_DURATION) {
+        console.log('Cache hit');
+        return res.json(cached.data);
+      }
+      cache.delete(cacheKey);
+    }
+
     const response = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
@@ -52,27 +123,65 @@ app.post('/analyze-content', async (req, res) => {
       temperature: 0.3,
     });
 
+    if (!response?.choices?.[0]?.message?.content) {
+      throw new Error('Invalid response from OpenAI');
+    }
+
     const manipulativeLanguage = response.choices[0].message.content;
-    res.json({ manipulativeLanguage });
+    const result = { 
+      manipulativeLanguage,
+      results: [] // Add an empty results array to match expected structure
+    };
+
+    // Cache the result
+    cache.set(cacheKey, {
+      timestamp: Date.now(),
+      data: result
+    });
+
+    console.log('Sending analysis result:', result); // Add logging
+    res.json(result);
   } catch (error) {
     console.error('Error analyzing content:', error);
 
+    const errorResponse = {
+      error: 'Failed to analyze content',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    };
+
     if (error.code === 'insufficient_quota') {
-      res.status(402).json({ error: 'OpenAI API quota exceeded' });
+      res.status(402).json({ ...errorResponse, error: 'OpenAI API quota exceeded' });
     } else if (error.code === 'invalid_api_key') {
-      res.status(401).json({ error: 'Invalid OpenAI API key' });
+      res.status(401).json({ ...errorResponse, error: 'Invalid OpenAI API key' });
+    } else if (error.code === 'context_length_exceeded') {
+      res.status(400).json({ ...errorResponse, error: 'Content too long for analysis' });
     } else {
-      res.status(500).json({ error: 'Failed to analyze content' });
+      res.status(500).json(errorResponse);
     }
   }
 });
 
-// Health check endpoint
+// Health check endpoint with basic metrics
 app.get('/health', (req, res) => {
-  res.json({ status: 'Server is running', port });
+  res.json({
+    status: 'healthy',
+    uptime: process.uptime(),
+    timestamp: Date.now(),
+    cacheSize: cache.size,
+    port: CONFIG.PORT
+  });
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-  console.log(`Health check: http://localhost:${port}/health`);
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received. Shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+});
+
+const server = app.listen(CONFIG.PORT, () => {
+  console.log(`Server is running on port ${CONFIG.PORT}`);
+  console.log(`Health check: http://localhost:${CONFIG.PORT}/health`);
 });
