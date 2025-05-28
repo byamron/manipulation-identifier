@@ -12,14 +12,14 @@
       color: #333;
       background-color: #fff;
     }
-    
+
     h1 {
       font-size: 18px;
       margin-bottom: 15px;
       color: #1a73e8;
       text-align: center;
     }
-    
+
     .analyze-button {
       background-color: #1a73e8;
       color: white;
@@ -32,23 +32,23 @@
       margin-bottom: 15px;
       transition: background-color 0.2s;
     }
-    
+
     .analyze-button:hover {
       background-color: #185abc;
     }
-    
+
     .analyze-button:disabled {
       background-color: #ccc;
       cursor: not-allowed;
     }
-    
+
     .status {
       font-size: 12px;
       color: #666;
       text-align: center;
       margin-bottom: 10px;
     }
-    
+
     .results-container {
       margin-top: 15px;
       border-top: 1px solid #eee;
@@ -56,7 +56,13 @@
       max-height: 300px;
       overflow-y: auto;
     }
-    
+
+    .results-summary {
+      font-size: 13px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
     .tactic-item {
       background-color: #fff3cd;
       border: 1px solid #ffeaa7;
@@ -64,32 +70,32 @@
       padding: 10px;
       margin-bottom: 10px;
     }
-    
+
     .tactic-title {
       font-weight: bold;
       margin-bottom: 5px;
       color: #856404;
     }
-    
+
     .tactic-description {
       font-size: 12px;
       color: #666;
       margin-bottom: 5px;
     }
-    
+
     .tactic-examples {
       font-size: 11px;
       color: #888;
       font-style: italic;
     }
-    
+
     .no-results {
       text-align: center;
       color: #28a745;
       font-size: 14px;
       font-weight: 500;
     }
-    
+
     .error {
       color: #dc3545;
       font-size: 12px;
@@ -100,17 +106,17 @@
       padding: 8px;
       margin-bottom: 10px;
     }
-    
+
     .loading {
       text-align: center;
       color: #6c757d;
     }
-    
+
     .loading::after {
       content: "";
       animation: dots 1.5s steps(5, end) infinite;
     }
-    
+
     @keyframes dots {
       0%, 20% {
         color: rgba(0,0,0,0);
@@ -139,18 +145,21 @@
 </head>
 <body>
   <h1>Manipulation Identifier</h1>
-  
+
   <button id="analyzeButton" class="analyze-button">
     Analyze Current Page
   </button>
-  
+
   <div id="status" class="status"></div>
-  
-  <div id="results" class="results-container" style="display: none;">
-    <h3>Analysis Results:</h3>
+
+  <div id="results" class="results-container" style="display: block;">
+    <div id="resultsSummary" class="results-summary"></div>
     <div id="resultsContent"></div>
   </div>
-  
+
+  <!-- Added div for LLM raw response -->
+  <div id="llmResponse" style="display: block; margin-top: 15px; font-size: 12px; color: #444; white-space: pre-wrap;"></div>
+
   <script src="popup.js"></script>
 </body>
 </html>

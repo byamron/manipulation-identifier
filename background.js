@@ -5,7 +5,6 @@ chrome.runtime.onInstalled.addListener(() => {
   
   // Trigger analysis when extension icon is clicked
   chrome.action.onClicked.addListener((tab) => {
-    // Send a message to the content script to start analysis
     chrome.tabs.sendMessage(tab.id, { action: "analyze" }, (response) => {
       if (chrome.runtime.lastError) {
         console.error('Error sending analyze message:', chrome.runtime.lastError.message);
@@ -31,15 +30,47 @@ chrome.runtime.onInstalled.addListener(() => {
       })
       .then(data => {
         console.log('LLM server responded:', data);
-        sendResponse({ success: true, data });
+  
+        const payload = {
+          action: "analysisComplete",
+          results: data.results,
+          llmResponse: data.llmResponse
+        };
+  
+        console.log("📤 background.js: attempting to send message to popup", payload);
+  
+        chrome.runtime.sendMessage(payload, (response) => {
+          if (chrome.runtime.lastError) {
+            console.warn("Popup not open. Saving analysis to chrome.storage.local instead.");
+            chrome.storage.local.set({ pendingAnalysis: payload });
+          } else {
+            console.log("Message delivered to popup successfully");
+          }
+        });
+  
+        sendResponse({ success: true });
       })
       .catch(error => {
         console.error('Fetch to LLM server failed:', error);
+  
+        const errorPayload = {
+          action: "analysisError",
+          error: error.message
+        };
+  
+        chrome.runtime.sendMessage(errorPayload, (response) => {
+          if (chrome.runtime.lastError) {
+            console.warn("Popup not open. Saving error to chrome.storage.local.");
+            chrome.storage.local.set({ pendingAnalysis: errorPayload });
+          } else {
+            console.log("Error message delivered to popup");
+          }
+        });
+  
         sendResponse({ success: false, error: error.message });
       });
   
-      // Return true to indicate we'll respond asynchronously
-      return true;
+      return true; // allow async sendResponse
     }
   });
   
