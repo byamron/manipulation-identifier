@@ -1,6 +1,7 @@
 let tactics = [];
 let isProcessing = false;
 let debounceTimeout = null;
+let currentHighlights = null; // Track current highlights state
 
 // Load tactics from JSON file with retry mechanism
 async function loadTactics(retries = 3) {
@@ -65,9 +66,40 @@ function collectTextForAnalysis(node, collected = new Set()) {
   return Array.from(collected);
 }
 
+// Add function to check for existing highlights
+function getExistingHighlights() {
+  const highlights = document.querySelectorAll('.manipulation-highlight');
+  if (!highlights.length) return null;
+  
+  const existingTactics = new Set();
+  highlights.forEach(highlight => {
+    const tooltip = document.querySelector(`.manipulation-tooltip[data-for="${highlight.dataset.highlightId}"]`);
+    if (tooltip) {
+      const tacticMatch = tooltip.textContent.match(/Manipulation Tactic: (.*)/);
+      if (tacticMatch) {
+        existingTactics.add(tacticMatch[1]);
+      }
+    }
+  });
+  
+  return existingTactics.size > 0 ? Array.from(existingTactics) : null;
+}
+
 // Optimized highlighting function using DocumentFragment
 function highlightManipulativeLanguage(detectedTactics) {
   if (!detectedTactics?.length) return;
+
+  // Clear existing highlights if any
+  const existingHighlights = document.querySelectorAll('.manipulation-highlight');
+  existingHighlights.forEach(highlight => {
+    const parent = highlight.parentNode;
+    if (parent) {
+      parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
+    }
+  });
+
+  const existingTooltips = document.querySelectorAll('.manipulation-tooltip');
+  existingTooltips.forEach(tooltip => tooltip.remove());
 
   // Add style only once
   if (!document.querySelector('#manipulation-highlight-style')) {
@@ -75,46 +107,125 @@ function highlightManipulativeLanguage(detectedTactics) {
     style.id = 'manipulation-highlight-style';
     style.textContent = `
       .manipulation-highlight {
-        background-color: yellow;
-        font-weight: bold;
-        border-radius: 2px;
-        padding: 0 2px;
-        transition: background-color 0.3s ease;
+        background-color: #fff3cd !important;
+        border: 1px solid #ffeaa7 !important;
+        border-radius: 3px !important;
+        padding: 2px !important;
+        position: relative !important;
       }
       .manipulation-highlight:hover {
-        background-color: #ffed4a;
+        background-color: #fff0b3 !important;
+        cursor: help !important;
+      }
+      .manipulation-tooltip {
+        display: none;
+        position: fixed;
+        background-color: #333;
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 12px;
+        max-width: 250px;
+        z-index: 10000;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        pointer-events: none;
+      }
+      .manipulation-tooltip.visible {
+        display: block;
+      }
+      .manipulation-tooltip::before {
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+      }
+      .manipulation-tooltip.tooltip-top::before {
+        bottom: -5px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-top: 5px solid #333;
+      }
+      .manipulation-tooltip.tooltip-bottom::before {
+        top: -5px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-bottom: 5px solid #333;
       }
     `;
     document.head.appendChild(style);
   }
 
-  const fragment = document.createDocumentFragment();
+  // Add event listeners for tooltip positioning
+  function positionTooltip(highlight, tooltip) {
+    const highlightRect = highlight.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const scrollY = window.scrollY;
+    
+    // Calculate space above and below the highlight
+    const spaceAbove = highlightRect.top;
+    const spaceBelow = viewportHeight - highlightRect.bottom;
+    
+    // Default margin from the highlight
+    const margin = 10;
+    
+    // Remove existing position classes
+    tooltip.classList.remove('tooltip-top', 'tooltip-bottom');
+    
+    // Position horizontally
+    let left = highlightRect.left + (highlightRect.width / 2) - (tooltipRect.width / 2);
+    
+    // Ensure tooltip doesn't go off-screen horizontally
+    left = Math.max(margin, Math.min(left, window.innerWidth - tooltipRect.width - margin));
+    
+    // Decide whether to show above or below based on available space
+    if (spaceAbove > tooltipRect.height + margin && spaceAbove >= spaceBelow) {
+      // Position above
+      tooltip.style.top = `${highlightRect.top + scrollY - tooltipRect.height - margin}px`;
+      tooltip.classList.add('tooltip-top');
+    } else {
+      // Position below
+      tooltip.style.top = `${highlightRect.bottom + scrollY + margin}px`;
+      tooltip.classList.add('tooltip-bottom');
+    }
+    
+    tooltip.style.left = `${left}px`;
+  }
+
   const textNodes = [];
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
 
   while (walker.nextNode()) {
-    textNodes.push(walker.currentNode);
+    const node = walker.currentNode;
+    const parent = node.parentNode;
+    if (!parent || ['SCRIPT', 'STYLE', 'NOSCRIPT', 'MANIPULATION-HIGHLIGHT'].includes(parent.tagName)) continue;
+    textNodes.push(node);
   }
 
   textNodes.forEach(node => {
-    const parent = node.parentNode;
-    if (!parent || ['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(parent.tagName)) return;
-
     let text = node.textContent;
     let hasMatch = false;
     let lastIndex = 0;
     const matches = [];
 
+    // Look for exact matches of examples in the text
     detectedTactics.forEach(tactic => {
-      const keywords = [tactic.name, ...(tactic.alsoKnownAs || [])];
-      keywords.forEach(keyword => {
-        const regex = new RegExp(`\\b(${keyword})\\b`, 'gi');
+      if (!tactic.examples) return;
+      
+      tactic.examples.forEach(example => {
+        // Escape special regex characters in the example
+        const escapedExample = example.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(escapedExample, 'gi');
         let match;
+        
         while ((match = regex.exec(text)) !== null) {
           matches.push({
             index: match.index,
             length: match[0].length,
-            text: match[0]
+            text: match[0],
+            tactic: tactic.tactic
           });
           hasMatch = true;
         }
@@ -122,6 +233,7 @@ function highlightManipulativeLanguage(detectedTactics) {
     });
 
     if (hasMatch) {
+      const parent = node.parentNode;
       const wrapper = document.createElement('span');
       matches.sort((a, b) => a.index - b.index);
       
@@ -132,6 +244,36 @@ function highlightManipulativeLanguage(detectedTactics) {
         const highlight = document.createElement('span');
         highlight.className = 'manipulation-highlight';
         highlight.textContent = match.text;
+        
+        // Create tooltip
+        const tooltip = document.createElement('span');
+        tooltip.className = 'manipulation-tooltip';
+        tooltip.textContent = `Manipulation Tactic: ${match.tactic}`;
+        document.body.appendChild(tooltip);
+        
+        // Add hover listeners
+        highlight.addEventListener('mouseenter', () => {
+          tooltip.classList.add('visible');
+          positionTooltip(highlight, tooltip);
+        });
+        
+        highlight.addEventListener('mouseleave', () => {
+          tooltip.classList.remove('visible');
+        });
+        
+        // Update tooltip position on scroll and resize
+        window.addEventListener('scroll', () => {
+          if (tooltip.classList.contains('visible')) {
+            positionTooltip(highlight, tooltip);
+          }
+        }, { passive: true });
+        
+        window.addEventListener('resize', () => {
+          if (tooltip.classList.contains('visible')) {
+            positionTooltip(highlight, tooltip);
+          }
+        }, { passive: true });
+        
         wrapper.appendChild(highlight);
         lastIndex = match.index + match.length;
       });
@@ -143,6 +285,9 @@ function highlightManipulativeLanguage(detectedTactics) {
       parent.replaceChild(wrapper, node);
     }
   });
+
+  // Store current highlights state
+  currentHighlights = detectedTactics;
 }
 
 // Optimized analysis function
@@ -173,25 +318,44 @@ async function analyzeTextWithLLM(text) {
     const resultText = response.data.manipulativeLanguage;
     console.log('Analysis result:', resultText);
 
-    // Parse the LLM response to extract tactics
-    const tacticMatches = resultText.match(/\[(.*?)\]:/g);
+    // Parse the LLM response to extract tactics and their examples
     const detectedTactics = [];
-
-    if (tacticMatches) {
-      tacticMatches.forEach(match => {
-        const tacticName = match.replace('[', '').replace(']:', '').trim();
-        // Find the corresponding description in the text
-        const descriptionRegex = new RegExp(`\\[${tacticName}\\]:\\s*([^\\[]+)`);
-        const descriptionMatch = resultText.match(descriptionRegex);
-        const description = descriptionMatch ? descriptionMatch[1].trim() : '';
-
-        detectedTactics.push({
-          tactic: tacticName,
-          description: description,
-          examples: [], // Could be extracted from the text if needed
+    const sections = resultText.split(/\d+\.\s*\[/);
+    
+    sections.forEach(section => {
+      if (!section.trim()) return;
+      
+      section = '[' + section; // Add back the '[' we split on
+      const tacticMatch = section.match(/\[(.*?)\]:/);
+      if (!tacticMatch) return;
+      
+      const tacticName = tacticMatch[1].trim();
+      const remainingText = section.slice(section.indexOf(']:') + 2).trim();
+      
+      // Extract the description (text until the first quote or example)
+      const descriptionEnd = Math.min(
+        remainingText.indexOf('"') > -1 ? remainingText.indexOf('"') : Infinity,
+        remainingText.indexOf('Example') > -1 ? remainingText.indexOf('Example') : Infinity
+      );
+      const description = remainingText.slice(0, descriptionEnd).trim();
+      
+      // Extract examples (text in quotes)
+      const examples = [];
+      const exampleMatches = remainingText.match(/"([^"]+)"/g);
+      if (exampleMatches) {
+        exampleMatches.forEach(match => {
+          // Remove the quotes and trim
+          const example = match.slice(1, -1).trim();
+          examples.push(example);
         });
+      }
+      
+      detectedTactics.push({
+        tactic: tacticName,
+        description: description,
+        examples: examples
       });
-    }
+    });
 
     // Send the analysis results to the popup
     chrome.runtime.sendMessage({ 
@@ -252,7 +416,15 @@ chrome.runtime.onMessage?.addListener((message, sender, sendResponse) => {
         sendResponse({ status: "Analysis failed", error: error.message });
       }
     })();
-    return true; // Keep the message channel open for async response
+    return true;
+  } else if (message.action === "getHighlightState") {
+    // Check for existing highlights and return their state
+    const existingTactics = getExistingHighlights();
+    sendResponse({ 
+      hasHighlights: !!existingTactics,
+      tactics: existingTactics
+    });
+    return true;
   }
 });
 
