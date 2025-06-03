@@ -1,10 +1,17 @@
 // Configuration
 const CONFIG = {
-  SERVER_URL: 'http://localhost:3000/analyze-content',
   TIMEOUT_MS: 30000,
   MAX_RETRIES: 3,
-  RETRY_DELAY_MS: 1000
+  RETRY_DELAY_MS: 1000,
+  WINDOW_ID: 'manipulation-identifier-window',
+  WINDOW_WIDTH: 320,
+  WINDOW_HEIGHT: 200
 };
+
+let SERVER_URL = 'http://localhost:3000'; // default
+chrome.storage.local.get(['serverUrl'], (result) => {
+  if (result.serverUrl) SERVER_URL = result.serverUrl;
+});
 
 // Utility function for delayed retry
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -66,24 +73,54 @@ async function fetchWithRetry(url, options, retries = CONFIG.MAX_RETRIES) {
   }
 }
 
-// Log when extension is installed
-chrome.runtime.onInstalled.addListener(() => {
-  console.log('Extension installed');
-  // Initialize any necessary storage
-  chrome.storage.local.set({ pendingAnalysis: null });
-});
+// Function to create or focus the window
+async function createOrFocusWindow() {
+  try {
+    // Try to find existing window
+    const windows = await chrome.windows.getAll();
+    const existingWindow = windows.find(w => 
+      w.type === 'popup' && w.title === 'Manipulation Identifier'
+    );
 
-// Trigger analysis when extension icon is clicked
+    if (existingWindow) {
+      // Focus existing window
+      await chrome.windows.update(existingWindow.id, { focused: true });
+      return existingWindow;
+    }
+
+    // Create new window
+    const window = await chrome.windows.create({
+      url: 'popup.html',
+      type: 'popup',
+      width: CONFIG.WINDOW_WIDTH,
+      height: CONFIG.WINDOW_HEIGHT,
+      focused: true
+    });
+
+    return window;
+  } catch (error) {
+    console.error('Error creating/focusing window:', error);
+    throw error;
+  }
+}
+
+// Handle extension icon click
 chrome.action.onClicked.addListener(async (tab) => {
   try {
-    await chrome.tabs.sendMessage(tab.id, { action: "analyze" });
-    console.log('Analyze message sent to content script');
+    await createOrFocusWindow();
   } catch (error) {
-    console.error('Error sending analyze message:', error);
-    await sendMessageWithFallback({
-      action: "analysisError",
-      error: "Failed to initialize analysis"
-    });
+    console.error('Error handling action click:', error);
+  }
+});
+
+// Handle keyboard shortcut
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === '_execute_action') {
+    try {
+      await createOrFocusWindow();
+    } catch (error) {
+      console.error('Error handling command:', error);
+    }
   }
 });
 
@@ -94,7 +131,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     (async () => {
       try {
-        const data = await fetchWithRetry(CONFIG.SERVER_URL, {
+        const data = await fetchWithRetry(SERVER_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ content: message.text })
@@ -128,5 +165,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     return true; // Keep message channel open for async response
   }
+});
+
+// Log when extension is installed
+chrome.runtime.onInstalled.addListener(() => {
+  console.log('Extension installed');
+  // Initialize any necessary storage
+  chrome.storage.local.set({ pendingAnalysis: null });
 });
   

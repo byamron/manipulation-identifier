@@ -1,0 +1,67 @@
+Server is running on port 3000
+Health check: http://localhost:3000/health
+OPTIONS /analyze-content 204 - 6ms
+POST /analyze-content 200 - 2049ms
+OPTIONS /analyze-content 204 - 2ms
+Sending analysis result: {
+  manipulativeLanguage: '[Emotional Language]\n' +
+    'Definition: Language that contains strong emotional terms – especially those with a negative affect such as fear or outrage.\n' +
+    '\n' +
+    'Examples:\n' +
+    `1. "What you're about to read will horrify you."\n` +
+    '   Why this is an example: This sentence uses strong emotional language to evoke fear and anticipation in the reader.\n' +
+    '2. "The latest government decision is absolutely DISGUSTING and will make your blood boil."\n' +
+    '   Why this is an example: This sentence uses strong negative emotional language ("DISGUSTING", "will make your blood boil") to provoke anger and outrage in the reader.\n' +
+    '3. "You should be outraged that they continue to ignore the suffering of everyday people."\n' +
+    "   Why this is an example: This sentence uses emotional language to suggest that the reader should feel outrage at the government's actions.\n" +
+    `4. "This is an urgent crisis that demands your immediate attention before it's too late."\n` +
+    '   Why this is an example: This sentence uses emotional language to create a sense of urgency and fear, suggesting that dire consequences will occur if the reader does not take immediate action.\n' +
+    '\n' +
+    '[False Dichotomy]\n' +
+    'Definition: Presenting a limited number of choices or sides as mutually inclusive, when in reality more options are possible.\n' +
+    '\n' +
+    'Examples:\n' +
+    `1. "This is an urgent crisis that demands your immediate attention before it's too late."\n` +
+    '   Why this is an example: This sentence presents a false dichotomy by suggesting that the reader must immediately pay attention to the issue or face dire consequences, ignoring the possibility that there may be other options or responses available.',
+  results: [
+    {
+      tactic: 'Emotional Language',
+      definition: 'Language that contains strong emotional terms – especially those with a negative affect such as fear or outrage.',
+      examples: [Array]
+    },
+    {
+      tactic: 'False Dichotomy',
+      definition: 'Presenting a limited number of choices or sides as mutually inclusive, when in reality more options are possible.',
+      examples: [Array]
+    }
+  ]
+}
+POST /analyze-content 200 - 9653ms
+OPTIONS /analyze-content 204 - 0ms
+Sending analysis result: {
+  manipulativeLanguage: '[Emotional Language]\n' +
+    'Definition: Language that contains strong emotional terms – especially those with a negative affect such as fear or outrage.\n' +
+    '\n' +
+    'Examples:\n' +
+    `1. "What you're about to read will horrify you."\n` +
+    '   Why this is an example: This statement is designed to evoke fear and anticipation in the reader, priming them to react emotionally to the following content.\n' +
+    '   \n' +
+    '2. "The latest government decision is absolutely DISGUSTING and will make your blood boil."\n' +
+    '   Why this is an example: The use of the word "DISGUSTING" and the phrase "will make your blood boil" are clear examples of emotional language meant to incite anger and outrage in the reader.\n' +
+    '\n' +
+    '3. "You should be outraged that they continue to ignore the suffering of everyday people."\n' +
+    '   Why this is an example: This statement is telling the reader how they should feel (outraged), which is a manipulation tactic designed to provoke a strong emotional response.\n' +
+    '\n' +
+    `4. "This is an urgent crisis that demands your immediate attention before it's too late."\n` +
+    `   Why this is an example: The use of words like "urgent," "crisis," and "before it's too late" are intended to create a sense of fear and urgency in the reader.\n` +
+    '\n' +
+    'No other manipulation tactics detected.',
+  results: [
+    {
+      tactic: 'Emotional Language',
+      definition: 'Language that contains strong emotional terms – especially those with a negative affect such as fear or outrage.',
+      examples: [Array]
+    }
+  ]
+}
+POST /analyze-content 200 - 7138ms

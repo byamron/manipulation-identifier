@@ -122,16 +122,29 @@ function highlightManipulativeLanguage(detectedTactics) {
         position: fixed;
         background-color: #333;
         color: white;
-        padding: 10px;
+        padding: 15px;
         border-radius: 5px;
         font-size: 12px;
-        max-width: 250px;
+        max-width: 300px;
         z-index: 10000;
         box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         pointer-events: none;
       }
       .manipulation-tooltip.visible {
         display: block;
+      }
+      .manipulation-tooltip h4 {
+        margin: 0 0 8px 0;
+        color: #fff;
+        font-size: 14px;
+      }
+      .manipulation-tooltip .definition {
+        margin-bottom: 8px;
+        color: #ddd;
+      }
+      .manipulation-tooltip .explanation {
+        color: #bbb;
+        font-style: italic;
       }
       .manipulation-tooltip::before {
         content: '';
@@ -206,28 +219,23 @@ function highlightManipulativeLanguage(detectedTactics) {
 
   textNodes.forEach(node => {
     let text = node.textContent;
-    let hasMatch = false;
     let lastIndex = 0;
+    let hasMatch = false;
     const matches = [];
 
-    // Look for exact matches of examples in the text
     detectedTactics.forEach(tactic => {
-      if (!tactic.examples) return;
-      
       tactic.examples.forEach(example => {
-        // Escape special regex characters in the example
-        const escapedExample = example.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(escapedExample, 'gi');
-        let match;
-        
-        while ((match = regex.exec(text)) !== null) {
-          matches.push({
-            index: match.index,
-            length: match[0].length,
-            text: match[0],
-            tactic: tactic.tactic
-          });
+        const index = text.toLowerCase().indexOf(example.text.toLowerCase());
+        if (index !== -1) {
           hasMatch = true;
+          matches.push({
+            index,
+            length: example.text.length,
+            text: example.text,
+            tactic: tactic.tactic,
+            definition: tactic.definition,
+            explanation: example.explanation
+          });
         }
       });
     });
@@ -245,10 +253,14 @@ function highlightManipulativeLanguage(detectedTactics) {
         highlight.className = 'manipulation-highlight';
         highlight.textContent = match.text;
         
-        // Create tooltip
-        const tooltip = document.createElement('span');
+        // Create tooltip with new format
+        const tooltip = document.createElement('div');
         tooltip.className = 'manipulation-tooltip';
-        tooltip.textContent = `Manipulation Tactic: ${match.tactic}`;
+        tooltip.innerHTML = `
+          <h4>Tactic: ${match.tactic}</h4>
+          <div class="definition">Definition: ${match.definition}</div>
+          <div class="explanation">Why this is an example: ${match.explanation}</div>
+        `;
         document.body.appendChild(tooltip);
         
         // Add hover listeners
@@ -296,73 +308,67 @@ async function analyzeTextWithLLM(text) {
   isProcessing = true;
 
   try {
-    const response = await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error('Analysis timeout'));
-      }, 30000);
-
-      chrome.runtime.sendMessage({ action: "analyzeText", text }, (response) => {
-        clearTimeout(timeout);
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message));
-          return;
-        }
-        resolve(response);
+    // Get server URL from storage (default to localhost)
+    const serverUrl = await new Promise(resolve => {
+      chrome.storage.local.get(['serverUrl'], (result) => {
+        resolve(result.serverUrl || 'http://localhost:3000');
       });
     });
+    const endpoint = serverUrl.replace(/\/$/, '') + '/analyze-content';
 
-    if (!response?.success || !response?.data?.manipulativeLanguage) {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: text })
+    });
+    if (!response.ok) throw new Error('Server error: ' + response.status);
+    const data = await response.json();
+
+    if (!data?.manipulativeLanguage) {
       throw new Error('Invalid response from analysis');
     }
 
-    const resultText = response.data.manipulativeLanguage;
+    const resultText = data.manipulativeLanguage;
     console.log('Analysis result:', resultText);
 
-    // Parse the LLM response to extract tactics and their examples
-    const detectedTactics = [];
-    const sections = resultText.split(/\d+\.\s*\[/);
-    
-    sections.forEach(section => {
-      if (!section.trim()) return;
-      
-      section = '[' + section; // Add back the '[' we split on
-      const tacticMatch = section.match(/\[(.*?)\]:/);
-      if (!tacticMatch) return;
-      
-      const tacticName = tacticMatch[1].trim();
-      const remainingText = section.slice(section.indexOf(']:') + 2).trim();
-      
-      // Extract the description (text until the first quote or example)
-      const descriptionEnd = Math.min(
-        remainingText.indexOf('"') > -1 ? remainingText.indexOf('"') : Infinity,
-        remainingText.indexOf('Example') > -1 ? remainingText.indexOf('Example') : Infinity
-      );
-      const description = remainingText.slice(0, descriptionEnd).trim();
-      
-      // Extract examples (text in quotes)
-      const examples = [];
-      const exampleMatches = remainingText.match(/"([^"]+)"/g);
-      if (exampleMatches) {
-        exampleMatches.forEach(match => {
-          // Remove the quotes and trim
-          const example = match.slice(1, -1).trim();
-          examples.push(example);
-        });
-      }
-      
-      detectedTactics.push({
-        tactic: tacticName,
-        description: description,
-        examples: examples
-      });
-    });
+    // Check if no manipulation was detected
+    if (resultText.trim() === "No manipulation tactics detected.") {
+      window.dispatchEvent(new CustomEvent('analysisComplete', { detail: { results: [], llmResponse: resultText } }));
+      return;
+    }
 
-    // Send the analysis results to the popup
-    chrome.runtime.sendMessage({ 
-      action: "analysisComplete",
-      results: detectedTactics,
-      llmResponse: resultText
-    });
+    // Use the pre-parsed results from the server if available
+    let detectedTactics = data.results;
+
+    // If no pre-parsed results, parse the response text
+    if (!detectedTactics || !detectedTactics.length) {
+      detectedTactics = [];
+      const sections = resultText.split(/\d+\.\s*\[/);
+      sections.forEach(section => {
+        if (!section.trim()) return;
+        section = '[' + section; // Add back the '[' we split on
+        const tacticMatch = section.match(/\[(.*?)\]:/);
+        if (!tacticMatch) return;
+        const tacticName = tacticMatch[1].trim();
+        const remainingText = section.slice(section.indexOf(']:') + 2).trim();
+        // Extract examples (text in quotes)
+        const examples = [];
+        const exampleMatches = remainingText.match(/"([^"]+)"/g);
+        if (exampleMatches) {
+          exampleMatches.forEach(match => {
+            examples.push(match.slice(1, -1).trim());
+          });
+        }
+        detectedTactics.push({
+          tactic: tacticName,
+          description: remainingText.replace(/"[^"]+"/g, '').trim(),
+          examples: examples
+        });
+      });
+    }
+
+    // Trigger analysisComplete event for the widget
+    window.dispatchEvent(new CustomEvent('analysisComplete', { detail: { results: detectedTactics, llmResponse: resultText } }));
 
     // Highlight the detected tactics if any were found
     if (detectedTactics.length > 0) {
@@ -370,10 +376,7 @@ async function analyzeTextWithLLM(text) {
     }
   } catch (error) {
     console.error('Analysis error:', error);
-    chrome.runtime.sendMessage({
-      action: "analysisError",
-      error: error.message || 'Failed to analyze text'
-    });
+    window.dispatchEvent(new CustomEvent('analysisError', { detail: { error: error.message || 'Failed to analyze text' } }));
   } finally {
     isProcessing = false;
   }
@@ -393,10 +396,7 @@ const runAnalysis = debounceAnalysis(async () => {
 
   if (combinedText.length < 50) {
     const error = new Error('Not enough text content found on this page to analyze.');
-    chrome.runtime.sendMessage({
-      action: "analysisError",
-      error: error.message
-    });
+    window.dispatchEvent(new CustomEvent('analysisError', { detail: { error: error.message } }));
     throw error;
   }
 
@@ -425,6 +425,23 @@ chrome.runtime.onMessage?.addListener((message, sender, sendResponse) => {
       tactics: existingTactics
     });
     return true;
+  } else if (message.action === "clearHighlights") {
+    // Clear all highlights and tooltips
+    const existingHighlights = document.querySelectorAll('.manipulation-highlight');
+    existingHighlights.forEach(highlight => {
+      const parent = highlight.parentNode;
+      if (parent) {
+        parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
+      }
+    });
+
+    const existingTooltips = document.querySelectorAll('.manipulation-tooltip');
+    existingTooltips.forEach(tooltip => tooltip.remove());
+
+    // Clear current highlights state
+    currentHighlights = null;
+    sendResponse({ status: "Highlights cleared" });
+    return true;
   }
 });
 
@@ -433,3 +450,238 @@ chrome.runtime.onMessage?.addListener((message, sender, sendResponse) => {
   await loadTactics();
   console.log('Content script initialized');
 })();
+
+// --- Widget Injection ---
+function injectWidget() {
+  if (document.getElementById('manipulation-widget-root')) return; // Prevent double-injection
+
+  // Create root
+  const root = document.createElement('div');
+  root.id = 'manipulation-widget-root';
+  root.innerHTML = `
+    <style>
+      #manipulation-widget-root {
+        position: fixed;
+        z-index: 2147483647;
+        bottom: 24px;
+        right: 24px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+      .manipulation-widget-btn {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: #1a73e8;
+        color: #fff;
+        border: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        font-size: 32px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+      }
+      .manipulation-widget-btn:hover {
+        background: #185abc;
+      }
+      .manipulation-widget-panel {
+        display: none;
+        position: absolute;
+        bottom: 70px;
+        right: 0;
+        width: 350px;
+        max-height: 500px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+        border: 1px solid #e0e0e0;
+        overflow: hidden;
+        flex-direction: column;
+      }
+      .manipulation-widget-panel.open {
+        display: flex;
+      }
+      .manipulation-widget-header {
+        background: #1a73e8;
+        color: #fff;
+        padding: 12px 16px;
+        font-size: 16px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .manipulation-widget-content {
+        padding: 16px;
+        flex: 1;
+        overflow-y: auto;
+      }
+      .analyze-button {
+        background-color: #1a73e8;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 12px 16px;
+        font-size: 14px;
+        cursor: pointer;
+        width: 100%;
+        transition: background-color 0.2s;
+        margin-bottom: 10px;
+      }
+      .analyze-button:hover {
+        background-color: #185abc;
+      }
+      .analyze-button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+      .analyze-button.active {
+        background-color: #dc3545;
+      }
+      .analyze-button.active:hover {
+        background-color: #c82333;
+      }
+      .status-message {
+        color: #666;
+        font-size: 13px;
+        line-height: 1.4;
+        padding: 8px;
+        border-radius: 4px;
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        margin-bottom: 8px;
+      }
+      .status-message.loading {
+        color: #6c757d;
+      }
+      .error {
+        color: #dc3545;
+        font-size: 12px;
+        margin-top: 10px;
+        padding: 8px;
+        border-radius: 4px;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+      }
+    </style>
+    <button class="manipulation-widget-btn" title="Open Manipulation Identifier" id="manipulationWidgetBtn">
+      <span class="manipulation-widget-btn-icon" id="manipulationWidgetBtnIcon">🔍</span>
+    </button>
+    <div class="manipulation-widget-panel" id="manipulationWidgetPanel">
+      <div class="manipulation-widget-header">
+        Manipulation Identifier
+      </div>
+      <div class="manipulation-widget-content">
+        <button id="analyzeButton" class="analyze-button">Analyze Current Page</button>
+        <div id="status" class="status"></div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(root);
+
+  const btn = root.querySelector('#manipulationWidgetBtn');
+  const btnIcon = root.querySelector('#manipulationWidgetBtnIcon');
+  const panel = root.querySelector('#manipulationWidgetPanel');
+  const analyzeButton = root.querySelector('#analyzeButton');
+  const statusDiv = root.querySelector('#status');
+
+  let panelOpen = false;
+
+  function setStatus(message, type = '') {
+    statusDiv.innerHTML = `<div class="status-message${type ? ' ' + type : ''}">${message}</div>`;
+  }
+  function showError(errorMessage) {
+    statusDiv.innerHTML = `<div class="error">${escapeHtml(errorMessage)}</div>`;
+    analyzeButton.disabled = false;
+    analyzeButton.textContent = 'Analyze Current Page';
+  }
+  function escapeHtml(unsafe) {
+    return unsafe
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function checkPageState() {
+    // Check for existing highlights
+    const highlights = document.querySelectorAll('.manipulation-highlight');
+    if (highlights.length > 0) {
+      analyzeButton.textContent = 'Clear Highlights';
+      analyzeButton.classList.add('active');
+      setStatus(`Analysis complete. ${highlights.length} manipulation tactics identified.`);
+    } else {
+      analyzeButton.textContent = 'Analyze Current Page';
+      analyzeButton.classList.remove('active');
+      setStatus('Click "Analyze" to search for manipulative language.');
+    }
+  }
+
+  analyzeButton.addEventListener('click', async function() {
+    if (analyzeButton.classList.contains('active')) {
+      // Clear highlights
+      const existingHighlights = document.querySelectorAll('.manipulation-highlight');
+      existingHighlights.forEach(highlight => {
+        const parent = highlight.parentNode;
+        if (parent) {
+          parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
+        }
+      });
+      const existingTooltips = document.querySelectorAll('.manipulation-tooltip');
+      existingTooltips.forEach(tooltip => tooltip.remove());
+      currentHighlights = null;
+      analyzeButton.textContent = 'Analyze Current Page';
+      analyzeButton.classList.remove('active');
+      setStatus('Click "Analyze" to search for manipulative language.');
+    } else {
+      // Start analysis
+      analyzeButton.disabled = true;
+      analyzeButton.textContent = 'Analyzing...';
+      setStatus('Analyzing page content...', 'loading');
+      try {
+        await runAnalysis();
+      } catch (error) {
+        showError(error.message || 'Unknown error occurred during analysis.');
+      }
+    }
+  });
+
+  // Listen for analysis results
+  window.addEventListener('analysisComplete', function(e) {
+    analyzeButton.disabled = false;
+    analyzeButton.textContent = 'Clear Highlights';
+    analyzeButton.classList.add('active');
+    if (e.detail && e.detail.results && e.detail.results.length > 0) {
+      setStatus(`Analysis complete. ${e.detail.results.length} manipulation tactics identified.`);
+    } else {
+      setStatus('No manipulative language identified.');
+    }
+  });
+  window.addEventListener('analysisError', function(e) {
+    showError(e.detail?.error || 'Unknown error occurred during analysis.');
+  });
+
+  // Update status on open
+  btn.addEventListener('click', () => {
+    panelOpen = !panelOpen;
+    if (panelOpen) {
+      panel.classList.add('open');
+      btnIcon.textContent = '✕';
+      btn.title = 'Close Manipulation Identifier';
+      checkPageState();
+    } else {
+      panel.classList.remove('open');
+      btnIcon.textContent = '🔍';
+      btn.title = 'Open Manipulation Identifier';
+    }
+  });
+}
+
+// Inject the widget on page load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', injectWidget);
+} else {
+  injectWidget();
+}

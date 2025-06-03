@@ -2,7 +2,7 @@ import express from 'express';
 import { OpenAI } from 'openai';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import { promptRoleSystem } from './prompts.js';
+import { promptRoleSystem, promptRoleUser } from './prompts.js';
 
 dotenv.config();
 
@@ -56,24 +56,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// CORS setup with dynamic origin whitelist
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-
-    const allowedOrigins = [
-      /^http:\/\/localhost:\d+$/,
-      /^chrome-extension:\/\//
-    ];
-
-    if (allowedOrigins.some(pattern => pattern.test(origin))) {
-      return callback(null, true);
-    }
-
-    callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true
-}));
+// Allow all origins for local development
+app.use(cors());
 
 app.use(express.json({ limit: '1mb' }));
 
@@ -117,7 +101,7 @@ app.post('/analyze-content', validateContent, async (req, res) => {
       model: 'gpt-4',
       messages: [
         { role: 'system', content: promptRoleSystem },
-        { role: 'user', content: `Please analyze the following text for manipulation tactics: ${content}` },
+        { role: 'user', content: promptRoleUser + content }
       ],
       max_tokens: 1000,
       temperature: 0.3,
@@ -128,9 +112,55 @@ app.post('/analyze-content', validateContent, async (req, res) => {
     }
 
     const manipulativeLanguage = response.choices[0].message.content;
+    
+    // Check if no manipulation was detected
+    if (manipulativeLanguage.trim() === "No manipulation tactics detected.") {
+      const result = {
+        manipulativeLanguage,
+        results: []
+      };
+      cache.set(cacheKey, {
+        timestamp: Date.now(),
+        data: result
+      });
+      return res.json(result);
+    }
+
+    // Parse the response to extract tactics
+    const tactics = [];
+    const sections = manipulativeLanguage.split(/\[(.*?)\]/);
+    
+    for (let i = 1; i < sections.length; i += 2) {
+      const tacticName = sections[i].trim();
+      const content = sections[i + 1] || '';
+      
+      // Extract definition
+      const definitionMatch = content.match(/Definition:\s*([^\n]+)/);
+      const definition = definitionMatch ? definitionMatch[1].trim() : '';
+      
+      // Extract examples and explanations
+      const examples = [];
+      const exampleMatches = content.matchAll(/(\d+)\.\s*"([^"]+)"\s*Why this is an example:\s*([^\n]+)/g);
+      
+      for (const match of exampleMatches) {
+        examples.push({
+          text: match[2].trim(),
+          explanation: match[3].trim()
+        });
+      }
+      
+      if (tacticName && definition && examples.length > 0) {
+        tactics.push({
+          tactic: tacticName,
+          definition: definition,
+          examples: examples
+        });
+      }
+    }
+
     const result = { 
       manipulativeLanguage,
-      results: [] // Add an empty results array to match expected structure
+      results: tactics
     };
 
     // Cache the result
@@ -139,7 +169,7 @@ app.post('/analyze-content', validateContent, async (req, res) => {
       data: result
     });
 
-    console.log('Sending analysis result:', result); // Add logging
+    console.log('Sending analysis result:', result);
     res.json(result);
   } catch (error) {
     console.error('Error analyzing content:', error);
