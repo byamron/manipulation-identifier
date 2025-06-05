@@ -2,6 +2,7 @@ let tactics = [];
 let isProcessing = false;
 let debounceTimeout = null;
 let currentHighlights = null; // Track current highlights state
+let openTooltip = null;
 
 // Load tactics from JSON file with retry mechanism
 async function loadTactics(retries = 3) {
@@ -112,10 +113,16 @@ function highlightManipulativeLanguage(detectedTactics) {
         border-radius: 3px !important;
         padding: 2px !important;
         position: relative !important;
+        transition: background 0.15s, border 0.15s;
       }
       .manipulation-highlight:hover {
-        background-color: #fff0b3 !important;
-        cursor: help !important;
+        background-color: #ffe082 !important;
+        border: 1px solid #ffd54f !important;
+        cursor: pointer !important;
+      }
+      .manipulation-highlight.pressed, .manipulation-highlight.active {
+        background-color: #ffd54f !important;
+        border: 1px solid #ffca28 !important;
       }
       .manipulation-tooltip {
         display: none;
@@ -156,13 +163,13 @@ function highlightManipulativeLanguage(detectedTactics) {
       }
       .manipulation-tooltip.tooltip-top::before {
         bottom: -5px;
-        left: 50%;
+        left: var(--dogear-left, 50%);
         transform: translateX(-50%);
         border-top: 5px solid #333;
       }
       .manipulation-tooltip.tooltip-bottom::before {
         top: -5px;
-        left: 50%;
+        left: var(--dogear-left, 50%);
         transform: translateX(-50%);
         border-bottom: 5px solid #333;
     }
@@ -176,35 +183,41 @@ function highlightManipulativeLanguage(detectedTactics) {
     const tooltipRect = tooltip.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
     const scrollY = window.scrollY;
-    
-    // Calculate space above and below the highlight
-    const spaceAbove = highlightRect.top;
-    const spaceBelow = viewportHeight - highlightRect.bottom;
-    
-    // Default margin from the highlight
     const margin = 10;
-    
+
     // Remove existing position classes
     tooltip.classList.remove('tooltip-top', 'tooltip-bottom');
-    
-    // Position horizontally
+
+    // Calculate ideal left (centered on highlight)
     let left = highlightRect.left + (highlightRect.width / 2) - (tooltipRect.width / 2);
-    
-    // Ensure tooltip doesn't go off-screen horizontally
-    left = Math.max(margin, Math.min(left, window.innerWidth - tooltipRect.width - margin));
-    
+    // Clamp left to viewport
+    const minLeft = margin;
+    const maxLeft = window.innerWidth - tooltipRect.width - margin;
+    left = Math.max(minLeft, Math.min(left, maxLeft));
+
     // Decide whether to show above or below based on available space
-    if (spaceAbove > tooltipRect.height + margin && spaceAbove >= spaceBelow) {
+    let top, dogearType;
+    if (highlightRect.top > tooltipRect.height + margin && highlightRect.top >= viewportHeight - highlightRect.bottom) {
       // Position above
-      tooltip.style.top = `${highlightRect.top + scrollY - tooltipRect.height - margin}px`;
-      tooltip.classList.add('tooltip-top');
+      top = highlightRect.top + scrollY - tooltipRect.height - margin;
+      dogearType = 'tooltip-top';
     } else {
       // Position below
-      tooltip.style.top = `${highlightRect.bottom + scrollY + margin}px`;
-      tooltip.classList.add('tooltip-bottom');
+      top = highlightRect.bottom + scrollY + margin;
+      dogearType = 'tooltip-bottom';
     }
-    
+    tooltip.style.top = `${top}px`;
     tooltip.style.left = `${left}px`;
+    tooltip.classList.remove('tooltip-top', 'tooltip-bottom');
+    tooltip.classList.add(dogearType);
+
+    // Adjust dogear position so it always points to the highlight
+    const dogear = tooltip.querySelector('::before'); // pseudo-element, so we can't select directly
+    // Instead, set a CSS variable for the dogear's left offset
+    const highlightCenter = highlightRect.left + highlightRect.width / 2;
+    const tooltipLeft = left;
+    const dogearOffset = Math.max(12, Math.min(tooltipRect.width - 12, highlightCenter - tooltipLeft));
+    tooltip.style.setProperty('--dogear-left', `${dogearOffset}px`);
   }
 
   const textNodes = [];
@@ -253,25 +266,33 @@ function highlightManipulativeLanguage(detectedTactics) {
         highlight.className = 'manipulation-highlight';
         highlight.textContent = match.text;
         
-        // Create tooltip with new format
+        // Create tooltip with close button
         const tooltip = document.createElement('div');
         tooltip.className = 'manipulation-tooltip';
         tooltip.innerHTML = `
+          <button class="manipulation-tooltip-close" style="position:absolute;top:8px;right:8px;background:none;border:none;color:#bbb;font-size:18px;cursor:pointer;z-index:2;">&times;</button>
           <h4>Tactic: ${match.tactic}</h4>
           <div class="definition">Definition: ${match.definition}</div>
           <div class="explanation">Why this is an example: ${match.explanation}</div>
         `;
         document.body.appendChild(tooltip);
         
-        // Add hover listeners
-        highlight.addEventListener('mouseenter', () => {
-          tooltip.classList.add('visible');
-          positionTooltip(highlight, tooltip);
+        // Tooltip close button
+        tooltip.querySelector('.manipulation-tooltip-close').addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeOpenTooltip();
         });
-        
-        highlight.addEventListener('mouseleave', () => {
-          tooltip.classList.remove('visible');
-        });
+
+        // Click/tap to open tooltip
+        highlight.addEventListener('click', (e) => handleHighlightClick(e, highlight, tooltip));
+        highlight.addEventListener('touchstart', (e) => handleHighlightClick(e, highlight, tooltip));
+
+        // Hover/pressed state for mouse/touch
+        highlight.addEventListener('mousedown', () => highlight.classList.add('pressed'));
+        highlight.addEventListener('mouseup', () => highlight.classList.remove('pressed'));
+        highlight.addEventListener('mouseleave', () => highlight.classList.remove('pressed'));
+        highlight.addEventListener('mouseenter', () => highlight.classList.add('hover'));
+        highlight.addEventListener('mouseleave', () => highlight.classList.remove('hover'));
         
         // Update tooltip position on scroll and resize
         window.addEventListener('scroll', () => {
@@ -810,3 +831,39 @@ if (document.readyState === 'loading') {
 } else {
   injectWidget();
 }
+
+function closeOpenTooltip() {
+  if (openTooltip) {
+    openTooltip.tooltip.classList.remove('visible');
+    openTooltip.highlight.classList.remove('pressed', 'active');
+    openTooltip = null;
+  }
+}
+
+function handleHighlightClick(e, highlight, tooltip) {
+  e.stopPropagation();
+  if (openTooltip && openTooltip.highlight === highlight) {
+    closeOpenTooltip();
+    return;
+  }
+  closeOpenTooltip();
+  highlight.classList.add('pressed', 'active');
+  tooltip.classList.add('visible');
+  openTooltip = { highlight, tooltip };
+}
+
+function handleDocumentClick(e) {
+  if (openTooltip && !openTooltip.tooltip.contains(e.target) && !openTooltip.highlight.contains(e.target)) {
+    closeOpenTooltip();
+  }
+}
+
+function handleEscapeKey(e) {
+  if (e.key === 'Escape') {
+    closeOpenTooltip();
+  }
+}
+
+document.addEventListener('click', handleDocumentClick, true);
+document.addEventListener('touchstart', handleDocumentClick, true);
+document.addEventListener('keydown', handleEscapeKey, true);
