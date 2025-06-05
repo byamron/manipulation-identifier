@@ -103,10 +103,10 @@ function highlightManipulativeLanguage(detectedTactics) {
 
   // Add style only once
   if (!document.querySelector('#manipulation-highlight-style')) {
-    const style = document.createElement('style');
+  const style = document.createElement('style');
     style.id = 'manipulation-highlight-style';
-    style.textContent = `
-      .manipulation-highlight {
+  style.textContent = `
+    .manipulation-highlight {
         background-color: #fff3cd !important;
         border: 1px solid #ffeaa7 !important;
         border-radius: 3px !important;
@@ -165,9 +165,9 @@ function highlightManipulativeLanguage(detectedTactics) {
         left: 50%;
         transform: translateX(-50%);
         border-bottom: 5px solid #333;
-      }
-    `;
-    document.head.appendChild(style);
+    }
+  `;
+  document.head.appendChild(style);
   }
 
   // Add event listeners for tooltip positioning
@@ -334,8 +334,8 @@ async function analyzeTextWithLLM(text) {
     // Check if no manipulation was detected
     if (resultText.trim() === "No manipulation tactics detected.") {
       window.dispatchEvent(new CustomEvent('analysisComplete', { detail: { results: [], llmResponse: resultText } }));
-      return;
-    }
+        return;
+      }
 
     // Use the pre-parsed results from the server if available
     let detectedTactics = data.results;
@@ -363,9 +363,9 @@ async function analyzeTextWithLLM(text) {
           tactic: tacticName,
           description: remainingText.replace(/"[^"]+"/g, '').trim(),
           examples: examples
-        });
-      });
-    }
+    });
+  });
+}
 
     // Trigger analysisComplete event for the widget
     window.dispatchEvent(new CustomEvent('analysisComplete', { detail: { results: detectedTactics, llmResponse: resultText } }));
@@ -373,14 +373,14 @@ async function analyzeTextWithLLM(text) {
     // Highlight the detected tactics if any were found
     if (detectedTactics.length > 0) {
       highlightManipulativeLanguage(detectedTactics);
-    }
+}
   } catch (error) {
     console.error('Analysis error:', error);
     window.dispatchEvent(new CustomEvent('analysisError', { detail: { error: error.message || 'Failed to analyze text' } }));
   } finally {
     isProcessing = false;
+    }
   }
-}
 
 // Optimized main analysis function
 const runAnalysis = debounceAnalysis(async () => {
@@ -405,7 +405,7 @@ const runAnalysis = debounceAnalysis(async () => {
 
 // Message listener
 chrome.runtime.onMessage?.addListener((message, sender, sendResponse) => {
-  if (message.action === "analyze") {
+    if (message.action === "analyze") {
     // Execute runAnalysis and ensure proper Promise handling
     (async () => {
       try {
@@ -432,8 +432,8 @@ chrome.runtime.onMessage?.addListener((message, sender, sendResponse) => {
       const parent = highlight.parentNode;
       if (parent) {
         parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
-      }
-    });
+    }
+  });
 
     const existingTooltips = document.querySelectorAll('.manipulation-tooltip');
     existingTooltips.forEach(tooltip => tooltip.remove());

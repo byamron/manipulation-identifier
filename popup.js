@@ -33,9 +33,9 @@ document.addEventListener('DOMContentLoaded', function() {
             resolve(null);
           } else {
             resolve(response);
-          }
+    }
         });
-      });
+  });
 
       // Update button and status based on highlights
       if (highlightState?.hasHighlights) {
@@ -60,15 +60,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
       if (analyzeButton.classList.contains('active')) {
         chrome.tabs.sendMessage(tab.id, {action: "clearHighlights"}, (response) => {
-          if (chrome.runtime.lastError) {
+        if (chrome.runtime.lastError) {
             showError('Could not clear highlights: ' + chrome.runtime.lastError.message);
-            return;
-          }
+          return;
+        }
           analyzeButton.textContent = 'Analyze Current Page';
           analyzeButton.classList.remove('active');
           statusDiv.innerHTML = '<div class="status-message">Click "Analyze" to search for manipulative language.</div>';
         });
-      } else {
+        } else {
         // Start analysis
         analyzeButton.disabled = true;
         analyzeButton.textContent = 'Analyzing...';
@@ -78,8 +78,8 @@ document.addEventListener('DOMContentLoaded', function() {
           if (chrome.runtime.lastError) {
             showError('Could not analyze page: ' + chrome.runtime.lastError.message + '. Try reloading the page.');
             return;
-          }
-        });
+        }
+      });
       }
     } catch (error) {
       console.error('Error during analysis:', error);
@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     } else if (message.action === "analysisError") {
       showError(message.error || "Unknown error occurred during analysis.");
-    }
+  }
   });
 
   // Initialize popup

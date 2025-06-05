@@ -11,8 +11,8 @@ const CONFIG = {
 let SERVER_URL = 'http://localhost:3000'; // default
 chrome.storage.local.get(['serverUrl'], (result) => {
   if (result.serverUrl) SERVER_URL = result.serverUrl;
-});
-
+  });
+  
 // Utility function for delayed retry
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -24,13 +24,13 @@ async function sendMessageWithFallback(payload) {
         if (chrome.runtime.lastError) {
           console.warn("Popup not open. Saving to storage instead.");
           chrome.storage.local.set({ pendingAnalysis: payload }, () => {
-            if (chrome.runtime.lastError) {
+      if (chrome.runtime.lastError) {
               reject(new Error('Storage fallback failed'));
             } else {
               resolve();
             }
           });
-        } else {
+      } else {
           console.log("Message delivered successfully");
           resolve();
         }
@@ -122,23 +122,23 @@ chrome.commands.onCommand.addListener(async (command) => {
       console.error('Error handling command:', error);
     }
   }
-});
-
-// Listen for analysis requests from content.js
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "analyzeText") {
-    console.log('Background received text for analysis');
-
+  });
+  
+  // Listen for analysis requests from content.js
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === "analyzeText") {
+      console.log('Background received text for analysis');
+  
     (async () => {
       try {
         const data = await fetchWithRetry(SERVER_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: message.text })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: message.text })
         });
 
         console.log('LLM server responded:', data);
-
+  
         // Ensure consistent response structure
         const payload = {
           action: "analysisComplete",
@@ -152,19 +152,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: true, data: payload.data });
       } catch (error) {
         console.error('Analysis failed:', error);
-        
+  
         const errorPayload = {
           action: "analysisError",
           error: error.message
         };
-
+  
         await sendMessageWithFallback(errorPayload);
         sendResponse({ success: false, error: error.message });
       }
     })();
-
+  
     return true; // Keep message channel open for async response
-  }
+    }
 });
 
 // Log when extension is installed
@@ -172,5 +172,5 @@ chrome.runtime.onInstalled.addListener(() => {
   console.log('Extension installed');
   // Initialize any necessary storage
   chrome.storage.local.set({ pendingAnalysis: null });
-});
+  });
   

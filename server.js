@@ -67,7 +67,7 @@ function validateContent(req, res, next) {
 
   if (!content || typeof content !== 'string') {
     return res.status(400).json({ error: 'Content must be a non-empty string' });
-  }
+    }
 
   if (content.trim().length === 0) {
     return res.status(400).json({ error: 'Content cannot be empty' });
@@ -93,7 +93,7 @@ app.post('/analyze-content', validateContent, async (req, res) => {
       if (Date.now() - cached.timestamp < CONFIG.CACHE_DURATION) {
         console.log('Cache hit');
         return res.json(cached.data);
-      }
+  }
       cache.delete(cacheKey);
     }
 
