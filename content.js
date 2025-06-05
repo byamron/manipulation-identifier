@@ -481,12 +481,20 @@ function injectWidget() {
         align-items: center;
         justify-content: center;
         transition: background 0.2s;
+        will-change: transform;
+      }
+      .manipulation-widget-btn.spin {
+        animation: spin-btn 0.5s ease-in-out;
+      }
+      @keyframes spin-btn {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
       }
       .manipulation-widget-btn:hover {
         background: #185abc;
       }
       .manipulation-widget-panel {
-        display: none;
+        display: flex;
         position: absolute;
         bottom: 70px;
         right: 0;
@@ -498,9 +506,16 @@ function injectWidget() {
         border: 1px solid #e0e0e0;
         overflow: hidden;
         flex-direction: column;
+        opacity: 0;
+        transform: scale(0.7);
+        pointer-events: none;
+        transition: opacity 0.5s cubic-bezier(0.4,0,0.2,1), transform 0.5s cubic-bezier(0.4,0,0.2,1);
+        transform-origin: 100% 100%;
       }
       .manipulation-widget-panel.open {
-        display: flex;
+        opacity: 1;
+        transform: scale(1);
+        pointer-events: auto;
       }
       .manipulation-widget-header {
         background: #1a73e8;
@@ -523,11 +538,18 @@ function injectWidget() {
         border: none;
         border-radius: 6px;
         padding: 12px 16px;
-        font-size: 14px;
+        font-size: 16px;
         cursor: pointer;
         width: 100%;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         transition: background-color 0.2s;
-        margin-bottom: 10px;
+        margin-bottom: 0;
+        white-space: normal;
+        text-align: center;
+        box-sizing: border-box;
       }
       .analyze-button:hover {
         background-color: #185abc;
@@ -535,6 +557,12 @@ function injectWidget() {
       .analyze-button:disabled {
         background-color: #ccc;
         cursor: not-allowed;
+      }
+      .analyze-button.clear {
+        background-color: #dc3545;
+      }
+      .analyze-button.clear:hover {
+        background-color: #c82333;
       }
       .analyze-button.active {
         background-color: #dc3545;
@@ -564,16 +592,50 @@ function injectWidget() {
         background-color: #f8d7da;
         border: 1px solid #f5c6cb;
       }
+      .analyze-actions {
+        width: 100%;
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .manipulation-widget-btn-icon {
+        transition: opacity 0.25s ease-in-out;
+        position: absolute;
+        left: 0; right: 0; top: 0; bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .manipulation-widget-btn-icon.hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .manipulation-widget-btn-icon.show {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      #manipulation-widget-root, .manipulation-widget-panel, .manipulation-widget-header, .manipulation-widget-content, .analyze-button, .status-message, .error, .manipulation-widget-btn, .manipulation-widget-btn-icon {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+      }
+      .manipulation-tooltip, .manipulation-tooltip * {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+      }
     </style>
     <button class="manipulation-widget-btn" title="Open Manipulation Identifier" id="manipulationWidgetBtn">
-      <span class="manipulation-widget-btn-icon" id="manipulationWidgetBtnIcon">🔍</span>
+      <span class="manipulation-widget-btn-icon show" id="manipulationWidgetBtnMagnifier">🔍</span>
+      <span class="manipulation-widget-btn-icon hide" id="manipulationWidgetBtnClose">✕</span>
     </button>
     <div class="manipulation-widget-panel" id="manipulationWidgetPanel">
       <div class="manipulation-widget-header">
         Manipulation Identifier
       </div>
       <div class="manipulation-widget-content">
-        <button id="analyzeButton" class="analyze-button">Analyze Current Page</button>
+        <div class="analyze-actions" style="display: flex; gap: 8px; width: 100%;">
+          <button id="analyzeButton" class="analyze-button" style="flex: 1;">Analyze Current Page</button>
+          <button id="redoButton" class="analyze-button" style="flex: 1; display: none;">Re-analyze</button>
+        </div>
         <div id="status" class="status"></div>
       </div>
     </div>
@@ -581,12 +643,14 @@ function injectWidget() {
   document.body.appendChild(root);
 
   const btn = root.querySelector('#manipulationWidgetBtn');
-  const btnIcon = root.querySelector('#manipulationWidgetBtnIcon');
+  const btnIcon = root.querySelector('#manipulationWidgetBtnMagnifier');
   const panel = root.querySelector('#manipulationWidgetPanel');
   const analyzeButton = root.querySelector('#analyzeButton');
   const statusDiv = root.querySelector('#status');
+  const redoButton = root.querySelector('#redoButton');
 
   let panelOpen = false;
+  let lastAnalysisResults = null;
 
   function setStatus(message, type = '') {
     statusDiv.innerHTML = `<div class="status-message${type ? ' ' + type : ''}">${message}</div>`;
@@ -606,21 +670,26 @@ function injectWidget() {
   }
 
   function checkPageState() {
-    // Check for existing highlights
     const highlights = document.querySelectorAll('.manipulation-highlight');
-    if (highlights.length > 0) {
-      analyzeButton.textContent = 'Clear Highlights';
-      analyzeButton.classList.add('active');
-      setStatus(`Analysis complete. ${highlights.length} manipulation tactics identified.`);
+    if (highlights.length > 0 && lastAnalysisResults && lastAnalysisResults.length > 0) {
+      analyzeButton.textContent = 'Clear';
+      analyzeButton.classList.add('clear');
+      analyzeButton.classList.remove('active');
+      redoButton.textContent = 'Re-analyze';
+      redoButton.style.display = '';
+      setStatus(`Analysis complete. ${lastAnalysisResults.length} manipulation tactic${lastAnalysisResults.length > 1 ? 's' : ''} identified.`);
     } else {
       analyzeButton.textContent = 'Analyze Current Page';
+      analyzeButton.classList.remove('clear');
       analyzeButton.classList.remove('active');
+      redoButton.style.display = 'none';
       setStatus('Click "Analyze" to search for manipulative language.');
+      lastAnalysisResults = null;
     }
   }
 
   analyzeButton.addEventListener('click', async function() {
-    if (analyzeButton.classList.contains('active')) {
+    if (analyzeButton.classList.contains('clear')) {
       // Clear highlights
       const existingHighlights = document.querySelectorAll('.manipulation-highlight');
       existingHighlights.forEach(highlight => {
@@ -632,8 +701,11 @@ function injectWidget() {
       const existingTooltips = document.querySelectorAll('.manipulation-tooltip');
       existingTooltips.forEach(tooltip => tooltip.remove());
       currentHighlights = null;
+      lastAnalysisResults = null;
       analyzeButton.textContent = 'Analyze Current Page';
+      analyzeButton.classList.remove('clear');
       analyzeButton.classList.remove('active');
+      redoButton.style.display = 'none';
       setStatus('Click "Analyze" to search for manipulative language.');
     } else {
       // Start analysis
@@ -648,14 +720,37 @@ function injectWidget() {
     }
   });
 
+  redoButton.addEventListener('click', async function() {
+    redoButton.disabled = true;
+    redoButton.textContent = 'Analyzing...';
+    setStatus('Re-running analysis...', 'loading');
+    try {
+      await runAnalysis();
+    } catch (error) {
+      showError(error.message || 'Unknown error occurred during analysis.');
+    } finally {
+      redoButton.disabled = false;
+      redoButton.textContent = 'Re-analyze';
+    }
+  });
+
   // Listen for analysis results
   window.addEventListener('analysisComplete', function(e) {
     analyzeButton.disabled = false;
-    analyzeButton.textContent = 'Clear Highlights';
-    analyzeButton.classList.add('active');
-    if (e.detail && e.detail.results && e.detail.results.length > 0) {
-      setStatus(`Analysis complete. ${e.detail.results.length} manipulation tactics identified.`);
+    redoButton.disabled = false;
+    lastAnalysisResults = e.detail && e.detail.results ? e.detail.results : [];
+    if (lastAnalysisResults.length > 0) {
+      analyzeButton.textContent = 'Clear';
+      analyzeButton.classList.add('clear');
+      analyzeButton.classList.remove('active');
+      redoButton.textContent = 'Re-analyze';
+      redoButton.style.display = '';
+      setStatus(`Analysis complete. ${lastAnalysisResults.length} manipulation tactic${lastAnalysisResults.length > 1 ? 's' : ''} identified.`);
     } else {
+      analyzeButton.textContent = 'Analyze Current Page';
+      analyzeButton.classList.remove('clear');
+      analyzeButton.classList.remove('active');
+      redoButton.style.display = 'none';
       setStatus('No manipulative language identified.');
     }
   });
@@ -665,18 +760,48 @@ function injectWidget() {
 
   // Update status on open
   btn.addEventListener('click', () => {
+    if (btn.classList.contains('spin')) return; // Prevent stacking spins
     panelOpen = !panelOpen;
+    btn.classList.add('spin');
     if (panelOpen) {
-      panel.classList.add('open');
-      btnIcon.textContent = '✕';
-      btn.title = 'Close Manipulation Identifier';
-      checkPageState();
+      setTimeout(() => {
+        panel.classList.add('open');
+        setTimeout(() => {
+          showBtnIcon(true);
+          btn.title = 'Close Manipulation Identifier';
+        }, 250);
+        checkPageState();
+        setTimeout(() => btn.classList.remove('spin'), 500);
+      }, 0);
     } else {
       panel.classList.remove('open');
-      btnIcon.textContent = '🔍';
-      btn.title = 'Open Manipulation Identifier';
+      setTimeout(() => {
+        showBtnIcon(false);
+        btn.title = 'Open Manipulation Identifier';
+      }, 250);
+      setTimeout(() => {
+        btn.classList.remove('spin');
+      }, 500);
     }
   });
+
+  function showBtnIcon(isClose) {
+    if (isClose) {
+      btnIcon.classList.remove('show');
+      btnIcon.classList.add('hide');
+      requestAnimationFrame(() => {
+        btn.querySelector('#manipulationWidgetBtnClose').classList.remove('hide');
+        btn.querySelector('#manipulationWidgetBtnClose').classList.add('show');
+      });
+    } else {
+      btn.querySelector('#manipulationWidgetBtnClose').classList.remove('show');
+      btn.querySelector('#manipulationWidgetBtnClose').classList.add('hide');
+      requestAnimationFrame(() => {
+        btn.querySelector('#manipulationWidgetBtnMagnifier').classList.remove('hide');
+        btn.querySelector('#manipulationWidgetBtnMagnifier').classList.add('show');
+      });
+    }
+  }
 }
 
 // Inject the widget on page load
