@@ -98,7 +98,7 @@ app.post('/analyze-content', validateContent, async (req, res) => {
     }
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4.1-nano',
       messages: [
         { role: 'system', content: promptRoleSystem },
         { role: 'user', content: promptRoleUser + content }

@@ -3,6 +3,11 @@ let isProcessing = false;
 let debounceTimeout = null;
 let currentHighlights = null; // Track current highlights state
 let openTooltip = null;
+let loadingInterval = null;
+let loadingBaseMessage = '';
+
+// Add global flag for robust tooltip persistence
+let ignoreNextDocumentClick = false;
 
 // Load tactics from JSON file with retry mechanism
 async function loadTactics(retries = 3) {
@@ -136,6 +141,7 @@ function highlightManipulativeLanguage(detectedTactics) {
         z-index: 10000;
         box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         pointer-events: none;
+        transform: translateX(-50%);
       }
       .manipulation-tooltip.visible {
         display: block;
@@ -158,21 +164,21 @@ function highlightManipulativeLanguage(detectedTactics) {
         position: absolute;
         width: 0;
         height: 0;
-        border-left: 5px solid transparent;
-        border-right: 5px solid transparent;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10001;
+        pointer-events: none;
       }
       .manipulation-tooltip.tooltip-top::before {
-        bottom: -5px;
-        left: var(--dogear-left, 50%);
-        transform: translateX(-50%);
-        border-top: 5px solid #333;
+        bottom: -6px;
+        border-top: 6px solid #333;
       }
       .manipulation-tooltip.tooltip-bottom::before {
-        top: -5px;
-        left: var(--dogear-left, 50%);
-        transform: translateX(-50%);
-        border-bottom: 5px solid #333;
-    }
+        top: -6px;
+        border-bottom: 6px solid #333;
+      }
   `;
   document.head.appendChild(style);
   }
@@ -182,42 +188,31 @@ function highlightManipulativeLanguage(detectedTactics) {
     const highlightRect = highlight.getBoundingClientRect();
     const tooltipRect = tooltip.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
-    const scrollY = window.scrollY;
     const margin = 10;
 
     // Remove existing position classes
     tooltip.classList.remove('tooltip-top', 'tooltip-bottom');
 
-    // Calculate ideal left (centered on highlight)
-    let left = highlightRect.left + (highlightRect.width / 2) - (tooltipRect.width / 2);
-    // Clamp left to viewport
-    const minLeft = margin;
-    const maxLeft = window.innerWidth - tooltipRect.width - margin;
-    left = Math.max(minLeft, Math.min(left, maxLeft));
+    // Calculate center position
+    const centerX = highlightRect.left + (highlightRect.width / 2);
+    const centerY = highlightRect.top + (highlightRect.height / 2);
 
     // Decide whether to show above or below based on available space
     let top, dogearType;
     if (highlightRect.top > tooltipRect.height + margin && highlightRect.top >= viewportHeight - highlightRect.bottom) {
       // Position above
-      top = highlightRect.top + scrollY - tooltipRect.height - margin;
+      top = highlightRect.top - tooltipRect.height - margin;
       dogearType = 'tooltip-top';
     } else {
       // Position below
-      top = highlightRect.bottom + scrollY + margin;
+      top = highlightRect.bottom + margin;
       dogearType = 'tooltip-bottom';
     }
-    tooltip.style.top = `${top}px`;
-    tooltip.style.left = `${left}px`;
-    tooltip.classList.remove('tooltip-top', 'tooltip-bottom');
-    tooltip.classList.add(dogearType);
 
-    // Adjust dogear position so it always points to the highlight
-    const dogear = tooltip.querySelector('::before'); // pseudo-element, so we can't select directly
-    // Instead, set a CSS variable for the dogear's left offset
-    const highlightCenter = highlightRect.left + highlightRect.width / 2;
-    const tooltipLeft = left;
-    const dogearOffset = Math.max(12, Math.min(tooltipRect.width - 12, highlightCenter - tooltipLeft));
-    tooltip.style.setProperty('--dogear-left', `${dogearOffset}px`);
+    // Set tooltip position
+    tooltip.style.top = `${top}px`;
+    tooltip.style.left = `${centerX}px`;
+    tooltip.classList.add(dogearType);
   }
 
   const textNodes = [];
@@ -265,27 +260,12 @@ function highlightManipulativeLanguage(detectedTactics) {
         const highlight = document.createElement('span');
         highlight.className = 'manipulation-highlight';
         highlight.textContent = match.text;
-        
-        // Create tooltip with close button
-        const tooltip = document.createElement('div');
-        tooltip.className = 'manipulation-tooltip';
-        tooltip.innerHTML = `
-          <button class="manipulation-tooltip-close" style="position:absolute;top:8px;right:8px;background:none;border:none;color:#bbb;font-size:18px;cursor:pointer;z-index:2;">&times;</button>
-          <h4>Tactic: ${match.tactic}</h4>
-          <div class="definition">Definition: ${match.definition}</div>
-          <div class="explanation">Why this is an example: ${match.explanation}</div>
-        `;
-        document.body.appendChild(tooltip);
-        
-        // Tooltip close button
-        tooltip.querySelector('.manipulation-tooltip-close').addEventListener('click', (e) => {
-          e.stopPropagation();
-          closeOpenTooltip();
-        });
-
+        highlight.tabIndex = 0;
+        highlight.setAttribute('role', 'button');
+        highlight.setAttribute('aria-label', `Show manipulation tactic details for: ${match.text}`);
         // Click/tap to open tooltip
-        highlight.addEventListener('click', (e) => handleHighlightClick(e, highlight, tooltip));
-        highlight.addEventListener('touchstart', (e) => handleHighlightClick(e, highlight, tooltip));
+        highlight.addEventListener('click', (e) => handleHighlightClick(e, highlight, match));
+        highlight.addEventListener('touchstart', (e) => handleHighlightClick(e, highlight, match));
 
         // Hover/pressed state for mouse/touch
         highlight.addEventListener('mousedown', () => highlight.classList.add('pressed'));
@@ -296,14 +276,14 @@ function highlightManipulativeLanguage(detectedTactics) {
         
         // Update tooltip position on scroll and resize
         window.addEventListener('scroll', () => {
-          if (tooltip.classList.contains('visible')) {
-            positionTooltip(highlight, tooltip);
+          if (openTooltip && openTooltip.highlight === highlight) {
+            positionTooltip(highlight, openTooltip.tooltip);
           }
         }, { passive: true });
         
         window.addEventListener('resize', () => {
-          if (tooltip.classList.contains('visible')) {
-            positionTooltip(highlight, tooltip);
+          if (openTooltip && openTooltip.highlight === highlight) {
+            positionTooltip(highlight, openTooltip.tooltip);
           }
         }, { passive: true });
         
@@ -474,209 +454,107 @@ chrome.runtime.onMessage?.addListener((message, sender, sendResponse) => {
 
 // --- Widget Injection ---
 function injectWidget() {
+  console.log('injectWidget: called');
   if (document.getElementById('manipulation-widget-root')) return; // Prevent double-injection
 
   // Create root
   const root = document.createElement('div');
   root.id = 'manipulation-widget-root';
-  root.innerHTML = `
-    <style>
-      #manipulation-widget-root {
-        position: fixed;
-        z-index: 2147483647;
-        bottom: 24px;
-        right: 24px;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      }
-      .manipulation-widget-btn {
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        background: #1a73e8;
-        color: #fff;
-        border: none;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        font-size: 32px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background 0.2s;
-        will-change: transform;
-      }
-      .manipulation-widget-btn.spin {
-        animation: spin-btn 0.5s ease-in-out;
-      }
-      @keyframes spin-btn {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      .manipulation-widget-btn:hover {
-        background: #185abc;
-      }
-      .manipulation-widget-panel {
-        display: flex;
-        position: absolute;
-        bottom: 70px;
-        right: 0;
-        width: 350px;
-        max-height: 500px;
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.18);
-        border: 1px solid #e0e0e0;
-        overflow: hidden;
-        flex-direction: column;
-        opacity: 0;
-        transform: scale(0.7);
-        pointer-events: none;
-        transition: opacity 0.5s cubic-bezier(0.4,0,0.2,1), transform 0.5s cubic-bezier(0.4,0,0.2,1);
-        transform-origin: 100% 100%;
-      }
-      .manipulation-widget-panel.open {
-        opacity: 1;
-        transform: scale(1);
-        pointer-events: auto;
-      }
-      .manipulation-widget-header {
-        background: #1a73e8;
-        color: #fff;
-        padding: 12px 16px;
-        font-size: 16px;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-      .manipulation-widget-content {
-        padding: 16px;
-        flex: 1;
-        overflow-y: auto;
-      }
-      .analyze-button {
-        background-color: #1a73e8;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        padding: 12px 16px;
-        font-size: 16px;
-        cursor: pointer;
-        width: 100%;
-        min-height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background-color 0.2s;
-        margin-bottom: 0;
-        white-space: normal;
-        text-align: center;
-        box-sizing: border-box;
-      }
-      .analyze-button:hover {
-        background-color: #185abc;
-      }
-      .analyze-button:disabled {
-        background-color: #ccc;
-        cursor: not-allowed;
-      }
-      .analyze-button.clear {
-        background-color: #dc3545;
-      }
-      .analyze-button.clear:hover {
-        background-color: #c82333;
-      }
-      .analyze-button.active {
-        background-color: #dc3545;
-      }
-      .analyze-button.active:hover {
-        background-color: #c82333;
-      }
-      .status-message {
-        color: #666;
-        font-size: 13px;
-        line-height: 1.4;
-        padding: 8px;
-        border-radius: 4px;
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        margin-bottom: 8px;
-      }
-      .status-message.loading {
-        color: #6c757d;
-      }
-      .error {
-        color: #dc3545;
-        font-size: 12px;
-        margin-top: 10px;
-        padding: 8px;
-        border-radius: 4px;
-        background-color: #f8d7da;
-        border: 1px solid #f5c6cb;
-      }
-      .analyze-actions {
-        width: 100%;
-        display: flex;
-        gap: 8px;
-        margin-bottom: 10px;
-      }
-      .manipulation-widget-btn-icon {
-        transition: opacity 0.25s ease-in-out;
-        position: absolute;
-        left: 0; right: 0; top: 0; bottom: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 1;
-        pointer-events: auto;
-      }
-      .manipulation-widget-btn-icon.hide {
-        opacity: 0;
-        pointer-events: none;
-      }
-      .manipulation-widget-btn-icon.show {
-        opacity: 1;
-        pointer-events: auto;
-      }
-      #manipulation-widget-root, .manipulation-widget-panel, .manipulation-widget-header, .manipulation-widget-content, .analyze-button, .status-message, .error, .manipulation-widget-btn, .manipulation-widget-btn-icon {
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-      }
-      .manipulation-tooltip, .manipulation-tooltip * {
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-      }
-    </style>
-    <button class="manipulation-widget-btn" title="Open Manipulation Identifier" id="manipulationWidgetBtn">
-      <span class="manipulation-widget-btn-icon show" id="manipulationWidgetBtnMagnifier">🔍</span>
-      <span class="manipulation-widget-btn-icon hide" id="manipulationWidgetBtnClose">✕</span>
-    </button>
-    <div class="manipulation-widget-panel" id="manipulationWidgetPanel">
-      <div class="manipulation-widget-header">
-        Manipulation Identifier
+  root.style.position = 'fixed';
+  root.style.zIndex = '2147483647';
+  root.style.bottom = '24px';
+  root.style.right = '24px';
+  root.style.display = 'flex';
+  root.style.flexDirection = 'column';
+  root.style.alignItems = 'flex-end';
+  root.style.gap = '8px';
+  root.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+
+  // Tooltip (top)
+  const tooltip = document.createElement('div');
+  tooltip.id = 'manipulation-widget-tooltip';
+  tooltip.style.display = 'none';
+  tooltip.style.maxWidth = '350px';
+  tooltip.style.minWidth = '220px';
+  tooltip.style.background = '#fff';
+  tooltip.style.borderRadius = '12px';
+  tooltip.style.boxShadow = '0 4px 24px rgba(0,0,0,0.18)';
+  tooltip.style.border = '1px solid #e0e0e0';
+  tooltip.style.padding = '20px';
+  tooltip.style.fontSize = '14px';
+  tooltip.style.color = '#222';
+  tooltip.style.transition = 'opacity 0.2s';
+  tooltip.style.opacity = '0';
+  tooltip.style.pointerEvents = 'auto';
+  tooltip.style.fontFamily = 'inherit';
+  tooltip.tabIndex = -1;
+
+  // Widget panel (middle)
+  const panel = document.createElement('div');
+  panel.className = 'manipulation-widget-panel';
+  panel.id = 'manipulationWidgetPanel';
+  panel.innerHTML = `
+    <div class="manipulation-widget-header">
+      Manipulation Identifier
+    </div>
+    <div class="manipulation-widget-content">
+      <div class="analyze-actions" style="display: flex; gap: 8px; width: 100%;">
+        <button id="analyzeButton" class="analyze-button" style="flex: 1;">Analyze Current Page</button>
+        <button id="redoButton" class="analyze-button" style="flex: 1; display: none;">Re-analyze</button>
       </div>
-      <div class="manipulation-widget-content">
-        <div class="analyze-actions" style="display: flex; gap: 8px; width: 100%;">
-          <button id="analyzeButton" class="analyze-button" style="flex: 1;">Analyze Current Page</button>
-          <button id="redoButton" class="analyze-button" style="flex: 1; display: none;">Re-analyze</button>
-        </div>
-        <div id="status" class="status"></div>
-      </div>
+      <div id="status" class="status"></div>
     </div>
   `;
+
+  // Floating button (bottom)
+  const btn = document.createElement('button');
+  btn.className = 'manipulation-widget-btn';
+  btn.title = 'Open Manipulation Identifier';
+  btn.id = 'manipulationWidgetBtn';
+  btn.innerHTML = `
+    <span class="manipulation-widget-btn-icon show" id="manipulationWidgetBtnMagnifier">🔍</span>
+    <span class="manipulation-widget-btn-icon hide" id="manipulationWidgetBtnClose">✕</span>
+  `;
+
+  // Append in stacking order: tooltip, panel, button
+  root.appendChild(tooltip);
+  root.appendChild(panel);
+  root.appendChild(btn);
   document.body.appendChild(root);
 
-  const btn = root.querySelector('#manipulationWidgetBtn');
   const btnIcon = root.querySelector('#manipulationWidgetBtnMagnifier');
-  const panel = root.querySelector('#manipulationWidgetPanel');
+  const panelOpen = root.querySelector('#manipulationWidgetPanel');
   const analyzeButton = root.querySelector('#analyzeButton');
   const statusDiv = root.querySelector('#status');
   const redoButton = root.querySelector('#redoButton');
 
-  let panelOpen = false;
   let lastAnalysisResults = null;
 
   function setStatus(message, type = '') {
-    statusDiv.innerHTML = `<div class="status-message${type ? ' ' + type : ''}">${message}</div>`;
+    // If switching away from loading, clear interval
+    if (type !== 'loading' && loadingInterval) {
+      clearInterval(loadingInterval);
+      loadingInterval = null;
+    }
+    if (type === 'loading') {
+      loadingBaseMessage = message.replace(/\.*$/, ''); // Remove any trailing dots
+      let dotCount = 0;
+      statusDiv.innerHTML = `<div class="status-message loading">${loadingBaseMessage}</div>`;
+      if (loadingInterval) clearInterval(loadingInterval);
+      loadingInterval = setInterval(() => {
+        dotCount = (dotCount + 1) % 4;
+        const dots = '.'.repeat(dotCount);
+        statusDiv.innerHTML = `<div class="status-message loading">${loadingBaseMessage}${dots}</div>`;
+      }, 500);
+    } else {
+      statusDiv.innerHTML = `<div class="status-message${type ? ' ' + type : ''}">${message}</div>`;
+    }
   }
   function showError(errorMessage) {
+    if (loadingInterval) {
+      clearInterval(loadingInterval);
+      loadingInterval = null;
+    }
     statusDiv.innerHTML = `<div class="error">${escapeHtml(errorMessage)}</div>`;
     analyzeButton.disabled = false;
     analyzeButton.textContent = 'Analyze Current Page';
@@ -757,6 +635,10 @@ function injectWidget() {
 
   // Listen for analysis results
   window.addEventListener('analysisComplete', function(e) {
+    if (loadingInterval) {
+      clearInterval(loadingInterval);
+      loadingInterval = null;
+    }
     analyzeButton.disabled = false;
     redoButton.disabled = false;
     lastAnalysisResults = e.detail && e.detail.results ? e.detail.results : [];
@@ -782,28 +664,9 @@ function injectWidget() {
   // Update status on open
   btn.addEventListener('click', () => {
     if (btn.classList.contains('spin')) return; // Prevent stacking spins
-    panelOpen = !panelOpen;
-    btn.classList.add('spin');
-    if (panelOpen) {
-      setTimeout(() => {
-        panel.classList.add('open');
-        setTimeout(() => {
-          showBtnIcon(true);
-          btn.title = 'Close Manipulation Identifier';
-        }, 250);
-        checkPageState();
-        setTimeout(() => btn.classList.remove('spin'), 500);
-      }, 0);
-    } else {
-      panel.classList.remove('open');
-      setTimeout(() => {
-        showBtnIcon(false);
-        btn.title = 'Open Manipulation Identifier';
-      }, 250);
-      setTimeout(() => {
-        btn.classList.remove('spin');
-      }, 500);
-    }
+    panelOpen.classList.toggle('open');
+    btn.classList.toggle('spin');
+    checkPageState();
   });
 
   function showBtnIcon(isClose) {
@@ -823,6 +686,19 @@ function injectWidget() {
       });
     }
   }
+
+  // After creating the tooltip in injectWidget, add a MutationObserver for debugging
+  if (tooltip && !tooltip._observerAttached) {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach(mutation => {
+        if (mutation.attributeName === 'class' || mutation.attributeName === 'style') {
+          console.log('Tooltip mutation:', tooltip.className, tooltip.style.display, tooltip.style.opacity);
+        }
+      });
+    });
+    observer.observe(tooltip, { attributes: true });
+    tooltip._observerAttached = true;
+  }
 }
 
 // Inject the widget on page load
@@ -832,30 +708,260 @@ if (document.readyState === 'loading') {
   injectWidget();
 }
 
-function closeOpenTooltip() {
-  if (openTooltip) {
-    openTooltip.tooltip.classList.remove('visible');
-    openTooltip.highlight.classList.remove('pressed', 'active');
-    openTooltip = null;
-  }
+// Inject full widget, button, and tooltip CSS into document head (only once)
+if (!document.getElementById('manipulation-widget-style')) {
+  const style = document.createElement('style');
+  style.id = 'manipulation-widget-style';
+  style.textContent = `
+    #manipulation-widget-root {
+      position: fixed;
+      z-index: 2147483647;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+    }
+    .manipulation-widget-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      font-size: 32px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      will-change: transform;
+      position: relative;
+    }
+    .manipulation-widget-btn.spin {
+      animation: spin-btn 0.5s ease-in-out;
+    }
+    @keyframes spin-btn {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .manipulation-widget-btn:hover {
+      background: #185abc;
+    }
+    .manipulation-widget-panel {
+      display: flex;
+      width: 350px;
+      max-height: 500px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+      border: 1px solid #e0e0e0;
+      overflow: hidden;
+      flex-direction: column;
+      opacity: 0;
+      transform: scale(0.7);
+      pointer-events: none;
+      transition: opacity 0.5s cubic-bezier(0.4,0,0.2,1), transform 0.5s cubic-bezier(0.4,0,0.2,1);
+      transform-origin: 100% 100%;
+      position: relative;
+    }
+    .manipulation-widget-panel.open {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+    .manipulation-widget-header {
+      background: #1a73e8;
+      color: #fff;
+      padding: 12px 16px;
+      font-size: 16px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .manipulation-widget-content {
+      padding: 16px;
+      flex: 1;
+      overflow-y: auto;
+    }
+    .analyze-button {
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 16px;
+      cursor: pointer;
+      width: 100%;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s;
+      margin-bottom: 0;
+      white-space: normal;
+      text-align: center;
+      box-sizing: border-box;
+    }
+    .analyze-button:hover {
+      background-color: #185abc;
+    }
+    .analyze-button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .analyze-button.clear {
+      background-color: #dc3545;
+    }
+    .analyze-button.clear:hover {
+      background-color: #c82333;
+    }
+    .analyze-button.active {
+      background-color: #dc3545;
+    }
+    .analyze-button.active:hover {
+      background-color: #c82333;
+    }
+    .status-message {
+      color: #666;
+      font-size: 13px;
+      line-height: 1.4;
+      margin-bottom: 8px;
+      background: none;
+      border: none;
+      padding: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    .status-message.loading {
+      color: #6c757d;
+      background: none;
+      border: none;
+      padding: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    .error {
+      color: #dc3545;
+      font-size: 12px;
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 4px;
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
+      box-shadow: none;
+    }
+    .analyze-actions {
+      width: 100%;
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .manipulation-widget-btn-icon {
+      transition: opacity 0.25s ease-in-out;
+      position: absolute;
+      left: 0; right: 0; top: 0; bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .manipulation-widget-btn-icon.hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .manipulation-widget-btn-icon.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .manipulation-highlight {
+      background-color: #fff3cd !important;
+      border: 1px solid #ffeaa7 !important;
+      border-radius: 3px !important;
+      padding: 2px !important;
+      position: relative !important;
+      transition: background 0.15s, border 0.15s;
+    }
+    .manipulation-highlight:hover {
+      background-color: #ffe082 !important;
+      border: 1px solid #ffd54f !important;
+      cursor: pointer !important;
+    }
+    .manipulation-highlight.pressed, .manipulation-highlight.active {
+      background-color: #ffd54f !important;
+      border: 1px solid #ffca28 !important;
+    }
+    #manipulation-widget-tooltip {
+      max-width: 350px;
+      min-width: 220px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+      border: 1px solid #e0e0e0;
+      padding: 20px;
+      font-size: 14px;
+      color: #222;
+      transition: opacity 0.2s;
+      opacity: 0;
+      pointer-events: auto;
+      font-family: inherit;
+      display: none;
+      position: relative;
+    }
+    #manipulation-widget-tooltip.visible {
+      display: block !important;
+      opacity: 1;
+    }
+  `;
+  document.head.appendChild(style);
 }
 
-function handleHighlightClick(e, highlight, tooltip) {
+// Tooltip persistence fix: add a short delay before document click handler can close it
+function handleHighlightClick(e, highlight, match) {
+  console.log('handleHighlightClick: start', { openTooltip, highlight, match });
   e.stopPropagation();
   if (openTooltip && openTooltip.highlight === highlight) {
-    closeOpenTooltip();
+    console.log('handleHighlightClick: already open for this highlight');
     return;
   }
   closeOpenTooltip();
   highlight.classList.add('pressed', 'active');
+  openTooltip = { highlight };
+  // Populate and show the tooltip
+  const tooltip = document.getElementById('manipulation-widget-tooltip');
+  tooltip.innerHTML = `
+    <div style="font-weight:bold;font-size:16px;margin-bottom:8px;">Tactic: ${match.tactic}</div>
+    <div style="margin-bottom:8px;color:#555;">Definition: ${match.definition}</div>
+    <div style="color:#888;font-style:italic;">Why this is an example: ${match.explanation}</div>
+    <button id="manipulation-tooltip-close" style="position:absolute;top:8px;right:12px;background:none;border:none;color:#bbb;font-size:18px;cursor:pointer;z-index:2;">&times;</button>
+  `;
   tooltip.classList.add('visible');
-  openTooltip = { highlight, tooltip };
+  setTimeout(() => { tooltip.style.opacity = '1'; }, 10);
+  ignoreNextDocumentClick = true;
+  tooltip.querySelector('#manipulation-tooltip-close').addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeOpenTooltip();
+  });
+  console.log('handleHighlightClick: end', { openTooltip });
 }
 
-function handleDocumentClick(e) {
-  if (openTooltip && !openTooltip.tooltip.contains(e.target) && !openTooltip.highlight.contains(e.target)) {
-    closeOpenTooltip();
+function closeOpenTooltip() {
+  console.log('closeOpenTooltip: start', { openTooltip });
+  if (openTooltip && openTooltip.highlight) {
+    openTooltip.highlight.classList.remove('pressed', 'active');
   }
+  openTooltip = null;
+  const tooltip = document.getElementById('manipulation-widget-tooltip');
+  if (tooltip) {
+    tooltip.classList.remove('visible');
+    tooltip.style.opacity = '0';
+  }
+  console.log('closeOpenTooltip: end');
 }
 
 function handleEscapeKey(e) {
@@ -864,6 +970,4 @@ function handleEscapeKey(e) {
   }
 }
 
-document.addEventListener('click', handleDocumentClick, true);
-document.addEventListener('touchstart', handleDocumentClick, true);
 document.addEventListener('keydown', handleEscapeKey, true);
