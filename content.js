@@ -5,6 +5,8 @@ let currentHighlights = null; // Track current highlights state
 let openTooltip = null;
 let loadingInterval = null;
 let loadingBaseMessage = '';
+let allInstances = []; // Track all highlighted instances in document order
+let currentInstanceIndex = -1; // Current navigation position
 
 // Add global flag for robust tooltip persistence
 let ignoreNextDocumentClick = false;
@@ -127,11 +129,17 @@ function clearAllHighlights() {
 
   openTooltip = null;
   currentHighlights = null;
+  allInstances = [];
+  currentInstanceIndex = -1;
 }
 
 // Optimized highlighting function using DocumentFragment
 function highlightManipulativeLanguage(detectedTactics) {
   if (!detectedTactics?.length) return;
+
+  // Initialize allInstances array
+  allInstances = [];
+  currentInstanceIndex = -1;
 
   // Clear existing highlights if any
   const existingHighlights = document.querySelectorAll('.manipulation-highlight');
@@ -313,9 +321,33 @@ function highlightManipulativeLanguage(detectedTactics) {
         highlight.tabIndex = 0;
         highlight.setAttribute('role', 'button');
         highlight.setAttribute('aria-label', `Show manipulation tactic details for: ${match.text}`);
-        // Click/tap to open tooltip
-        highlight.addEventListener('click', (e) => handleHighlightClick(e, highlight, match));
-        highlight.addEventListener('touchstart', (e) => handleHighlightClick(e, highlight, match));
+        
+        // Store instance data for navigation
+        highlight.instanceData = {
+          tactic: match.tactic,
+          definition: match.definition,
+          explanation: match.explanation,
+          text: match.text
+        };
+        // SUPER SIMPLE CLICK TEST
+        highlight.addEventListener('click', function(e) {
+          console.log('CLICK WORKED! Text:', this.textContent);
+          e.stopPropagation();
+          
+          // Just add a visual indicator that click worked
+          this.style.backgroundColor = 'red';
+          setTimeout(() => {
+            this.style.backgroundColor = '';
+          }, 1000);
+          
+          // Now try the complex handler
+          handleHighlightClick(e, this, match);
+        });
+        highlight.addEventListener('touchstart', (e) => {
+          console.log('=== BASIC TOUCH DETECTED ===');
+          console.log('Touch event fired on highlight:', highlight.textContent);
+          handleHighlightClick(e, highlight, match);
+        });
 
         // Hover/pressed state for mouse/touch
         highlight.addEventListener('mousedown', () => highlight.classList.add('pressed'));
@@ -338,6 +370,16 @@ function highlightManipulativeLanguage(detectedTactics) {
         }, { passive: true });
         
         wrapper.appendChild(highlight);
+        
+        // Immediately add to allInstances array as we create highlights
+        if (!allInstances.includes(highlight)) {
+          allInstances.push(highlight);
+        }
+        
+        // DEBUG: Verify highlight is accessible immediately after creation
+        console.log(`Created highlight: "${highlight.textContent}" - hasEventListeners: ${!!highlight.click}`);
+        console.log(`  Parent: ${!!highlight.parentNode}, Wrapper: ${highlight.parentNode === wrapper}`);
+        
         lastIndex = match.index + match.length;
       });
 
@@ -346,8 +388,74 @@ function highlightManipulativeLanguage(detectedTactics) {
       }
 
       parent.replaceChild(wrapper, node);
+      
+      // DEBUG: Verify the replacement worked and elements are in DOM
+      console.log('DOM replacement completed. Wrapper children:', wrapper.children.length);
+      
+      // CRITICAL FIX: Re-attach event listeners after DOM insertion
+      setTimeout(() => {
+        Array.from(wrapper.querySelectorAll('.manipulation-highlight')).forEach((highlight, i) => {
+          console.log(`Post-DOM highlight ${i}: "${highlight.textContent}" in DOM = ${document.contains(highlight)}`);
+          
+          // ENSURE event listeners are attached after DOM insertion
+          if (!highlight._listenersAttached) {
+            console.log(`Re-attaching listeners for "${highlight.textContent}"`);
+            
+            const match = highlight.instanceData; // Should have been set earlier
+            if (match) {
+              // Clean event attachment
+              highlight.addEventListener('click', function(e) {
+                console.log('POST-DOM CLICK WORKED! Text:', this.textContent);
+                e.stopPropagation();
+                e.preventDefault();
+                
+                // Visual feedback
+                this.style.backgroundColor = 'red';
+                setTimeout(() => { this.style.backgroundColor = ''; }, 1000);
+                
+                // Handle the click
+                handleHighlightClick(e, this, match);
+              });
+              
+              highlight._listenersAttached = true;
+            }
+          }
+        });
+      }, 10); // Small delay to ensure DOM is settled
     }
   });
+
+  // CRITICAL FIX: Rebuild allInstances array from actual DOM
+  setTimeout(() => {
+    console.log('=== REBUILDING ALLINSTANCES FROM DOM ===');
+    allInstances = Array.from(document.querySelectorAll('.manipulation-highlight'));
+    console.log('Found highlights in DOM:', allInstances.length);
+    
+    // Sort all instances in document order for navigation
+    allInstances.sort((a, b) => {
+      const pos = a.compareDocumentPosition(b);
+      return pos & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+    });
+    
+    // DEBUG: Verify all instances are valid and in DOM
+    console.log('POST-REBUILD DOM CHECK:');
+    allInstances.forEach((instance, i) => {
+      const inDOM = document.contains(instance);
+      const hasParent = !!instance.parentNode;
+      const hasListeners = !!instance._listenersAttached;
+      console.log(`Instance ${i}: inDOM=${inDOM}, hasParent=${hasParent}, hasListeners=${hasListeners}, text="${instance.textContent}"`);
+    });
+    
+    // Trigger UI update with correct count
+    window.dispatchEvent(new CustomEvent('instancesReady', { detail: { count: allInstances.length } }));
+    
+    console.log('=== REBUILD COMPLETE ===');
+  }, 50); // Slightly longer delay to ensure all DOM operations complete
+  
+  // Legacy collection code - now handled by DOM rebuild above
+  currentInstanceIndex = -1;
+  
+  // Navigation UI update now handled by DOM rebuild above
 
   // Store current highlights state
   currentHighlights = detectedTactics;
@@ -656,6 +764,42 @@ function injectCSS() {
         gap: 8px;
         margin-bottom: 10px;
       }
+      .navigation-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 10px 0;
+        padding: 8px;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        border: 1px solid #e9ecef;
+      }
+      .nav-button {
+        padding: 6px 10px;
+        border: 1px solid #ced4da;
+        background: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        min-width: 30px;
+        transition: all 0.2s;
+      }
+      .nav-button:hover {
+        background-color: #e9ecef;
+        border-color: #adb5bd;
+      }
+      .nav-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: #f8f9fa;
+      }
+      .instance-position {
+        flex: 1;
+        text-align: center;
+        font-size: 12px;
+        color: #6c757d;
+        font-weight: 500;
+      }
       .manipulation-widget-btn-icon {
         transition: opacity 0.25s ease-in-out;
         position: absolute;
@@ -772,6 +916,11 @@ function injectWidget() {
         <button id="analyzeButton" class="analyze-button" style="flex: 1;">Analyze Current Page</button>
         <button id="redoButton" class="analyze-button" style="flex: 1; display: none;">Re-analyze</button>
       </div>
+      <div id="navigationControls" class="navigation-controls" style="display: none; align-items: center; gap: 8px; margin: 10px 0; padding: 8px; background-color: #f8f9fa; border-radius: 6px;">
+        <button id="prevInstanceBtn" class="nav-button" style="padding: 4px 8px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;">←</button>
+        <span id="instancePosition" class="instance-position" style="flex: 1; text-align: center; font-size: 12px; color: #666;">Instance 1 of 1</span>
+        <button id="nextInstanceBtn" class="nav-button" style="padding: 4px 8px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;">→</button>
+      </div>
       <div id="status" class="status"></div>
     </div>
   `;
@@ -805,6 +954,10 @@ function injectWidget() {
   const analyzeButton = root.querySelector('#analyzeButton');
   const statusDiv = root.querySelector('#status');
   const redoButton = root.querySelector('#redoButton');
+  const navigationControls = root.querySelector('#navigationControls');
+  const prevInstanceBtn = root.querySelector('#prevInstanceBtn');
+  const nextInstanceBtn = root.querySelector('#nextInstanceBtn');
+  const instancePosition = root.querySelector('#instancePosition');
   const fab = btn; // alias
 
   let lastAnalysisResults = null;
@@ -830,6 +983,100 @@ function injectWidget() {
     }
   }
 
+  // Navigation functions
+  function updateNavigationUI() {
+    console.log('updateNavigationUI called: instances =', allInstances.length, 'currentIndex =', currentInstanceIndex);
+    
+    if (allInstances.length === 0) {
+      navigationControls.style.display = 'none';
+      return;
+    }
+    
+    navigationControls.style.display = 'flex';
+    
+    // If no instance is selected yet, default to first one
+    if (currentInstanceIndex === -1 && allInstances.length > 0) {
+      // Set the index first to avoid recursion
+      currentInstanceIndex = 0;
+      
+      // Activate the first instance manually
+      const firstInstance = allInstances[0];
+      if (firstInstance) {
+        firstInstance.classList.add('active');
+        
+        // Scroll to it
+        firstInstance.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center',
+          inline: 'nearest'
+        });
+        
+        // Show tooltip for first instance
+        showTooltipForInstance(firstInstance);
+      }
+    }
+    
+    instancePosition.textContent = `Instance ${currentInstanceIndex + 1} of ${allInstances.length}`;
+    
+    // Enable both buttons since we have wrapping navigation
+    prevInstanceBtn.disabled = false;
+    nextInstanceBtn.disabled = false;
+  }
+
+  function navigateToInstance(index) {
+    console.log('navigateToInstance called with index:', index);
+    
+    if (index < 0 || index >= allInstances.length) {
+      console.warn('navigateToInstance: Invalid index', index, 'of', allInstances.length);
+      return;
+    }
+    
+    const targetInstance = allInstances[index];
+    if (!targetInstance) {
+      console.error('navigateToInstance: No instance found at index', index);
+      return;
+    }
+    
+    // Use unified activation function
+    activateInstance(targetInstance, index);
+  }
+
+  function navigatePrevious() {
+    if (allInstances.length === 0) return;
+    
+    let newIndex;
+    if (currentInstanceIndex > 0) {
+      newIndex = currentInstanceIndex - 1;
+    } else {
+      // Wrap to last instance
+      newIndex = allInstances.length - 1;
+    }
+    navigateToInstance(newIndex);
+  }
+
+  function navigateNext() {
+    if (allInstances.length === 0) return;
+    
+    let newIndex;
+    if (currentInstanceIndex < allInstances.length - 1) {
+      newIndex = currentInstanceIndex + 1;
+    } else {
+      // Wrap to first instance
+      newIndex = 0;
+    }
+    navigateToInstance(newIndex);
+  }
+
+  // activateInstance is now a global function
+
+  function showTooltipForInstance(instance) {
+    // This function is now replaced by activateInstance
+    // Find the index and use the unified function
+    const index = allInstances.indexOf(instance);
+    if (index !== -1) {
+      activateInstance(instance, index);
+    }
+  }
 
   // Compute average luminance behind the button and adapt styles
   function computeAverageLuminance() {
@@ -999,7 +1246,9 @@ function injectWidget() {
       analyzeButton.classList.remove('active');
       redoButton.textContent = 'Re-analyze';
       redoButton.style.display = '';
-      setStatus(`Analysis complete. ${lastAnalysisResults.length} manipulation tactic${lastAnalysisResults.length > 1 ? 's' : ''} identified.`);
+      const instanceCount = allInstances.length;
+      setStatus(`Analysis complete. ${lastAnalysisResults.length} manipulation tactic${lastAnalysisResults.length > 1 ? 's' : ''} identified (${instanceCount} instance${instanceCount > 1 ? 's' : ''}).`);
+      updateNavigationUI();
     } else {
       analyzeButton.textContent = 'Analyze Current Page';
       analyzeButton.classList.remove('clear');
@@ -1007,6 +1256,7 @@ function injectWidget() {
       redoButton.style.display = 'none';
       setStatus('Click "Analyze" to search for manipulative language.');
       lastAnalysisResults = null;
+      updateNavigationUI();
     }
   }
 
@@ -1046,6 +1296,10 @@ function injectWidget() {
     }
   });
 
+  // Navigation button event listeners
+  prevInstanceBtn.addEventListener('click', navigatePrevious);
+  nextInstanceBtn.addEventListener('click', navigateNext);
+
   // Listen for analysis results
   window.addEventListener('analysisComplete', function(e) {
     if (loadingInterval) {
@@ -1061,7 +1315,9 @@ function injectWidget() {
       analyzeButton.classList.remove('active');
       redoButton.textContent = 'Re-analyze';
       redoButton.style.display = '';
-      setStatus(`Analysis complete. ${lastAnalysisResults.length} manipulation tactic${lastAnalysisResults.length > 1 ? 's' : ''} identified.`);
+      const instanceCount = allInstances.length;
+      setStatus(`Analysis complete. ${lastAnalysisResults.length} manipulation tactic${lastAnalysisResults.length > 1 ? 's' : ''} identified (${instanceCount} instance${instanceCount > 1 ? 's' : ''}).`);
+      updateNavigationUI();
     } else {
       analyzeButton.textContent = 'Analyze Current Page';
       analyzeButton.classList.remove('clear');
@@ -1072,6 +1328,17 @@ function injectWidget() {
   });
   window.addEventListener('analysisError', function(e) {
     showError(e.detail?.error || 'Unknown error occurred during analysis.');
+  });
+
+  // Listen for instances ready event
+  window.addEventListener('instancesReady', function(e) {
+    console.log('instancesReady event: instances =', e.detail.count);
+    // Update status with correct instance count
+    if (lastAnalysisResults && lastAnalysisResults.length > 0) {
+      const instanceCount = allInstances.length;
+      setStatus(`Analysis complete. ${lastAnalysisResults.length} manipulation tactic${lastAnalysisResults.length > 1 ? 's' : ''} identified (${instanceCount} instance${instanceCount > 1 ? 's' : ''}).`);
+      updateNavigationUI();
+    }
   });
 
   // Update status on open/close and toggle icon
@@ -1132,33 +1399,187 @@ if (document.readyState === 'loading') {
   injectWidget();
 }
 
+// UNIFIED NAVIGATION FUNCTION - handles all instance activation
+function activateInstance(highlight, index) {
+  console.log('activateInstance called:', { highlight, index, allInstancesLength: allInstances.length });
+  
+  // Validate inputs
+  if (!highlight || typeof index !== 'number') {
+    console.error('activateInstance: Invalid parameters', { highlight, index });
+    return false;
+  }
+  
+  // Clear any existing active states
+  allInstances.forEach(inst => {
+    if (inst !== highlight) {
+      inst.classList.remove('active', 'pressed');
+    }
+  });
+  
+  // Close any existing tooltip
+  closeOpenTooltip();
+  
+  // Update current index
+  currentInstanceIndex = index;
+  
+  // Activate the target instance
+  highlight.classList.add('active');
+  openTooltip = { highlight };
+  
+  // Get instance data
+  const instanceData = highlight.instanceData;
+  if (!instanceData) {
+    console.warn('activateInstance: No instanceData found on highlight');
+    return false;
+  }
+  
+  // Show tooltip
+  const tooltip = document.getElementById('manipulation-widget-tooltip');
+  if (tooltip) {
+    tooltip.innerHTML = `
+      <div style="font-weight:bold;font-size:16px;margin-bottom:8px;">Tactic: ${instanceData.tactic}</div>
+      <div style="margin-bottom:8px;color:#555;">Definition: ${instanceData.definition}</div>
+      <div style="color:#888;font-style:italic;">Why this is an example: ${instanceData.explanation}</div>
+      <button id="manipulation-tooltip-close" style="position:absolute;top:8px;right:12px;background:none;border:none;color:#bbb;font-size:18px;cursor:pointer;z-index:2;">&times;</button>
+    `;
+    tooltip.classList.add('visible');
+    setTimeout(() => { tooltip.style.opacity = '1'; }, 10);
+    
+    // Add close button listener
+    const closeBtn = tooltip.querySelector('#manipulation-tooltip-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeOpenTooltip();
+      });
+    }
+  }
+  
+  // Scroll to instance
+  highlight.scrollIntoView({ 
+    behavior: 'smooth', 
+    block: 'center',
+    inline: 'nearest'
+  });
+  
+  // Update navigation UI if widget exists
+  const instancePosition = document.querySelector('#instancePosition');
+  if (instancePosition && allInstances.length > 0) {
+    instancePosition.textContent = `Instance ${index + 1} of ${allInstances.length}`;
+  }
+  
+  // Update navigation button states if they exist
+  const prevBtn = document.querySelector('#prevInstanceBtn');
+  const nextBtn = document.querySelector('#nextInstanceBtn');
+  if (prevBtn && nextBtn) {
+    prevBtn.disabled = false;
+    nextBtn.disabled = false;
+  }
+  
+  console.log('activateInstance: Successfully activated instance', index);
+  return true;
+}
+
 // Tooltip persistence fix: add a short delay before document click handler can close it
 function handleHighlightClick(e, highlight, match) {
-  console.log('handleHighlightClick: start', { openTooltip, highlight, match });
-  e.stopPropagation();
+  console.log('=== MANUAL CLICK START ===');
+  console.log('Clicked highlight:', highlight);
+  console.log('allInstances.length:', allInstances.length);
+  
+  // Prevent default and stop propagation
+  if (e.stopPropagation) e.stopPropagation();
+  if (e.preventDefault) e.preventDefault();
+  
+  // Strategy 1: Direct indexOf lookup
+  let clickedIndex = allInstances.indexOf(highlight);
+  console.log('Strategy 1 (indexOf):', clickedIndex);
+  
+  // Strategy 2: If indexOf fails, search by text content match
+  if (clickedIndex === -1) {
+    for (let i = 0; i < allInstances.length; i++) {
+      if (allInstances[i].textContent === highlight.textContent && 
+          allInstances[i].className === highlight.className) {
+        clickedIndex = i;
+        console.log('Strategy 2 (textContent + className match):', i);
+        break;
+      }
+    }
+  }
+  
+  // Strategy 3: If still not found, search by instanceData match
+  if (clickedIndex === -1 && highlight.instanceData) {
+    for (let i = 0; i < allInstances.length; i++) {
+      const inst = allInstances[i];
+      if (inst.instanceData && 
+          inst.instanceData.text === highlight.instanceData.text &&
+          inst.instanceData.tactic === highlight.instanceData.tactic) {
+        clickedIndex = i;
+        console.log('Strategy 3 (instanceData match):', i);
+        break;
+      }
+    }
+  }
+  
+  // Strategy 4: If found, use unified navigation
+  if (clickedIndex !== -1) {
+    console.log('SUCCESS: Using unified navigation for index', clickedIndex);
+    const success = activateInstance(highlight, clickedIndex);
+    if (success) {
+      console.log('=== MANUAL CLICK SUCCESS ===');
+      return;
+    }
+  }
+  
+  // Strategy 5: Fallback - direct activation without navigation sync
+  console.warn('FALLBACK: Direct activation without navigation sync');
+  
+  // Prevent reopening same tooltip
   if (openTooltip && openTooltip.highlight === highlight) {
-    console.log('handleHighlightClick: already open for this highlight');
+    console.log('Already open, ignoring click');
     return;
   }
+  
+  // Use fallback activation
   closeOpenTooltip();
-  highlight.classList.add('pressed', 'active');
+  highlight.classList.add('active');
   openTooltip = { highlight };
-  // Populate and show the tooltip
+  
+  // Get instance data from highlight or match parameter
+  const instanceData = highlight.instanceData || match;
+  if (!instanceData) {
+    console.error('No instance data available for fallback');
+    return;
+  }
+  
+  // Show tooltip
   const tooltip = document.getElementById('manipulation-widget-tooltip');
-  tooltip.innerHTML = `
-    <div style="font-weight:bold;font-size:16px;margin-bottom:8px;">Tactic: ${match.tactic}</div>
-    <div style="margin-bottom:8px;color:#555;">Definition: ${match.definition}</div>
-    <div style="color:#888;font-style:italic;">Why this is an example: ${match.explanation}</div>
-    <button id="manipulation-tooltip-close" style="position:absolute;top:8px;right:12px;background:none;border:none;color:#bbb;font-size:18px;cursor:pointer;z-index:2;">&times;</button>
-  `;
-  tooltip.classList.add('visible');
-  setTimeout(() => { tooltip.style.opacity = '1'; }, 10);
-  ignoreNextDocumentClick = true;
-  tooltip.querySelector('#manipulation-tooltip-close').addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeOpenTooltip();
+  if (tooltip) {
+    tooltip.innerHTML = `
+      <div style="font-weight:bold;font-size:16px;margin-bottom:8px;">Tactic: ${instanceData.tactic}</div>
+      <div style="margin-bottom:8px;color:#555;">Definition: ${instanceData.definition}</div>
+      <div style="color:#888;font-style:italic;">Why this is an example: ${instanceData.explanation}</div>
+      <button id="manipulation-tooltip-close" style="position:absolute;top:8px;right:12px;background:none;border:none;color:#bbb;font-size:18px;cursor:pointer;z-index:2;">&times;</button>
+    `;
+    tooltip.classList.add('visible');
+    setTimeout(() => { tooltip.style.opacity = '1'; }, 10);
+    
+    const closeBtn = tooltip.querySelector('#manipulation-tooltip-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeOpenTooltip();
+      });
+    }
+  }
+  
+  // Scroll to highlight
+  highlight.scrollIntoView({ 
+    behavior: 'smooth', 
+    block: 'center',
+    inline: 'nearest'
   });
-  console.log('handleHighlightClick: end', { openTooltip });
+  
+  console.log('=== MANUAL CLICK FALLBACK COMPLETE ===');
 }
 
 function closeOpenTooltip() {
