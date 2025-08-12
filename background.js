@@ -73,56 +73,8 @@ async function fetchWithRetry(url, options, retries = CONFIG.MAX_RETRIES) {
   }
 }
 
-// Function to create or focus the window
-async function createOrFocusWindow() {
-  try {
-    // Try to find existing window
-    const windows = await chrome.windows.getAll();
-    const existingWindow = windows.find(w => 
-      w.type === 'popup' && w.title === 'Manipulation Identifier'
-    );
-
-    if (existingWindow) {
-      // Focus existing window
-      await chrome.windows.update(existingWindow.id, { focused: true });
-      return existingWindow;
-    }
-
-    // Create new window
-    const window = await chrome.windows.create({
-      url: 'popup.html',
-      type: 'popup',
-      width: CONFIG.WINDOW_WIDTH,
-      height: CONFIG.WINDOW_HEIGHT,
-      focused: true
-    });
-
-    return window;
-  } catch (error) {
-    console.error('Error creating/focusing window:', error);
-    throw error;
-  }
-}
-
-// Handle extension icon click
-chrome.action.onClicked.addListener(async (tab) => {
-  try {
-    await createOrFocusWindow();
-  } catch (error) {
-    console.error('Error handling action click:', error);
-  }
-});
-
-// Handle keyboard shortcut
-chrome.commands.onCommand.addListener(async (command) => {
-  if (command === '_execute_action') {
-    try {
-      await createOrFocusWindow();
-    } catch (error) {
-      console.error('Error handling command:', error);
-    }
-  }
-  });
+// Note: We rely on the manifest `action.default_popup` (popup.html) for UI.
+// No custom window creation is needed here.
   
   // Listen for analysis requests from content.js
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

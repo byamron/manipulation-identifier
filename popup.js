@@ -20,22 +20,48 @@ document.addEventListener('DOMContentLoaded', function() {
     window.close();
   });
 
+  // Helper: ensure content script is injected if not present
+  async function ensureContentScript(tabId) {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['content.js']
+      });
+    } catch (e) {
+      // Ignore if already injected or not permitted
+      console.warn('ensureContentScript failed:', e);
+    }
+  }
+
   // Function to check page state
   async function checkPageState() {
     try {
       const tab = await getActiveTabInLastFocusedNormalWindow();
       if (!tab) return;
 
-      const highlightState = await new Promise(resolve => {
+      let highlightState = await new Promise(resolve => {
         chrome.tabs.sendMessage(tab.id, {action: "getHighlightState"}, response => {
           if (chrome.runtime.lastError) {
-            console.warn("Could not get highlight state:", chrome.runtime.lastError);
             resolve(null);
           } else {
             resolve(response);
-    }
+          }
         });
-  });
+      });
+
+      // If no receiver, try to inject and retry once
+      if (!highlightState) {
+        await ensureContentScript(tab.id);
+        highlightState = await new Promise(resolve => {
+          chrome.tabs.sendMessage(tab.id, {action: "getHighlightState"}, response => {
+            if (chrome.runtime.lastError) {
+              resolve(null);
+            } else {
+              resolve(response);
+            }
+          });
+        });
+      }
 
       // Update button and status based on highlights
       if (highlightState?.hasHighlights) {
@@ -68,18 +94,24 @@ document.addEventListener('DOMContentLoaded', function() {
           analyzeButton.classList.remove('active');
           statusDiv.innerHTML = '<div class="status-message">Click "Analyze" to search for manipulative language.</div>';
         });
-        } else {
+      } else {
         // Start analysis
         analyzeButton.disabled = true;
         analyzeButton.textContent = 'Analyzing...';
         statusDiv.innerHTML = '<div class="status-message loading">Analyzing page content...</div>';
 
-        chrome.tabs.sendMessage(tab.id, {action: "analyze"}, (response) => {
+        chrome.tabs.sendMessage(tab.id, {action: "analyze"}, async (response) => {
           if (chrome.runtime.lastError) {
-            showError('Could not analyze page: ' + chrome.runtime.lastError.message + '. Try reloading the page.');
+            // Try injecting the content script and retry once
+            await ensureContentScript(tab.id);
+            chrome.tabs.sendMessage(tab.id, {action: "analyze"}, (retryResp) => {
+              if (chrome.runtime.lastError) {
+                showError('Could not analyze page: ' + chrome.runtime.lastError.message + '. Try reloading the page.');
+              }
+            });
             return;
-        }
-      });
+          }
+        });
       }
     } catch (error) {
       console.error('Error during analysis:', error);

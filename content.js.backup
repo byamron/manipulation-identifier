@@ -544,29 +544,79 @@ function injectWidget() {
     </div>
   `;
 
+  // Floating button using Shadow DOM for style isolation
+  const fabHost = document.createElement('div');
+  fabHost.style.position = 'fixed';
+  fabHost.style.bottom = '24px';
+  fabHost.style.right = '24px';
+  fabHost.style.zIndex = '999999';
 
-  // Floating button (bottom) - Simple, working implementation
-  const btn = document.createElement('button');
-  btn.className = 'manipulation-widget-btn';
-  btn.title = 'Open Manipulation Identifier';
-  btn.id = 'manipulationWidgetBtn';
-  btn.innerHTML = `
-    <span class="manipulation-widget-btn-icon show" id="manipulationWidgetBtnEye">
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/>
-        <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
-      </svg>
-    </span>
-    <span class="manipulation-widget-btn-icon hide" id="manipulationWidgetBtnClose">✕</span>
+  const shadow = fabHost.attachShadow({ mode: 'open' });
+
+  shadow.innerHTML = `
+    <style>
+      .fab {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        font-size: 28px;
+        font-family: system-ui, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+        transition: background-color 200ms ease, color 200ms ease;
+        user-select: none;
+        outline-offset: 2px;
+      }
+      .fab-icon {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .fab-icon svg {
+        width: 24px;
+        height: 24px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .fab-icon.hide {
+        display: none;
+      }
+      .fab-icon.show {
+        display: flex;
+      }
+    </style>
+    <button class="fab" title="Open Manipulation Identifier">
+      <span class="fab-icon show" id="manipulationWidgetBtnEye">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </span>
+      <span class="fab-icon hide" id="manipulationWidgetBtnClose">✕</span>
+    </button>
   `;
+
+  const btn = shadow.querySelector('.fab');
+  btn.id = 'manipulationWidgetBtn';
 
   // Append in stacking order: tooltip, panel, button
   root.appendChild(tooltip);
   root.appendChild(panel);
-  root.appendChild(btn);
   document.body.appendChild(root);
+  document.body.appendChild(fabHost); // Add Shadow DOM button separately
 
-  const btnIcon = root.querySelector('#manipulationWidgetBtnEye');
+  const btnIcon = shadow.querySelector('#manipulationWidgetBtnEye');
   const panelOpen = root.querySelector('#manipulationWidgetPanel');
   const analyzeButton = root.querySelector('#analyzeButton');
   const statusDiv = root.querySelector('#status');
@@ -595,7 +645,6 @@ function injectWidget() {
       statusDiv.innerHTML = `<div class="status-message${type ? ' ' + type : ''}">${message}</div>`;
     }
   }
-
 
   // Compute average luminance behind the button and adapt styles
   function computeAverageLuminance() {
@@ -703,8 +752,8 @@ function injectWidget() {
     fab.style.webkitBackdropFilter = 'blur(6px)';
     
     // Update icon colors based on the new button color
-    const eyeIcon = fab.querySelector('#manipulationWidgetBtnEye');
-    const closeIcon = fab.querySelector('#manipulationWidgetBtnClose');
+    const eyeIcon = shadow.querySelector('#manipulationWidgetBtnEye');
+    const closeIcon = shadow.querySelector('#manipulationWidgetBtnClose');
     if (eyeIcon) {
       eyeIcon.style.color = fab.style.color;
     }
@@ -719,8 +768,6 @@ function injectWidget() {
   ro.observe(document.documentElement);
   window.addEventListener('scroll', applyAdaptiveFabStyle, { passive: true });
   window.addEventListener('resize', applyAdaptiveFabStyle, { passive: true });
-
-
   function showError(errorMessage) {
     if (loadingInterval) {
       clearInterval(loadingInterval);
@@ -866,18 +913,18 @@ function injectWidget() {
 
   function showBtnIcon(isClose) {
     if (isClose) {
-      btnIcon.classList.remove('show');
-      btnIcon.classList.add('hide');
+      shadow.querySelector('#manipulationWidgetBtnEye').classList.remove('show');
+      shadow.querySelector('#manipulationWidgetBtnEye').classList.add('hide');
       requestAnimationFrame(() => {
-        btn.querySelector('#manipulationWidgetBtnClose').classList.remove('hide');
-        btn.querySelector('#manipulationWidgetBtnClose').classList.add('show');
+        shadow.querySelector('#manipulationWidgetBtnClose').classList.remove('hide');
+        shadow.querySelector('#manipulationWidgetBtnClose').classList.add('show');
       });
     } else {
-      btn.querySelector('#manipulationWidgetBtnClose').classList.remove('show');
-      btn.querySelector('#manipulationWidgetBtnClose').classList.add('hide');
+      shadow.querySelector('#manipulationWidgetBtnClose').classList.remove('show');
+      shadow.querySelector('#manipulationWidgetBtnClose').classList.add('hide');
       requestAnimationFrame(() => {
-        btn.querySelector('#manipulationWidgetBtnEye').classList.remove('hide');
-        btn.querySelector('#manipulationWidgetBtnEye').classList.add('show');
+        shadow.querySelector('#manipulationWidgetBtnEye').classList.remove('hide');
+        shadow.querySelector('#manipulationWidgetBtnEye').classList.add('show');
       });
     }
   }
@@ -1182,4 +1229,3 @@ function handleEscapeKey(e) {
 }
 
 document.addEventListener('keydown', handleEscapeKey, true);
-
