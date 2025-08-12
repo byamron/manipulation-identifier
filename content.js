@@ -490,10 +490,242 @@ chrome.runtime.onMessage?.addListener((message, sender, sendResponse) => {
   console.log('Content script initialized');
 })();
 
+// Inject full widget, button, and tooltip CSS into document head (only once)
+function injectCSS() {
+  if (!document.getElementById('manipulation-widget-style')) {
+    console.log('CSS injection: Starting at', performance.now());
+    const style = document.createElement('style');
+    style.id = 'manipulation-widget-style';
+    style.textContent = `
+      #manipulation-widget-root {
+        position: fixed;
+        z-index: 2147483647;
+        bottom: 24px;
+        right: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+      }
+      .manipulation-widget-btn {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        /* Adaptive solid with 50% opacity */
+        background: var(--fab-bg, rgba(255,255,255,0.5));
+        color: var(--fab-icon-color, rgba(0,0,0,0.8));
+        border: 1px solid rgba(0,0,0,0.12);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        overflow: hidden; /* mask blur to circle */
+        box-shadow: 0 4px 4px rgba(0,0,0,0.15);
+        font-size: 32px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 200ms ease, color 200ms ease, box-shadow 200ms ease, transform 200ms ease, backdrop-filter 200ms ease;
+        will-change: transform;
+        position: relative;
+      }
+      .manipulation-widget-btn:hover {
+        box-shadow: 0 6px 8px rgba(0,0,0,0.18);
+      }
+      .manipulation-widget-btn:focus-visible {
+        outline: 2px solid rgba(44,47,54,0.5);
+        outline-offset: 2px;
+      }
+      .manipulation-widget-btn.spin {
+        animation: spin-btn 0.5s ease-in-out;
+      }
+      @keyframes spin-btn {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      /* Ensure icons meet contrast */
+      .manipulation-widget-btn-icon { text-shadow: var(--fab-icon-shadow, 0 0 0 transparent); }
+      .manipulation-widget-btn-icon svg { filter: none; }
+      .manipulation-widget-panel {
+        display: flex;
+        width: 350px;
+        max-height: 500px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+        border: 1px solid #e0e0e0;
+        overflow: hidden;
+        flex-direction: column;
+        opacity: 0;
+        transform: scale(0.7);
+        pointer-events: none;
+        transition: opacity 0.5s cubic-bezier(0.4,0,0.2,1), transform 0.5s cubic-bezier(0.4,0,0.2,1);
+        transform-origin: 100% 100%;
+        position: relative;
+      }
+      .manipulation-widget-panel.open {
+        opacity: 1;
+        transform: scale(1);
+        pointer-events: auto;
+      }
+      .manipulation-widget-header {
+        background: #1a73e8;
+        color: #fff;
+        padding: 12px 16px;
+        font-size: 16px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .manipulation-widget-content {
+        padding: 16px;
+        flex: 1;
+        overflow-y: auto;
+      }
+      .analyze-button {
+        background-color: #1a73e8;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 12px 16px;
+        font-size: 16px;
+        cursor: pointer;
+        width: 100%;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.2s;
+        margin-bottom: 0;
+        white-space: normal;
+        text-align: center;
+        box-sizing: border-box;
+      }
+      .analyze-button:hover {
+        background-color: #185abc;
+      }
+      .analyze-button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+      .analyze-button.clear {
+        background-color: #dc3545;
+      }
+      .analyze-button.clear:hover {
+        background-color: #c82333;
+      }
+      .analyze-button.active {
+        background-color: #dc3545;
+      }
+      .analyze-button.active:hover {
+        background-color: #c82333;
+      }
+      .status-message {
+        color: #666;
+        font-size: 13px;
+        line-height: 1.4;
+        margin-bottom: 8px;
+        background: none;
+        border: none;
+        padding: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      .status-message.loading {
+        color: #6c757d;
+        background: none;
+        border: none;
+        padding: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      .error {
+        color: #dc3545;
+        font-size: 12px;
+        margin-top: 10px;
+        padding: 8px;
+        border-radius: 4px;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        box-shadow: none;
+      }
+      .analyze-actions {
+        width: 100%;
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .manipulation-widget-btn-icon {
+        transition: opacity 0.25s ease-in-out;
+        position: absolute;
+        left: 0; right: 0; top: 0; bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .manipulation-widget-btn-icon svg { width: 24px; height: 24px; fill: currentColor; }
+      .manipulation-widget-btn-icon.hide {
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+      .manipulation-widget-btn-icon.show {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+      #manipulationWidgetBtnEye { color: var(--fab-icon-color, rgba(64,64,64,1)); }
+      #manipulationWidgetBtnClose { color: var(--fab-icon-color, rgba(64,64,64,1)); font-size: 24px; line-height: 24px; }
+      .manipulation-highlight {
+        background-color: #fff3cd !important;
+        border: 1px solid #ffeaa7 !important;
+        border-radius: 3px !important;
+        padding: 2px !important;
+        position: relative !important;
+        transition: background 0.15s, border 0.15s;
+      }
+      .manipulation-highlight:hover {
+        background-color: #ffe082 !important;
+        border: 1px solid #ffd54f !important;
+        cursor: pointer !important;
+      }
+      .manipulation-highlight.pressed, .manipulation-highlight.active {
+        background-color: #ffd54f !important;
+        border: 1px solid #ffca28 !important;
+      }
+      #manipulation-widget-tooltip {
+        max-width: 350px;
+        min-width: 220px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+        border: 1px solid #e0e0e0;
+        padding: 20px;
+        font-size: 14px;
+        color: #222;
+        transition: opacity 0.2s;
+        opacity: 0;
+        pointer-events: auto;
+        font-family: inherit;
+        display: none;
+        position: relative;
+      }
+      #manipulation-widget-tooltip.visible {
+        display: block !important;
+        opacity: 1;
+      }
+    `;
+    document.head.appendChild(style);
+    console.log('CSS injection: Complete at', performance.now());
+  }
+}
+
 // --- Widget Injection ---
 function injectWidget() {
-  console.log('injectWidget: called');
+  console.log('injectWidget: called at', performance.now());
   if (document.getElementById('manipulation-widget-root')) return; // Prevent double-injection
+  
+  // Ensure CSS is injected first
+  injectCSS();
 
   // Create root
   const root = document.createElement('div');
@@ -564,7 +796,9 @@ function injectWidget() {
   root.appendChild(tooltip);
   root.appendChild(panel);
   root.appendChild(btn);
+  console.log('injectWidget: DOM elements created at', performance.now());
   document.body.appendChild(root);
+  console.log('injectWidget: elements added to DOM at', performance.now());
 
   const btnIcon = root.querySelector('#manipulationWidgetBtnEye');
   const panelOpen = root.querySelector('#manipulationWidgetPanel');
@@ -682,43 +916,35 @@ function injectWidget() {
     }
 
     const lum = getBackgroundLuminance();
-    console.log('Background luminance:', lum);
+    console.log('applyAdaptiveFabStyle: Background luminance:', lum, 'at', performance.now());
     
     if (lum > 0.5) {
       // light background
       fab.style.backgroundColor = 'rgba(0, 0, 0, 0.15)';
       fab.style.color = '#000';
       fab.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.12)';
-      console.log('Applied light page style');
+      console.log('applyAdaptiveFabStyle: Applied light page style at', performance.now());
     } else {
       // dark background
       fab.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
       fab.style.color = '#fff';
       fab.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-      console.log('Applied dark page style');
+      console.log('applyAdaptiveFabStyle: Applied dark page style at', performance.now());
     }
     
     // Apply backdrop filter
     fab.style.backdropFilter = 'blur(6px)';
     fab.style.webkitBackdropFilter = 'blur(6px)';
-    
-    // Update icon colors based on the new button color
-    const eyeIcon = fab.querySelector('#manipulationWidgetBtnEye');
-    const closeIcon = fab.querySelector('#manipulationWidgetBtnClose');
-    if (eyeIcon) {
-      eyeIcon.style.color = fab.style.color;
-    }
-    if (closeIcon) {
-      closeIcon.style.color = fab.style.color;
-    }
   }
 
-  // Initial apply and on changes
-  applyAdaptiveFabStyle();
-  const ro = new ResizeObserver(() => applyAdaptiveFabStyle());
-  ro.observe(document.documentElement);
-  window.addEventListener('scroll', applyAdaptiveFabStyle, { passive: true });
-  window.addEventListener('resize', applyAdaptiveFabStyle, { passive: true });
+  // Initial apply and on changes - delay initial apply to avoid flash
+  setTimeout(() => {
+    applyAdaptiveFabStyle();
+    const ro = new ResizeObserver(() => applyAdaptiveFabStyle());
+    ro.observe(document.documentElement);
+    window.addEventListener('scroll', applyAdaptiveFabStyle, { passive: true });
+    window.addEventListener('resize', applyAdaptiveFabStyle, { passive: true });
+  }, 0);
 
 
   function showError(errorMessage) {
@@ -865,24 +1091,25 @@ function injectWidget() {
   });
 
   function showBtnIcon(isClose) {
+    const eyeIcon = btn.querySelector('#manipulationWidgetBtnEye');
+    const closeIcon = btn.querySelector('#manipulationWidgetBtnClose');
+    
     if (isClose) {
-      btnIcon.classList.remove('show');
-      btnIcon.classList.add('hide');
+      eyeIcon.classList.remove('show');
+      eyeIcon.classList.add('hide');
       requestAnimationFrame(() => {
-        btn.querySelector('#manipulationWidgetBtnClose').classList.remove('hide');
-        btn.querySelector('#manipulationWidgetBtnClose').classList.add('show');
+        closeIcon.classList.remove('hide');
+        closeIcon.classList.add('show');
       });
     } else {
-      btn.querySelector('#manipulationWidgetBtnClose').classList.remove('show');
-      btn.querySelector('#manipulationWidgetBtnClose').classList.add('hide');
+      closeIcon.classList.remove('show');
+      closeIcon.classList.add('hide');
       requestAnimationFrame(() => {
-        btn.querySelector('#manipulationWidgetBtnEye').classList.remove('hide');
-        btn.querySelector('#manipulationWidgetBtnEye').classList.add('show');
+        eyeIcon.classList.remove('hide');
+        eyeIcon.classList.add('show');
       });
     }
   }
-  // Ensure icon reflects current open state on first render
-  showBtnIcon(panelOpen.classList.contains('open'));
 
   // After creating the tooltip in injectWidget, add a MutationObserver for debugging
   if (tooltip && !tooltip._observerAttached) {
@@ -903,233 +1130,6 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', injectWidget);
 } else {
   injectWidget();
-}
-
-// Inject full widget, button, and tooltip CSS into document head (only once)
-if (!document.getElementById('manipulation-widget-style')) {
-  const style = document.createElement('style');
-  style.id = 'manipulation-widget-style';
-  style.textContent = `
-    #manipulation-widget-root {
-      position: fixed;
-      z-index: 2147483647;
-      bottom: 24px;
-      right: 24px;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 8px;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-    }
-    .manipulation-widget-btn {
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      /* Adaptive solid with 50% opacity */
-      background: var(--fab-bg, rgba(255,255,255,0.5));
-      color: var(--fab-icon-color, rgba(0,0,0,0.8));
-      border: 1px solid rgba(0,0,0,0.12);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      overflow: hidden; /* mask blur to circle */
-      box-shadow: 0 4px 4px rgba(0,0,0,0.15);
-      font-size: 32px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background-color 200ms ease, color 200ms ease, box-shadow 200ms ease, transform 200ms ease, backdrop-filter 200ms ease;
-      will-change: transform;
-      position: relative;
-    }
-    .manipulation-widget-btn:hover {
-      box-shadow: 0 6px 8px rgba(0,0,0,0.18);
-    }
-    .manipulation-widget-btn:focus-visible {
-      outline: 2px solid rgba(44,47,54,0.5);
-      outline-offset: 2px;
-    }
-    .manipulation-widget-btn.spin {
-      animation: spin-btn 0.5s ease-in-out;
-    }
-    @keyframes spin-btn {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    /* Ensure icons meet contrast */
-    .manipulation-widget-btn-icon { text-shadow: var(--fab-icon-shadow, 0 0 0 transparent); }
-    .manipulation-widget-btn-icon svg { filter: none; }
-    .manipulation-widget-panel {
-      display: flex;
-      width: 350px;
-      max-height: 500px;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.18);
-      border: 1px solid #e0e0e0;
-      overflow: hidden;
-      flex-direction: column;
-      opacity: 0;
-      transform: scale(0.7);
-      pointer-events: none;
-      transition: opacity 0.5s cubic-bezier(0.4,0,0.2,1), transform 0.5s cubic-bezier(0.4,0,0.2,1);
-      transform-origin: 100% 100%;
-      position: relative;
-    }
-    .manipulation-widget-panel.open {
-      opacity: 1;
-      transform: scale(1);
-      pointer-events: auto;
-    }
-    .manipulation-widget-header {
-      background: #1a73e8;
-      color: #fff;
-      padding: 12px 16px;
-      font-size: 16px;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .manipulation-widget-content {
-      padding: 16px;
-      flex: 1;
-      overflow-y: auto;
-    }
-    .analyze-button {
-      background-color: #1a73e8;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 12px 16px;
-      font-size: 16px;
-      cursor: pointer;
-      width: 100%;
-      min-height: 48px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background-color 0.2s;
-      margin-bottom: 0;
-      white-space: normal;
-      text-align: center;
-      box-sizing: border-box;
-    }
-    .analyze-button:hover {
-      background-color: #185abc;
-    }
-    .analyze-button:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
-    .analyze-button.clear {
-      background-color: #dc3545;
-    }
-    .analyze-button.clear:hover {
-      background-color: #c82333;
-    }
-    .analyze-button.active {
-      background-color: #dc3545;
-    }
-    .analyze-button.active:hover {
-      background-color: #c82333;
-    }
-    .status-message {
-      color: #666;
-      font-size: 13px;
-      line-height: 1.4;
-      margin-bottom: 8px;
-      background: none;
-      border: none;
-      padding: 0;
-      border-radius: 0;
-      box-shadow: none;
-    }
-    .status-message.loading {
-      color: #6c757d;
-      background: none;
-      border: none;
-      padding: 0;
-      border-radius: 0;
-      box-shadow: none;
-    }
-    .error {
-      color: #dc3545;
-      font-size: 12px;
-      margin-top: 10px;
-      padding: 8px;
-      border-radius: 4px;
-      background-color: #f8d7da;
-      border: 1px solid #f5c6cb;
-      box-shadow: none;
-    }
-    .analyze-actions {
-      width: 100%;
-      display: flex;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-    .manipulation-widget-btn-icon {
-      transition: opacity 0.25s ease-in-out;
-      position: absolute;
-      left: 0; right: 0; top: 0; bottom: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .manipulation-widget-btn-icon svg { width: 24px; height: 24px; fill: currentColor; }
-    #manipulationWidgetBtnEye { color: var(--fab-icon-color, rgba(64,64,64,1)); }
-    #manipulationWidgetBtnClose { color: var(--fab-icon-color, rgba(64,64,64,1)); font-size: 24px; line-height: 24px; }
-    .manipulation-widget-btn-icon.hide {
-      opacity: 0;
-      pointer-events: none;
-    }
-    .manipulation-widget-btn-icon.show {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .manipulation-highlight {
-      background-color: #fff3cd !important;
-      border: 1px solid #ffeaa7 !important;
-      border-radius: 3px !important;
-      padding: 2px !important;
-      position: relative !important;
-      transition: background 0.15s, border 0.15s;
-    }
-    .manipulation-highlight:hover {
-      background-color: #ffe082 !important;
-      border: 1px solid #ffd54f !important;
-      cursor: pointer !important;
-    }
-    .manipulation-highlight.pressed, .manipulation-highlight.active {
-      background-color: #ffd54f !important;
-      border: 1px solid #ffca28 !important;
-    }
-    #manipulation-widget-tooltip {
-      max-width: 350px;
-      min-width: 220px;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.18);
-      border: 1px solid #e0e0e0;
-      padding: 20px;
-      font-size: 14px;
-      color: #222;
-      transition: opacity 0.2s;
-      opacity: 0;
-      pointer-events: auto;
-      font-family: inherit;
-      display: none;
-      position: relative;
-    }
-    #manipulation-widget-tooltip.visible {
-      display: block !important;
-      opacity: 1;
-    }
-  `;
-  document.head.appendChild(style);
 }
 
 // Tooltip persistence fix: add a short delay before document click handler can close it
