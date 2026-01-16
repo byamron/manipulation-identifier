@@ -1,0 +1,188 @@
+
+> manipulation-identifier@1.0.0 start
+> node server.js
+
+Server is running on port 3000
+Health check: http://localhost:3000/health
+GET /health 200 - 3ms
+GET /health 200 - 2ms
+GET /favicon.ico 404 - 1ms
+OPTIONS /analyze-content 204 - 1ms
+POST /analyze-content 200 - 973ms
+OPTIONS /analyze-content 204 - 0ms
+POST /analyze-content 200 - 1287ms
+OPTIONS /analyze-content 204 - 1ms
+Cache hit
+POST /analyze-content 200 - 2ms
+Cache hit
+POST /analyze-content 200 - 2ms
+OPTIONS /analyze-content 204 - 1ms
+Sending analysis result: {
+  manipulativeLanguage: '[Emotional Language]\n' +
+    'Definition: Language that contains strong emotional terms – especially those with a negative affect such as fear or outrage.\n' +
+    '\n' +
+    'Examples:\n' +
+    `1. "What you're about to read will horrify you."\n` +
+    `   Why this is an example: The phrase "horrify you" uses a strong emotional term to evoke fear or anxiety, aiming to manipulate the reader's emotional response.\n` +
+    '\n' +
+    '2. "The latest government decision is absolutely DISGUSTING and will make your blood boil."\n' +
+    '   Why this is an example: Words like "DISGUSTING" and the phrase "make your blood boil" are emotionally charged, intended to provoke outrage and anger.\n' +
+    '\n' +
+    '3. "You should be outraged that they continue to ignore the suffering of everyday people."\n' +
+    '   Why this is an example: "Outraged" is a strong emotional term used to incite anger and a sense of injustice.\n' +
+    '\n' +
+    `4. "This is an urgent crisis that demands your immediate attention before it's too late."\n` +
+    `   Why this is an example: The words "urgent crisis" and "before it's too late" evoke fear and a sense of emergency, pressuring the reader to act quickly.`,
+  results: [
+    {
+      tactic: 'Emotional Language',
+      definition: 'Language that contains strong emotional terms – especially those with a negative affect such as fear or outrage.',
+      examples: [Array]
+    }
+  ]
+}
+POST /analyze-content 200 - 3456ms
+OPTIONS /analyze-content 204 - 0ms
+Sending analysis result: {
+  manipulativeLanguage: '[Emotional Language]\n' +
+    'Definition: Language that contains strong emotional terms – especially those with a negative affect such as fear or outrage.\n' +
+    '\n' +
+    'Examples:\n' +
+    `1. "What you're about to read will horrify you."\n` +
+    `   Why this is an example: The phrase "horrify you" uses a strong emotional term to evoke fear or anxiety, aiming to manipulate the reader's emotional response.\n` +
+    '2. "The latest government decision is absolutely DISGUSTING and will make your blood boil."\n' +
+    '   Why this is an example: Words like "DISGUSTING" and the phrase "make your blood boil" are emotionally charged, intended to provoke outrage and anger.\n' +
+    '3. "You should be outraged that they continue to ignore the suffering of everyday people."\n' +
+    `   Why this is an example: The phrase "should be outraged" appeals to the reader's sense of moral outrage, encouraging an emotional reaction.\n` +
+    `4. "This is an urgent crisis that demands your immediate attention before it's too late."\n` +
+    `   Why this is an example: The words "urgent crisis" and "before it's too late" evoke fear and a sense of emergency, manipulating the reader to act quickly without rational deliberation.`,
+  results: [
+    {
+      tactic: 'Emotional Language',
+      definition: 'Language that contains strong emotional terms – especially those with a negative affect such as fear or outrage.',
+      examples: [Array]
+    }
+  ]
+}
+POST /analyze-content 200 - 3825ms
+OPTIONS /analyze-content 204 - 1ms
+Sending analysis result: {
+  manipulativeLanguage: '[Emotional Language]\n' +
+    'Definition: Language that contains strong emotional terms – especially those with a negative affect such as fear or outrage.\n' +
+    '\n' +
+    'Examples:\n' +
+    `1. "What you're about to read will horrify you."\n` +
+    `   Why this is an example: The phrase "horrify you" uses a strong emotional term to evoke fear or anxiety, aiming to manipulate the reader's emotional response.\n` +
+    '\n' +
+    '2. "The latest government decision is absolutely DISGUSTING and will make your blood boil."\n' +
+    '   Why this is an example: Words like "DISGUSTING" and the phrase "make your blood boil" are emotionally charged, designed to provoke outrage and anger in the reader.\n' +
+    '\n' +
+    '3. "You should be outraged that they continue to ignore the suffering of everyday people."\n' +
+    `   Why this is an example: The phrase "should be outraged" appeals to the reader's sense of moral outrage, encouraging an emotional reaction to the situation.\n` +
+    '\n' +
+    `4. "This is an urgent crisis that demands your immediate attention before it's too late."\n` +
+    `   Why this is an example: The words "urgent crisis" and "before it's too late" create a sense of fear and immediacy, pressuring the reader to react emotionally and quickly.`,
+  results: [
+    {
+      tactic: 'Emotional Language',
+      definition: 'Language that contains strong emotional terms – especially those with a negative affect such as fear or outrage.',
+      examples: [Array]
+    }
+  ]
+}
+POST /analyze-content 200 - 3910ms
+OPTIONS /analyze-content 204 - 1ms
+Cache hit
+POST /analyze-content 200 - 0ms
+OPTIONS /analyze-content 204 - 1ms
+Cache hit
+POST /analyze-content 200 - 3ms
+OPTIONS /analyze-content 204 - 0ms
+Sending analysis result: {
+  manipulativeLanguage: '[Emotional Language]  \n' +
+    'Definition: Language that contains strong emotional terms – especially those with a negative affect such as fear or outrage.  \n' +
+    `Examples: "What you're about to read will horrify you." "The latest government decision is absolutely DISGUSTING and will make your blood boil." "You should be outraged that they continue to ignore the suffering of everyday people." "This is an urgent crisis that demands your immediate attention before it's too late."  \n` +
+    `Why this is an example: The text uses words like "horrify," "DISGUSTING," "blood boil," "outraged," "urgent crisis," and "before it's too late" to evoke strong negative emotions, aiming to manipulate the reader's emotional response and provoke outrage or fear.`,
+  results: []
+}
+POST /analyze-content 200 - 1809ms
+OPTIONS /analyze-content 204 - 1ms
+Cache hit
+POST /analyze-content 200 - 1ms
+OPTIONS /analyze-content 204 - 1ms
+Cache hit
+POST /analyze-content 200 - 1ms
+OPTIONS /analyze-content 204 - 0ms
+Cache hit
+POST /analyze-content 200 - 2ms
+OPTIONS /analyze-content 204 - 1ms
+Cache hit
+POST /analyze-content 200 - 2ms
+OPTIONS /analyze-content 204 - 1ms
+Cache hit
+POST /analyze-content 200 - 1ms
+OPTIONS /analyze-content 204 - 1ms
+Cache hit
+POST /analyze-content 200 - 1ms
+OPTIONS /analyze-content 204 - 1ms
+Sending analysis result: {
+  manipulativeLanguage: '[Emotional Language]  \n' +
+    'Definition: Language that contains strong emotional terms – especially those with a negative affect such as fear or outrage.  \n' +
+    'Examples:  \n' +
+    `1. "What you're about to read will horrify you."  \n` +
+    '   Why this is an example: The phrase "horrify you" uses a strong negative emotional term to evoke fear or anxiety.  \n' +
+    '2. "The latest government decision is absolutely DISGUSTING and will make your blood boil."  \n' +
+    '   Why this is an example: Words like "DISGUSTING" and the phrase "make your blood boil" are emotionally charged and aim to provoke outrage.  \n' +
+    '3. "You should be outraged that they continue to ignore the suffering of everyday people."  \n' +
+    '   Why this is an example: The word "outraged" is a strong emotional term intended to incite anger.  \n' +
+    `4. "This is an urgent crisis that demands your immediate attention before it's too late."  \n` +
+    `   Why this is an example: The words "urgent crisis" and "before it's too late" evoke fear and a sense of emergency, pushing for immediate action.`,
+  results: [
+    {
+      tactic: 'Emotional Language',
+      definition: 'Language that contains strong emotional terms – especially those with a negative affect such as fear or outrage.',
+      examples: [Array]
+    }
+  ]
+}
+POST /analyze-content 200 - 1956ms
+OPTIONS /analyze-content 204 - 1ms
+Sending analysis result: {
+  manipulativeLanguage: '[Emotional Language]\n' +
+    'Definition: Language that contains strong emotional terms – especially those with a negative affect such as fear or outrage.\n' +
+    '\n' +
+    'Examples:\n' +
+    `1. "What you're about to read will horrify you."\n` +
+    `   Why this is an example: It uses the word "horrify," which evokes fear and outrage to manipulate the reader's emotional response.\n` +
+    '\n' +
+    '2. "The latest government decision is absolutely DISGUSTING and will make your blood boil."\n' +
+    '   Why this is an example: The words "disgusting" and "make your blood boil" are emotionally charged, aiming to provoke anger and outrage.\n' +
+    '\n' +
+    '3. "You should be outraged that they continue to ignore the suffering of everyday people."\n' +
+    '   Why this is an example: It directly appeals to feelings of outrage and moral indignation.\n' +
+    '\n' +
+    `4. "This is an urgent crisis that demands your immediate attention before it's too late."\n` +
+    `   Why this is an example: The words "urgent crisis" and "before it's too late" are designed to create a sense of panic and urgency, pressuring the reader to act quickly without rational deliberation.`,
+  results: [
+    {
+      tactic: 'Emotional Language',
+      definition: 'Language that contains strong emotional terms – especially those with a negative affect such as fear or outrage.',
+      examples: [Array]
+    }
+  ]
+}
+POST /analyze-content 200 - 3241ms
+OPTIONS /analyze-content 204 - 1ms
+Cache hit
+POST /analyze-content 200 - 1ms
+OPTIONS /analyze-content 204 - 0ms
+Cache hit
+POST /analyze-content 200 - 2ms
+OPTIONS /analyze-content 204 - 1ms
+POST /analyze-content 200 - 556ms
+OPTIONS /analyze-content 204 - 1ms
+Cache hit
+POST /analyze-content 200 - 1ms
+OPTIONS /analyze-content 204 - 1ms
+Cache hit
+POST /analyze-content 200 - 1ms

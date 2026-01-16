@@ -2,15 +2,43 @@
   "manifest_version": 3,
   "name": "Manipulation Identifier",
   "version": "1.0",
-  "description": "Identifies manipulative language on web pages.",
+  "description": "Highlights emotionally manipulative language on web pages.",
   "permissions": [
-    "activeTab"
+    "scripting",
+    "activeTab",
+    "storage",
+    "tabs"
   ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
       "js": ["content.js"],
-      "css": ["styles.css"]
+      "run_at": "document_idle"
     }
-  ]
-}
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["tactics.json"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "action": {
+    "default_title": "Analyze page"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+M",
+        "mac": "Command+Shift+M"
+      },
+      "description": "Open Manipulation Identifier"
+    }
+  },
+  "options_page": "options.html"
+  }
