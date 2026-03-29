@@ -1,15 +1,69 @@
 // Import full description of tactics
 import { tactics } from './tactics.js';
 
-// Helper function to format the tactic data
-const formatTactic = (tactic) => {
-  return `[${tactic.name}]. Definition: ${tactic.definition}. ${tactic.alsoKnownAs ? `Also known as: ${tactic.alsoKnownAs}.` : ''} Examples: ${tactic.examples.join('; ')}. Why: ${tactic.why} What to do: ${tactic.whatToDo}`;
+// Build tactic list: name + one-sentence definition only (token-efficient)
+function buildTacticList() {
+  return tactics.map(t => `- ${t.name}: ${t.definition}`).join('\n');
+}
+
+// JSON schema for OpenAI structured output
+export const analysisJsonSchema = {
+  name: 'manipulation_analysis',
+  strict: true,
+  schema: {
+    type: 'object',
+    properties: {
+      tactics_detected: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            tactic_name: { type: 'string' },
+            definition: { type: 'string' },
+            instances: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  exact_quote: { type: 'string' },
+                  explanation: { type: 'string' }
+                },
+                required: ['exact_quote', 'explanation'],
+                additionalProperties: false
+              }
+            }
+          },
+          required: ['tactic_name', 'definition', 'instances'],
+          additionalProperties: false
+        }
+      }
+    },
+    required: ['tactics_detected'],
+    additionalProperties: false
+  }
 };
 
-// Define and export the system prompt
-export const promptRoleSystem = `You are a helpful assistant designed to detect possible manipulation tactics in text. The tactics you are aiming to detect are described here in the following format: ${tactics.map(formatTactic).join(' ')}`;
+// System prompt — role + tactic definitions only (~400 tokens vs ~1500 before)
+export const promptRoleSystem = `You are an expert in detecting manipulation tactics in text. Identify instances of these tactics:
 
-// Define and export the user prompt
+${buildTacticList()}
+
+Instructions:
+- For each tactic you detect, provide its name, definition, and every instance where it appears.
+- For each instance, return the EXACT text from the input as the quote. Copy it verbatim — do not paraphrase, summarize, or shorten.
+- Provide a brief explanation of why each quote is an example of the tactic.
+- Only report tactics you are confident are present. Do not speculate.`;
+
+// User prompt — wraps content in delimiters to prevent injection
+export function buildUserPrompt(content) {
+  return `Analyze the following text for manipulation tactics.
+
+<content>
+${content}
+</content>`;
+}
+
+// Legacy user prompt string (kept for backward compatibility with concat pattern)
 export const promptRoleUser = `Analyze this text for manipulation tactics. For each tactic found, provide a response in the following format:
 
 [TACTIC NAME]
@@ -26,12 +80,3 @@ Definition: [Definition of next tactic]
 If no manipulation tactics are found, respond with "No manipulation tactics detected."
 
 Here is the text to analyze: `;
-
-// Helper function to format the response for tooltips
-export const formatTooltipContent = (tacticName, definition, explanation) => {
-  return `
-    <h4>Tactic: ${tacticName}</h4>
-    <div class="definition">Definition: ${definition}</div>
-    <div class="explanation">Why this is an example: ${explanation}</div>
-  `;
-};

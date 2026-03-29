@@ -1,15 +1,18 @@
 {
   "manifest_version": 3,
   "name": "Manipulation Identifier",
-  "version": "1.0",
-  "description": "Highlights emotionally manipulative language on web pages.",
+  "version": "2.0",
+  "description": "Detects and highlights manipulation tactics in web page text.",
+  "minimum_chrome_version": "116",
   "permissions": [
-    "scripting",
+    "sidePanel",
     "activeTab",
     "storage",
-    "tabs"
+    "tabs",
+    "scripting"
   ],
   "host_permissions": [
+    "https://api.openai.com/*",
     "<all_urls>"
   ],
   "background": {
@@ -22,14 +25,11 @@
       "run_at": "document_idle"
     }
   ],
-  "web_accessible_resources": [
-    {
-      "resources": ["tactics.json"],
-      "matches": ["<all_urls>"]
-    }
-  ],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
   "action": {
-    "default_title": "Analyze page"
+    "default_title": "Manipulation Identifier"
   },
   "commands": {
     "_execute_action": {
@@ -41,4 +41,4 @@
     }
   },
   "options_page": "options.html"
-  }
+}

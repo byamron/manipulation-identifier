@@ -2,7 +2,7 @@ import express from 'express';
 import { OpenAI } from 'openai';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import { promptRoleSystem, promptRoleUser } from './prompts.js';
+import { promptRoleSystem, buildUserPrompt, analysisJsonSchema } from './prompts.js';
 import { dbOperations } from './database.js';
 import crypto from 'crypto';
 
@@ -51,10 +51,49 @@ function cleanCache() {
 // Clean cache periodically
 setInterval(cleanCache, CONFIG.CACHE_DURATION);
 
-// Initialize OpenAI
+// Initialize OpenAI with timeout
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  timeout: 30000,
 });
+
+// In-memory rate limiter
+const rateLimitStore = new Map();
+function rateLimit(req, res, next) {
+  const ip = req.ip || req.connection.remoteAddress;
+  const now = Date.now();
+  const windowStart = now - CONFIG.RATE_LIMIT.windowMs;
+
+  let entry = rateLimitStore.get(ip);
+  if (!entry) {
+    entry = { requests: [], blocked: false };
+    rateLimitStore.set(ip, entry);
+  }
+
+  // Remove old entries
+  entry.requests = entry.requests.filter(t => t > windowStart);
+  entry.requests.push(now);
+
+  if (entry.requests.length > CONFIG.RATE_LIMIT.max) {
+    const retryAfter = Math.ceil((entry.requests[0] - windowStart) / 1000);
+    res.set('Retry-After', String(retryAfter));
+    return res.status(429).json({
+      error: 'Too many requests. Try again later.',
+      retryAfter
+    });
+  }
+
+  next();
+}
+
+// Clean up rate limit store periodically
+setInterval(() => {
+  const cutoff = Date.now() - CONFIG.RATE_LIMIT.windowMs;
+  for (const [ip, entry] of rateLimitStore.entries()) {
+    entry.requests = entry.requests.filter(t => t > cutoff);
+    if (entry.requests.length === 0) rateLimitStore.delete(ip);
+  }
+}, CONFIG.RATE_LIMIT.windowMs);
 
 const app = express();
 
@@ -112,7 +151,30 @@ function validateModel(req, res, next) {
   next();
 }
 
-// Parse analysis response
+// Parse JSON structured output from OpenAI
+function parseJsonResponse(rawContent) {
+  try {
+    const parsed = JSON.parse(rawContent);
+    const detected = parsed.tactics_detected;
+
+    if (!Array.isArray(detected)) return [];
+
+    return detected
+      .filter(t => t.tactic_name && t.definition && Array.isArray(t.instances) && t.instances.length > 0)
+      .map(t => ({
+        tactic: t.tactic_name,
+        definition: t.definition,
+        examples: t.instances.map(inst => ({
+          text: inst.exact_quote,
+          explanation: inst.explanation
+        }))
+      }));
+  } catch {
+    return null; // Signal to fall back to regex parser
+  }
+}
+
+// Legacy regex parser — fallback for models without structured output
 function parseAnalysisResponse(manipulativeLanguage) {
   if (manipulativeLanguage.trim() === "No manipulation tactics detected.") {
     return [];
@@ -120,26 +182,24 @@ function parseAnalysisResponse(manipulativeLanguage) {
 
   const tactics = [];
   const sections = manipulativeLanguage.split(/\[(.*?)\]/);
-  
+
   for (let i = 1; i < sections.length; i += 2) {
     const tacticName = sections[i].trim();
     const content = sections[i + 1] || '';
-    
-    // Extract definition
+
     const definitionMatch = content.match(/Definition:\s*([^\n]+)/);
     const definition = definitionMatch ? definitionMatch[1].trim() : '';
-    
-    // Extract examples and explanations
+
     const examples = [];
     const exampleMatches = content.matchAll(/(\d+)\.\s*"([^"]+)"\s*Why this is an example:\s*([^\n]+)/g);
-    
+
     for (const match of exampleMatches) {
       examples.push({
         text: match[2].trim(),
         explanation: match[3].trim()
       });
     }
-    
+
     if (tacticName && definition && examples.length > 0) {
       tactics.push({
         tactic: tacticName,
@@ -152,9 +212,8 @@ function parseAnalysisResponse(manipulativeLanguage) {
   return tactics;
 }
 
-// ENHANCED ANALYZE ENDPOINT WITH MODEL SELECTION
-app.post('/analyze-content-with-model', validateContent, validateModel, async (req, res) => {
-  const { content, model, sessionId = generateSessionId(), pageUrl = '' } = req.body;
+// Core analysis logic shared by both endpoints
+async function analyzeContent(content, model, sessionId, pageUrl, res) {
   const modelConfig = CONFIG.MODELS[model];
   const cacheKey = `${model}:${content.trim()}`;
   const startTime = Date.now();
@@ -164,9 +223,6 @@ app.post('/analyze-content-with-model', validateContent, validateModel, async (r
     if (cache.has(cacheKey)) {
       const cached = cache.get(cacheKey);
       if (Date.now() - cached.timestamp < CONFIG.CACHE_DURATION) {
-        console.log('Cache hit for model:', model);
-        
-        // Record performance from cache
         await dbOperations.recordPerformance({
           model_name: model,
           response_time_ms: Date.now() - startTime,
@@ -192,9 +248,13 @@ app.post('/analyze-content-with-model', validateContent, validateModel, async (r
       model: modelConfig.name,
       messages: [
         { role: 'system', content: promptRoleSystem },
-        { role: 'user', content: promptRoleUser + content }
+        { role: 'user', content: buildUserPrompt(content) }
       ],
       max_completion_tokens: modelConfig.tokens,
+      response_format: {
+        type: 'json_schema',
+        json_schema: analysisJsonSchema
+      }
     });
 
     if (!response?.choices?.[0]?.message?.content) {
@@ -203,10 +263,15 @@ app.post('/analyze-content-with-model', validateContent, validateModel, async (r
 
     const responseTime = Date.now() - startTime;
     const manipulativeLanguage = response.choices[0].message.content;
-    const tactics = parseAnalysisResponse(manipulativeLanguage);
+
+    // Try JSON structured output first, fall back to regex parser
+    let tactics = parseJsonResponse(manipulativeLanguage);
+    if (tactics === null) {
+      tactics = parseAnalysisResponse(manipulativeLanguage);
+    }
     const tokensUsed = response.usage?.total_tokens || 0;
-    
-    const result = { 
+
+    const result = {
       manipulativeLanguage,
       results: tactics,
       model: model,
@@ -225,7 +290,6 @@ app.post('/analyze-content-with-model', validateContent, validateModel, async (r
       }
     });
 
-    // Record performance
     await dbOperations.recordPerformance({
       model_name: model,
       response_time_ms: responseTime,
@@ -238,14 +302,12 @@ app.post('/analyze-content-with-model', validateContent, validateModel, async (r
       page_url: pageUrl
     });
 
-    console.log(`Analysis completed with ${model}:`, { tactics: tactics.length, responseTime, tokensUsed });
     res.json(result);
 
   } catch (error) {
     console.error(`Error analyzing content with ${model}:`, error);
     const responseTime = Date.now() - startTime;
 
-    // Record failed performance
     await dbOperations.recordPerformance({
       model_name: model,
       response_time_ms: responseTime,
@@ -274,6 +336,12 @@ app.post('/analyze-content-with-model', validateContent, validateModel, async (r
       res.status(500).json(errorResponse);
     }
   }
+}
+
+// ENHANCED ANALYZE ENDPOINT WITH MODEL SELECTION
+app.post('/analyze-content-with-model', rateLimit, validateContent, validateModel, async (req, res) => {
+  const { content, model, sessionId = generateSessionId(), pageUrl = '' } = req.body;
+  await analyzeContent(content, model, sessionId, pageUrl, res);
 });
 
 // FEEDBACK SUBMISSION ENDPOINT
@@ -316,12 +384,6 @@ app.post('/submit-instance-feedback', async (req, res) => {
       response_time_ms: responseTime,
       session_id: sessionId,
       feedback_type: 'detection_feedback'
-    });
-
-    console.log(`Feedback recorded for ${modelUsed}:`, { 
-      tactic: detectedTactic, 
-      rating: userRating, 
-      feedbackId 
     });
 
     res.json({ 
@@ -371,13 +433,8 @@ app.post('/report-missing-manipulation', async (req, res) => {
       reported_from_feedback_id: reportedFromFeedbackId
     });
 
-    console.log(`Missing manipulation reported for ${modelUsed}:`, { 
-      tactic: suggestedTactic, 
-      reportId 
-    });
-
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       reportId: reportId,
       message: 'Missing manipulation report recorded successfully' 
     });
@@ -472,11 +529,10 @@ app.get('/analytics/recent-performance', async (req, res) => {
   }
 });
 
-// BACKWARD COMPATIBILITY - Keep original endpoint
-app.post('/analyze-content', validateContent, async (req, res) => {
-  // Default to gpt-5-nano for backward compatibility
-  req.body.model = 'gpt-5-nano';
-  return app._router.handle(req, res, () => {});
+// BACKWARD COMPATIBILITY - Keep original endpoint (defaults to gpt-5-nano)
+app.post('/analyze-content', rateLimit, validateContent, async (req, res) => {
+  const { content, sessionId = generateSessionId(), pageUrl = '' } = req.body;
+  await analyzeContent(content, 'gpt-5-nano', sessionId, pageUrl, res);
 });
 
 // Health check endpoint with enhanced metrics
@@ -520,4 +576,5 @@ const server = app.listen(CONFIG.PORT, () => {
   console.log(`Available models: ${Object.keys(CONFIG.MODELS).join(', ')}`);
 });
 
+export { parseAnalysisResponse, parseJsonResponse };
 export default app;
