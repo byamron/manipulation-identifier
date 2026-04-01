@@ -22,7 +22,10 @@ Instructions:
 - For each tactic you detect, provide its name, definition, and every instance where it appears.
 - For each instance, return the EXACT text from the input as the quote. Copy it verbatim — do not paraphrase, summarize, or shorten.
 - Provide a brief explanation of why each quote is an example of the tactic.
-- Only report tactics you are confident are present. Do not speculate.`;
+- Only report tactics you are confident are present. Do not speculate.
+- Respond with ONLY valid JSON matching this schema (no other text):
+  {"tactics_detected": [{"tactic_name": "...", "definition": "...", "instances": [{"exact_quote": "...", "explanation": "..."}]}]}
+- If no tactics are found, respond with: {"tactics_detected": []}`;
 
 function buildUserPrompt(content) {
   return `Analyze the following text for manipulation tactics.

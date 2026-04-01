@@ -6,9 +6,36 @@ Detailed documentation of shipped features, organized by development phase.
 
 ## Phase 6: API Provider Migration (April 2026)
 
-### Apr 1, 2026 — Migrate from OpenAI to Anthropic API
+### Apr 1, 2026 — Complete server-side Anthropic migration
 
-**Branch:** byo-api-key-analysis
+**Branch:** fix-anthropic-analysis
+
+**What was done:**
+Migrated the server proxy path (server.js) from OpenAI SDK to Anthropic SDK, completing the API migration that PR #2 started on the client side. The server now uses `@anthropic-ai/sdk`, accepts Claude model names, calls `anthropic.messages.create()`, and handles Anthropic-specific response/error formats. Also updated prompts.js to include JSON output instructions in the system prompt (replacing the removed OpenAI JSON schema), removed dead legacy prompt code, and updated CLAUDE.md.
+
+**Why:**
+PR #2 migrated the BYOK (client-side) path to Anthropic but left the server proxy path on OpenAI. This caused two failures: (1) the server rejected Claude model names sent by the extension, and (2) even if model validation passed, the server would try to call OpenAI's API with an Anthropic key. Users without a BYOK key configured saw "Could not reach the server."
+
+**Design decisions:**
+- Used the official `@anthropic-ai/sdk` npm package rather than raw fetch, to match the project's existing pattern of using an SDK for the server.
+- Added JSON output instructions directly to `promptRoleSystem` in prompts.js (matching the pattern already used in background.js for BYOK mode). This replaces the OpenAI `response_format.json_schema` approach.
+- Kept the legacy regex parser (`parseAnalysisResponse`) as a fallback in case JSON parsing fails.
+
+**Technical decisions:**
+- Anthropic SDK's `messages.create()` uses `system` as a top-level parameter, `content[0].text` for response text, and `usage.input_tokens + usage.output_tokens` for token counting.
+- Added markdown fence stripping to server's `parseJsonResponse` (matching background.js) since Anthropic may wrap JSON in code fences.
+- Error handling maps Anthropic HTTP status codes (401, 402, 429) instead of OpenAI error codes.
+- Removed `analysisJsonSchema` from prompts.js and `promptRoleUser` legacy export (both dead code).
+
+**Tradeoffs:**
+- The `.env.example` file could not be auto-updated (blocked by a pre-commit hook on .env files). Users must manually rename `OPENAI_API_KEY` to `ANTHROPIC_API_KEY`.
+- Replaced `openai` npm dependency with `@anthropic-ai/sdk`, which is a breaking change for anyone running the server with `OPENAI_API_KEY` in their `.env`.
+
+---
+
+### Apr 1, 2026 — Migrate BYOK from OpenAI to Anthropic API
+
+**Branch:** byo-api-key-analysis | **Commit:** `6a55d88`
 
 **What was done:**
 Replaced the entire OpenAI integration with Anthropic's Claude API across all extension files (background.js, manifest.json, options.html, options.js, sidepanel.html, sidepanel.js). Default model changed from GPT-5-nano to Claude Sonnet 4.6, with Claude Haiku 4.5 as the lightweight alternative.

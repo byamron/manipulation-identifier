@@ -2,7 +2,8 @@
 
 function parseJsonResponse(rawContent) {
   try {
-    const parsed = JSON.parse(rawContent);
+    const cleaned = rawContent.replace(/^```json\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    const parsed = JSON.parse(cleaned);
     const detected = parsed.tactics_detected;
 
     if (!Array.isArray(detected)) return [];
@@ -106,6 +107,23 @@ describe('parseJsonResponse', () => {
     const result = parseJsonResponse(input);
     expect(result).toHaveLength(1);
     expect(result[0].tactic).toBe('Valid');
+  });
+
+  test('should strip markdown json fences from Anthropic responses', () => {
+    const input = '```json\n' + JSON.stringify({
+      tactics_detected: [{
+        tactic_name: 'Emotional Language',
+        definition: 'Language using strong emotional terms.',
+        instances: [{
+          exact_quote: 'This will horrify you',
+          explanation: 'Uses fear to bypass rational thinking'
+        }]
+      }]
+    }) + '\n```';
+
+    const result = parseJsonResponse(input);
+    expect(result).toHaveLength(1);
+    expect(result[0].tactic).toBe('Emotional Language');
   });
 
   test('should handle refusal or no-content response', () => {

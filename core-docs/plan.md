@@ -6,12 +6,13 @@ Side Panel Polish: keyboard navigation, animations, responsive sidebar, tab swit
 
 ## Handoff Notes
 
-API provider migration (OpenAI → Anthropic) in progress on `byo-api-key-analysis` branch. Infrastructure migration complete (Apr 1, 2026). Agents, rules, skills, and CLAUDE.md are all in place.
+API provider migration (OpenAI → Anthropic) complete — both BYOK and server proxy paths now use Anthropic Claude API. Server.js migrated from OpenAI SDK to @anthropic-ai/sdk. `.env.example` needs manual update: rename `OPENAI_API_KEY` to `ANTHROPIC_API_KEY`.
 
 ---
 
 ## Recently Completed
 
+- **Apr 1, 2026**: Complete Anthropic migration — server.js migrated from OpenAI SDK to @anthropic-ai/sdk, prompts.js updated with JSON output instructions, dead code removed
 - **Apr 1, 2026**: Infrastructure migration — CLAUDE.md, agents, rules, skills, core-docs rename
 - **Mar 25, 2026**: Best-in-Class Overhaul — JSON structured output, BYOK architecture, Chrome Side Panel, fuzzy highlighting, content.js simplification (1850→250 lines), rate limiting, database indexes, test suite (56 tests)
 - **Mar 24, 2026**: Taxonomy expansion (11→15 tactics), codebase stabilization, XSS fixes, database.js, SOURCES.md

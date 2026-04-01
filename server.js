@@ -1,8 +1,8 @@
 import express from 'express';
-import { OpenAI } from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import { promptRoleSystem, buildUserPrompt, analysisJsonSchema } from './prompts.js';
+import { promptRoleSystem, buildUserPrompt } from './prompts.js';
 import { dbOperations } from './database.js';
 import crypto from 'crypto';
 
@@ -18,9 +18,8 @@ const CONFIG = {
   },
   MAX_CONTENT_LENGTH: 5000, // characters
   MODELS: {
-    'gpt-5': { tokens: 4000, name: 'gpt-5' },
-    'gpt-5-mini': { tokens: 4000, name: 'gpt-5-mini' },
-    'gpt-5-nano': { tokens: 4000, name: 'gpt-5-nano' }
+    'claude-sonnet-4-6': { tokens: 4096, name: 'claude-sonnet-4-6' },
+    'claude-haiku-4-5-20251001': { tokens: 4096, name: 'claude-haiku-4-5-20251001' }
   }
 };
 
@@ -51,9 +50,9 @@ function cleanCache() {
 // Clean cache periodically
 setInterval(cleanCache, CONFIG.CACHE_DURATION);
 
-// Initialize OpenAI with timeout
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+// Initialize Anthropic client
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
   timeout: 30000,
 });
 
@@ -151,10 +150,11 @@ function validateModel(req, res, next) {
   next();
 }
 
-// Parse JSON structured output from OpenAI
+// Parse JSON response (handles markdown fences from Anthropic)
 function parseJsonResponse(rawContent) {
   try {
-    const parsed = JSON.parse(rawContent);
+    const cleaned = rawContent.replace(/^```json\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    const parsed = JSON.parse(cleaned);
     const detected = parsed.tactics_detected;
 
     if (!Array.isArray(detected)) return [];
@@ -244,32 +244,29 @@ async function analyzeContent(content, model, sessionId, pageUrl, res) {
       cache.delete(cacheKey);
     }
 
-    const response = await openai.chat.completions.create({
+    const response = await anthropic.messages.create({
       model: modelConfig.name,
+      max_tokens: modelConfig.tokens,
+      system: promptRoleSystem,
       messages: [
-        { role: 'system', content: promptRoleSystem },
         { role: 'user', content: buildUserPrompt(content) }
-      ],
-      max_completion_tokens: modelConfig.tokens,
-      response_format: {
-        type: 'json_schema',
-        json_schema: analysisJsonSchema
-      }
+      ]
     });
 
-    if (!response?.choices?.[0]?.message?.content) {
-      throw new Error('Invalid response from OpenAI');
+    const responseContent = response?.content?.[0]?.text;
+    if (!responseContent) {
+      throw new Error('No response from Anthropic');
     }
 
     const responseTime = Date.now() - startTime;
-    const manipulativeLanguage = response.choices[0].message.content;
+    const manipulativeLanguage = responseContent;
 
     // Try JSON structured output first, fall back to regex parser
     let tactics = parseJsonResponse(manipulativeLanguage);
     if (tactics === null) {
       tactics = parseAnalysisResponse(manipulativeLanguage);
     }
-    const tokensUsed = response.usage?.total_tokens || 0;
+    const tokensUsed = (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0);
 
     const result = {
       manipulativeLanguage,
@@ -326,11 +323,12 @@ async function analyzeContent(content, model, sessionId, pageUrl, res) {
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     };
 
-    if (error.code === 'insufficient_quota') {
-      res.status(402).json({ ...errorResponse, error: 'OpenAI API quota exceeded' });
-    } else if (error.code === 'invalid_api_key') {
-      res.status(401).json({ ...errorResponse, error: 'Invalid OpenAI API key' });
-    } else if (error.code === 'context_length_exceeded') {
+    const status = error.status || error.statusCode;
+    if (status === 401) {
+      res.status(401).json({ ...errorResponse, error: 'Invalid Anthropic API key' });
+    } else if (status === 402 || status === 429) {
+      res.status(status).json({ ...errorResponse, error: 'Anthropic API quota exceeded or rate limited' });
+    } else if (status === 400) {
       res.status(400).json({ ...errorResponse, error: 'Content too long for analysis' });
     } else {
       res.status(500).json(errorResponse);
@@ -529,10 +527,10 @@ app.get('/analytics/recent-performance', async (req, res) => {
   }
 });
 
-// BACKWARD COMPATIBILITY - Keep original endpoint (defaults to gpt-5-nano)
+// BACKWARD COMPATIBILITY - Keep original endpoint (defaults to claude-sonnet-4-6)
 app.post('/analyze-content', rateLimit, validateContent, async (req, res) => {
   const { content, sessionId = generateSessionId(), pageUrl = '' } = req.body;
-  await analyzeContent(content, 'gpt-5-nano', sessionId, pageUrl, res);
+  await analyzeContent(content, 'claude-sonnet-4-6', sessionId, pageUrl, res);
 });
 
 // Health check endpoint with enhanced metrics
