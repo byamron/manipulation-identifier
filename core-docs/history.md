@@ -4,6 +4,34 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 5: Infrastructure Standardization (April 2026)
+
+### Apr 1, 2026 — Standardized Project Infrastructure
+
+**Branch:** main | **Commits:** `161f03d`, `d4d20fc`
+
+**What was done:**
+Migrated project documentation and Claude Code configuration to standardized template structure. Merged the `review-next-steps` branch (Side Panel, BYOK, JSON structured output) into main.
+
+**Why:**
+The project had grown organically with `core-documentation/` naming, no CLAUDE.md, no agent definitions, and no automated rules. Standardizing enables consistent agent workflows, automatic rule enforcement, and a clear entry point for any contributor or agent session.
+
+**Design decisions:**
+- Renamed `core-documentation/` → `core-docs/` to match template convention. Used `git mv` to preserve file history.
+- Created CLAUDE.md with project-specific content (not template placeholders): actual tech stack, product principles, quality bar with concrete targets (30s timeout, 56+ tests).
+- Skipped template files that don't apply: `ui.md` rule (not a design-system app), `dev-server.md` rule, `design-language.md` (Chrome extension CSS, not tokens), `link`/`dev-panel`/`setup` skills.
+
+**Technical decisions:**
+- Safety rule scoped to `server.*`, `database.*`, `background.*`, `manifest.json` — the files where mistakes leak API keys or break the extension silently.
+- Excluded `.claude/forge/` from version control (ephemeral cache).
+- Adapted all 5 agent specs to reference this project's actual files (sidepanel.js, shared.js, highlight-matcher.js, etc.) rather than generic template paths.
+
+**Tradeoffs:**
+- feedback.md was reformatted from the old "what went wrong" template to the FB-XXXX format. No existing entries were lost (file had none). New format is more structured but requires more fields per entry.
+- Merged review-next-steps directly to main rather than via PR — the branch was already code-reviewed and all 56 tests pass.
+
+---
+
 ## Phase 1: Initial Project Setup (April 2025)
 
 ### Apr 8, 2025 — Initial Extension Setup & Keyword Highlighting

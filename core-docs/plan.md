@@ -1,15 +1,25 @@
 # Project Tracker
 
-## Current Projects
+## Current Focus
 
-- **Side Panel Polish**: Keyboard navigation, animations, responsive sidebar, tab switching UX refinements.
+Side Panel Polish: keyboard navigation, animations, responsive sidebar, tab switching UX refinements.
+
+## Handoff Notes
+
+Infrastructure migration complete (Apr 1, 2026). Agents, rules, skills, and CLAUDE.md are all in place. Next agent session can use `claude --agent planner` to scope Side Panel Polish work.
+
+---
+
+## Recently Completed
+
+- **Apr 1, 2026**: Infrastructure migration — CLAUDE.md, agents, rules, skills, core-docs rename
+- **Mar 25, 2026**: Best-in-Class Overhaul — JSON structured output, BYOK architecture, Chrome Side Panel, fuzzy highlighting, content.js simplification (1850→250 lines), rate limiting, database indexes, test suite (56 tests)
+- **Mar 24, 2026**: Taxonomy expansion (11→15 tactics), codebase stabilization, XSS fixes, database.js, SOURCES.md
 
 ---
 
 ## Shipped Features
 
-- **Mar 25, 2026**: Best-in-Class Overhaul — JSON structured output, BYOK architecture, Chrome Side Panel, fuzzy highlighting, content.js simplification (1850→250 lines), rate limiting, database indexes, test suite (56 tests)
-- **Mar 24, 2026**: Taxonomy expansion (11→15 tactics), codebase stabilization, XSS fixes, database.js, SOURCES.md
 - **Aug 12, 2025**: A/B Testing System & UI Cleanup
 - **Aug 12, 2025**: Navigation System & Manual Click Fix
 - **Aug 12, 2025**: Widget Flash Fix
