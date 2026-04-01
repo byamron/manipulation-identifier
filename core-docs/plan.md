@@ -6,7 +6,7 @@ Side Panel Polish: keyboard navigation, animations, responsive sidebar, tab swit
 
 ## Handoff Notes
 
-Infrastructure migration complete (Apr 1, 2026). Agents, rules, skills, and CLAUDE.md are all in place. Next agent session can use `claude --agent planner` to scope Side Panel Polish work.
+API provider migration (OpenAI → Anthropic) in progress on `byo-api-key-analysis` branch. Infrastructure migration complete (Apr 1, 2026). Agents, rules, skills, and CLAUDE.md are all in place.
 
 ---
 

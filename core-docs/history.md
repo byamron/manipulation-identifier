@@ -4,6 +4,35 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 6: API Provider Migration (April 2026)
+
+### Apr 1, 2026 — Migrate from OpenAI to Anthropic API
+
+**Branch:** byo-api-key-analysis
+
+**What was done:**
+Replaced the entire OpenAI integration with Anthropic's Claude API across all extension files (background.js, manifest.json, options.html, options.js, sidepanel.html, sidepanel.js). Default model changed from GPT-5-nano to Claude Sonnet 4.6, with Claude Haiku 4.5 as the lightweight alternative.
+
+**Why:**
+Anthropic's Claude models offer stronger reasoning for manipulation detection tasks. Moving to Anthropic also aligns the extension with the project's broader tooling.
+
+**Design decisions:**
+- Switched from OpenAI's structured output (JSON schema in `response_format`) to prompt-based JSON instructions with markdown fence stripping. Anthropic doesn't support OpenAI-style structured output, so JSON format is requested in the system prompt and `parseJsonResponse` strips code fences defensively.
+- API key validation in options.js now sends a minimal real request (`max_tokens: 1`) instead of hitting a free models endpoint. Anthropic has no equivalent free validation endpoint; cost per test is negligible.
+- Removed the `ANALYSIS_SCHEMA` constant entirely rather than keeping it as dead code.
+
+**Technical decisions:**
+- Anthropic requires `system` as a top-level field (not a message role), `max_tokens` (required), and specific headers (`x-api-key`, `anthropic-version`, `anthropic-dangerous-direct-browser-access` for BYOK browser calls).
+- Token counting changed from `total_tokens` to `input_tokens + output_tokens` (Anthropic splits them).
+- Storage key renamed from `openaiApiKey` to `anthropicApiKey` across all files.
+- `host_permissions` updated from `api.openai.com` to `api.anthropic.com` in manifest.
+
+**Tradeoffs:**
+- Losing OpenAI's guaranteed JSON schema enforcement in exchange for broader model choice. Mitigated by the existing `try/catch` in `parseJsonResponse` which returns `[]` on parse failure.
+- Breaking change for existing users who had an OpenAI key saved — their stored `openaiApiKey` will be ignored. Acceptable since this is pre-release.
+
+---
+
 ## Phase 5: Infrastructure Standardization (April 2026)
 
 ### Apr 1, 2026 — Standardized Project Infrastructure
