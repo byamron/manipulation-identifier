@@ -12,7 +12,7 @@
     "scripting"
   ],
   "host_permissions": [
-    "https://api.openai.com/*",
+    "https://api.anthropic.com/*",
     "<all_urls>"
   ],
   "background": {

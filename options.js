@@ -11,11 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const serverStatus = document.getElementById('serverStatus');
 
   // Load saved settings
-  chrome.storage.local.get(['openaiApiKey', 'selectedModel', 'serverUrl'], (result) => {
-    if (result.openaiApiKey) apiKeyInput.value = result.openaiApiKey;
+  chrome.storage.local.get(['anthropicApiKey', 'selectedModel', 'serverUrl'], (result) => {
+    if (result.anthropicApiKey) apiKeyInput.value = result.anthropicApiKey;
     if (result.selectedModel) modelSelect.value = result.selectedModel;
     if (result.serverUrl) serverUrlInput.value = result.serverUrl;
-    updateModeIndicator(result.openaiApiKey);
+    updateModeIndicator(result.anthropicApiKey);
   });
 
   function updateModeIndicator(apiKey) {
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const model = modelSelect.value;
 
     chrome.storage.local.set({
-      openaiApiKey: apiKey,
+      anthropicApiKey: apiKey,
       selectedModel: model
     }, () => {
       updateModeIndicator(apiKey);
@@ -73,8 +73,19 @@ document.addEventListener('DOMContentLoaded', () => {
     testBtn.disabled = true;
 
     try {
-      const response = await fetch('https://api.openai.com/v1/models', {
-        headers: { 'Authorization': `Bearer ${apiKey}` }
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 1,
+          messages: [{ role: 'user', content: 'hi' }]
+        })
       });
 
       if (response.ok) {

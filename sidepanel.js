@@ -20,12 +20,12 @@
   // ── Init ──
   async function init() {
     // Load saved model preference
-    chrome.storage.local.get(['selectedModel', 'openaiApiKey', 'serverUrl'], (result) => {
+    chrome.storage.local.get(['selectedModel', 'anthropicApiKey', 'serverUrl'], (result) => {
       if (result.selectedModel && modelSelect.querySelector(`option[value="${result.selectedModel}"]`)) {
         modelSelect.value = result.selectedModel;
       }
       // Check if setup is needed (no API key and no server URL)
-      const hasKey = !!result.openaiApiKey;
+      const hasKey = !!result.anthropicApiKey;
       const hasServer = !!result.serverUrl;
       if (!hasKey && !hasServer) {
         showSetup();
@@ -213,7 +213,7 @@
       <div class="status-message">
         <strong>Welcome to Manipulation Identifier</strong><br><br>
         This tool detects manipulation tactics in web page text using AI analysis.<br><br>
-        To get started, <a href="#" id="setupLink">set up your OpenAI API key</a> in Settings,
+        To get started, <a href="#" id="setupLink">set up your Anthropic API key</a> in Settings,
         or configure a server URL.
       </div>
     `;

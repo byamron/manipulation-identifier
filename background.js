@@ -5,7 +5,7 @@ const CONFIG = {
   TIMEOUT_MS: 30000,
   MAX_RETRIES: 2,
   RETRY_DELAY_MS: 1000,
-  DEFAULT_MODEL: 'gpt-5-nano',
+  DEFAULT_MODEL: 'claude-sonnet-4-6',
   DEFAULT_SERVER_URL: 'http://localhost:3000'
 };
 
@@ -62,10 +62,10 @@ async function fetchWithRetry(url, options, retries = CONFIG.MAX_RETRIES) {
 // Get settings from storage
 async function getSettings() {
   return new Promise(resolve => {
-    chrome.storage.local.get(['serverUrl', 'openaiApiKey', 'selectedModel'], result => {
+    chrome.storage.local.get(['serverUrl', 'anthropicApiKey', 'selectedModel'], result => {
       resolve({
         serverUrl: result.serverUrl || CONFIG.DEFAULT_SERVER_URL,
-        apiKey: result.openaiApiKey || null,
+        apiKey: result.anthropicApiKey || null,
         model: result.selectedModel || CONFIG.DEFAULT_MODEL
       });
     });
@@ -91,7 +91,10 @@ Instructions:
 - For each tactic you detect, provide its name, definition, and every instance where it appears.
 - For each instance, return the EXACT text from the input as the quote. Copy it verbatim — do not paraphrase, summarize, or shorten.
 - Provide a brief explanation of why each quote is an example of the tactic.
-- Only report tactics you are confident are present. Do not speculate.`;
+- Only report tactics you are confident are present. Do not speculate.
+- Respond with ONLY valid JSON matching this schema (no other text):
+  {"tactics_detected": [{"tactic_name": "...", "definition": "...", "instances": [{"exact_quote": "...", "explanation": "..."}]}]}
+- If no tactics are found, respond with: {"tactics_detected": []}`;
 }
 
 function buildUserPrompt(content) {
@@ -102,47 +105,12 @@ ${content}
 </content>`;
 }
 
-// JSON schema for OpenAI structured output
-const ANALYSIS_SCHEMA = {
-  name: 'manipulation_analysis',
-  strict: true,
-  schema: {
-    type: 'object',
-    properties: {
-      tactics_detected: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            tactic_name: { type: 'string' },
-            definition: { type: 'string' },
-            instances: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  exact_quote: { type: 'string' },
-                  explanation: { type: 'string' }
-                },
-                required: ['exact_quote', 'explanation'],
-                additionalProperties: false
-              }
-            }
-          },
-          required: ['tactic_name', 'definition', 'instances'],
-          additionalProperties: false
-        }
-      }
-    },
-    required: ['tactics_detected'],
-    additionalProperties: false
-  }
-};
-
 // Parse structured JSON response into normalized format
 function parseJsonResponse(rawContent) {
   try {
-    const parsed = JSON.parse(rawContent);
+    // Strip markdown code fences if present
+    const cleaned = rawContent.replace(/^```json\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    const parsed = JSON.parse(cleaned);
     const detected = parsed.tactics_detected;
     if (!Array.isArray(detected)) return [];
 
@@ -161,37 +129,35 @@ function parseJsonResponse(rawContent) {
   }
 }
 
-// Call OpenAI directly (BYOK mode)
-async function callOpenAIDirect(text, model, apiKey) {
+// Call Anthropic directly (BYOK mode)
+async function callAnthropicDirect(text, model, apiKey) {
   const tactics = await loadTactics();
 
-  const data = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
+  const data = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
     },
     body: JSON.stringify({
       model: model,
+      max_tokens: 4096,
+      system: buildSystemPrompt(tactics),
       messages: [
-        { role: 'system', content: buildSystemPrompt(tactics) },
         { role: 'user', content: buildUserPrompt(text) }
-      ],
-      max_completion_tokens: 4000,
-      response_format: {
-        type: 'json_schema',
-        json_schema: ANALYSIS_SCHEMA
-      }
+      ]
     })
   });
 
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error('No response from OpenAI');
+  const content = data.content?.[0]?.text;
+  if (!content) throw new Error('No response from Anthropic');
 
   return {
     results: parseJsonResponse(content),
     rawResponse: content,
-    tokensUsed: data.usage?.total_tokens || 0,
+    tokensUsed: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
     model: model
   };
 }
@@ -234,7 +200,7 @@ async function handleAnalyze(tabId, model) {
     // Call API — BYOK if key exists, otherwise server proxy
     let result;
     if (settings.apiKey) {
-      result = await callOpenAIDirect(text, useModel, settings.apiKey);
+      result = await callAnthropicDirect(text, useModel, settings.apiKey);
     } else {
       result = await callServerProxy(text, useModel, settings.serverUrl);
     }
@@ -283,7 +249,7 @@ function mapErrorMessage(error) {
   const status = error.status;
 
   if (status === 401) return 'Invalid API key. Update in Settings.';
-  if (status === 402) return 'API quota exceeded. Check your OpenAI billing.';
+  if (status === 402) return 'API quota exceeded. Check your Anthropic billing.';
   if (status === 429) return 'Too many requests. Try again in a minute.';
   if (status >= 500) return 'Server error. Try again later.';
   if (msg.includes('timeout')) return 'Request timed out. Try again.';
