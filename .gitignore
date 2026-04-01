@@ -5,3 +5,4 @@ nohup.out
 server.pid
 .DS_Store
 *.db
+.claude/forge/
