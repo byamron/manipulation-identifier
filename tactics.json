@@ -3,7 +3,7 @@
       "name": "Emotional Language",
       "definition": "Language that contains strong emotional terms – especially those with a negative affect such as fear or outrage.",
       "alsoKnownAs": [
-        "Emotional manipulation", 
+        "Emotional manipulation",
         "Fearmongering (a subset of emotional language focused on frightening the listener)"
       ],
       "examples": [
@@ -12,20 +12,20 @@
         "The judge issued a DISGUSTING ruling today. It will make your blood boil."
       ],
       "why": [
-        "Research shows that using emotional words, especially ones that evoke negative emotions such as fear or outrage, increases the viral potential of digital content. Individuals are especially malleable and less focused on rational, deliberate decision making when pushed to a heightened emotional state.", 
+        "Research shows that using emotional words, especially ones that evoke negative emotions such as fear or outrage, increases the viral potential of digital content. Individuals are especially malleable and less focused on rational, deliberate decision making when pushed to a heightened emotional state.",
         "The use of inflammatory language has proven to be especially effective when it comes to spreading ideas over social networks."
       ],
       "whatToDo": [
-        "Take a moment to arrive at a well-thought-out conclusion or judgment —  especially before sharing or responding.",
+        "Take a moment to arrive at a well-thought-out conclusion or judgment — especially before sharing or responding.",
         "Reflect on your emotional response to content online — if it makes you feel fearful, angry, or distressed, it may be because someone is trying to manipulate you to trigger a reaction."
       ]
     },
     {
       "name": "False Dichotomy",
-      "definition": "Presenting a limited number of choices or sides as mutually inclusive, when in reality more options are possible.",
+      "definition": "Presenting a limited number of choices or sides as mutually exclusive, when in reality more options are possible.",
       "alsoKnownAs": [
-        "False dilemma", 
-        "Either-or-fallacy"
+        "False dilemma",
+        "Either-or fallacy"
       ],
       "examples": [
         "If you're not with us, you're against us",
@@ -44,9 +44,9 @@
     },
     {
       "name": "Cherry Picking",
-      "definition": "Definition: Presenting a selection of evidence to support a claim, while ignoring or omitting evidence that contradicts it.",
+      "definition": "Presenting a selection of evidence to support a claim, while ignoring or omitting evidence that contradicts it.",
       "alsoKnownAs": [
-        "Selection bias", 
+        "Selection bias",
         "Fallacy of incomplete evidence"
       ],
       "examples": [
@@ -69,7 +69,8 @@
       "name": "Fake Experts",
       "definition": "Individuals who speak in a way that conveys the impression of expertise on a topic while possessing little to no relevant expertise. They are often deployed to elicit support for miracle cures, unproven arguments, or to cast doubt on established expert consensus and may leverage entirely fabricated institutions that sound legitimate to add to their guise of credibility.",
       "alsoKnownAs": [
-        "False, alleged, or irrelevant authority"
+        "False authority",
+        "Alleged or irrelevant authority"
       ],
       "examples": [
         "An influencer wearing a white doctor's coat giving advice about brain cancer",
@@ -77,7 +78,7 @@
         "A philosopher who asserts claims about climate change and emphasizes their doctorate degree, but has not studied climate science"
       ],
       "why": [
-        "Our minds devise shortcuts to help manage vast amounts of information that we process every minute. An ingrained trust in experts is a mental shortcut — instead of having to deal with complicated cognitive decisions to deduce our perspective. Our minds devise shortcuts to help manage vast amounts of information that we process every minute. An ingrained trust in experts is a mental shortcut — instead of having to deal with complicated cognitive decisions to deduce our perspective on a subject we know little about.",
+        "Our minds devise shortcuts to help manage vast amounts of information that we process every minute. An ingrained trust in experts is a mental shortcut — instead of having to deal with complicated cognitive decisions to deduce our perspective on a subject we know little about.",
         "But expert credentials can be misleading, especially when an expert's exact background is not clear. Very often audiences fail to verify an expert's background, and take people at their word."
       ],
       "whatToDo": [
@@ -87,14 +88,41 @@
       ]
     },
     {
+      "name": "Appeal to Authority",
+      "definition": "Citing an authority figure or institution to settle an argument, regardless of whether the authority has relevant expertise on the specific topic at hand. Unlike Fake Experts, the authority may be genuine but is being invoked outside their area of competence or to shut down legitimate debate.",
+      "alsoKnownAs": [
+        "Argument from authority",
+        "Argumentum ad verecundiam"
+      ],
+      "examples": [
+        "A Nobel Prize-winning physicist says this economic policy is the best, so it must be true",
+        "The CEO of a major tech company says vaccines are dangerous — he's a genius, so he must know",
+        "My professor said it, so it's definitely correct and there's no point discussing further",
+        "This famous athlete endorses this supplement, so it must work"
+      ],
+      "why": [
+        "People tend to defer to authority figures due to perceived expertise or status, even when the authority's knowledge doesn't extend to the topic in question. This shortcut bypasses critical evaluation of the actual argument.",
+        "Appeals to authority can also be used to silence dissent — if a respected figure has spoken, questioning them feels inappropriate, even when the evidence warrants it."
+      ],
+      "whatToDo": [
+        "Ask whether the authority being cited has specific, relevant expertise on the topic at hand — not just general prestige or fame.",
+        "Remember that even genuine experts can be wrong, especially outside their field. Evaluate the argument on its merits, not just who is making it.",
+        "Look for whether a consensus of experts agrees, rather than relying on a single authority's opinion."
+      ]
+    },
+    {
       "name": "Red Herring",
       "definition": "Diverting attention from a real issue by focusing on a topic with only a surface relevance to the original.",
       "alsoKnownAs": [
         "Misdirection",
-        "Diversion"
+        "Diversion",
+        "Appeal to worse problems"
       ],
       "examples": [
-        "Jack: 'Bob Dylan was the greatest songwriter.' Jill: 'No, Fleetwood Mac had the greatest live performers of all time' 'Why are you upset? Think of all the starving children around the world who have it worse than you.'"
+        "Jack: 'Bob Dylan was the greatest songwriter.' Jill: 'No, Fleetwood Mac had the greatest live performers of all time.'",
+        "Why are you upset? Think of all the starving children around the world who have it worse than you.",
+        "We shouldn't worry about pollution in our city — there are countries with far worse environmental problems.",
+        "Why are we debating school lunches when there are children who don't even have schools?"
       ],
       "why": [
         "When subtlety isn't an option, a red herring may be employed to confuse the audience. By pivoting to an entirely unrelated, outrageous, and highly charged topic, a speaker can make the audience forget the original discussion.",
@@ -130,8 +158,8 @@
         "A headline calling attention to a candidate's 'screechy' voice during a rally instead of addressing the person's arguments."
       ],
       "why": [
-        "Ad hominem attacks are arguments that use emotional appeal rather than logic. They're used with the explicit intent of redirecting the listener away from the topic at hand, which might be hard to poke holes in, and towards the \"flaws\" of an individual or entity, which might be easier. ",
-        "Ad hominem attacks work because once an individual agrees that the holder of the point of view is flawed, it can become harder for them to agree that their point of view is not."    
+        "Ad hominem attacks are arguments that use emotional appeal rather than logic. They're used with the explicit intent of redirecting the listener away from the topic at hand, which might be hard to poke holes in, and towards the \"flaws\" of an individual or entity, which might be easier.",
+        "Ad hominem attacks work because once an individual agrees that the holder of the point of view is flawed, it can become harder for them to agree that their point of view is not."
       ],
       "whatToDo": [
         "Be skeptical of arguments that question (or attack) the shortcomings of a person or entity, rather than the merits of their argument.",
@@ -156,29 +184,16 @@
       ]
     },
     {
-      "name": "Impersonation",
-      "definition": "Deceiving an audience by assuming another person's online persona. This can be done to harm the person's reputation, inflict emotional harm, or to spread manipulation from a particular source.",
-      "alsoKnownAs": [
-        "Spoofing"
-      ],
-      "examples": [
-        "Impersonation attacks include, but are not limited to, setting up fake social media accounts associated with a target, accessing a target's online accounts to send messages, and spoofing the sender email address or phone number of a target to make it appear as if the target authored the message."
-      ],
-      "why": [
-        "Impersonating someone else can provide a range of gains to a malicious actor, from financial gains to reputational damage."
-      ],
-      "whatToDo": [
-        "Strong digital security practices are a key first step to avoid being a target of impersonation. Two-factor authentication for account logins, strong password hygiene, and wariness of phishing or other social-engineering attacks can help prevent accounts from being compromised and allowing in impersonators.",
-        "To avoid being manipulated by an impersonation (ie: where someone is pretending to be someone else) it is important to cross-check the source. Look to see if their current behavior matches their past behavior. Significant deviation can be a sign the account is an impersonation."
-      ]
-    },
-    {
       "name": "Slippery Slope",
       "definition": "Asserting that a first step taken will inevitably lead to major, often disastrous, consequences.",
-      "alsoKnownAs": [],
+      "alsoKnownAs": [
+        "Thin end of the wedge",
+        "Camel's nose"
+      ],
       "examples": [
         "If we implement even a modest change in policy, we'll lose all of our freedoms.",
-        "If you don't pass tomorrow's math test, then you can't take calculus next year. If you don't take calculus, you won't get into college!"
+        "If you don't pass tomorrow's math test, then you can't take calculus next year. If you don't take calculus, you won't get into college!",
+        "If we allow students to redo one test, soon they'll expect to redo every assignment, and eventually no one will study at all."
       ],
       "why": [
         "Slippery slope arguments take advantage of the gray area between initial actions and their conclusions. They often rely on fear of grave – and unavoidable – consequences of any step taken and can bypass more critical evaluations of the arguments they present."
@@ -206,6 +221,99 @@
       "whatToDo": [
         "Be skeptical of arguments that rely on a highly inflammatory image or quote and always double check the source sharing the information: is it reputable and/or trustworthy?",
         "Review content shared online carefully to determine if the commentary surrounding it is accurate by seeing if others are sharing or refuting the information and/or searching for the original source of the image/video/story. Reverse Image Search is a great tool to find the origin point for images."
+      ]
+    },
+    {
+      "name": "Hasty Generalization",
+      "definition": "Drawing a broad conclusion from a small or unrepresentative sample of evidence. One or a few examples are treated as proof of a universal rule.",
+      "alsoKnownAs": [
+        "Overgeneralization",
+        "Sweeping generalization",
+        "Jumping to conclusions"
+      ],
+      "examples": [
+        "I met two rude people from that city, so everyone there must be rude.",
+        "My friend got food poisoning at that restaurant, so the whole chain must be unsafe.",
+        "One study found a link between X and Y, so X definitely causes Y.",
+        "This politician lied once, so you can never trust anything any politician says."
+      ],
+      "why": [
+        "Our brains are wired to find patterns quickly, which helped in survival situations but can mislead in complex modern contexts. A single vivid example can feel more convincing than a mountain of statistics, leading people to generalize from limited experience.",
+        "Hasty generalizations are especially effective because they offer simple, memorable narratives that are easy to share and hard to argue against without detailed counter-evidence."
+      ],
+      "whatToDo": [
+        "Ask how large and representative the sample is. One or two examples rarely prove a universal rule.",
+        "Look for counter-examples. If the conclusion is 'all X are Y,' can you find even one X that isn't Y?",
+        "Be wary of language like 'always,' 'never,' 'everyone,' or 'no one' — these signal potential overgeneralization."
+      ]
+    },
+    {
+      "name": "Appeal to Majority",
+      "definition": "Arguing that something must be true or good because many people believe it or do it. The popularity of an idea is treated as evidence of its correctness.",
+      "alsoKnownAs": [
+        "Bandwagon fallacy",
+        "Ad populum",
+        "Appeal to popularity"
+      ],
+      "examples": [
+        "Millions of people use this product, so it must be the best one available.",
+        "Most people believe this policy is right, so it must be the correct approach.",
+        "Everyone is investing in this stock — you'd be foolish not to join them.",
+        "This is the most popular opinion online, so it's clearly the truth."
+      ],
+      "why": [
+        "Humans are social creatures with a deep instinct to conform to group behavior. When we see large numbers of people supporting something, we tend to assume the group has done the evaluation for us and follow along.",
+        "This tactic is especially potent in digital environments where metrics like likes, shares, and follower counts create visible 'social proof' that can be easily manufactured or manipulated."
+      ],
+      "whatToDo": [
+        "Remember that popularity doesn't equal truth. Many widely held beliefs throughout history have turned out to be wrong.",
+        "Evaluate the claim on its own evidence and logic, independent of how many people support it.",
+        "Consider whether the 'majority' claim is even accurate — stated numbers can be exaggerated or fabricated."
+      ]
+    },
+    {
+      "name": "Appeal to Nature",
+      "definition": "Arguing that something is good, right, or superior simply because it is 'natural,' or that something is bad because it is 'unnatural' or synthetic.",
+      "alsoKnownAs": [
+        "Naturalistic fallacy"
+      ],
+      "examples": [
+        "This remedy is made from all-natural ingredients, so it must be safer than medicine.",
+        "Humans weren't meant to eat processed food — if it's not natural, it's not good for you.",
+        "Traditional farming is better because it's how nature intended food to be grown.",
+        "You shouldn't take that medication — it's full of chemicals. Try this herbal alternative instead."
+      ],
+      "why": [
+        "People tend to associate 'natural' with 'safe' and 'good,' even though many natural substances are harmful (e.g., arsenic, snake venom) and many synthetic ones are beneficial (e.g., vaccines, clean water treatment).",
+        "This fallacy exploits a romanticized view of nature and a distrust of modern technology, making it particularly effective in health, food, and environmental discussions."
+      ],
+      "whatToDo": [
+        "Ask whether something being 'natural' actually makes it safe or effective. Naturalness alone is not evidence of quality.",
+        "Look for actual evidence of safety, efficacy, or superiority — not just claims about origin.",
+        "Remember that 'natural' and 'chemical' are not opposites. Everything is made of chemicals, and many natural substances are dangerous."
+      ]
+    },
+    {
+      "name": "Appeal to Tradition",
+      "definition": "Arguing that something is right, good, or should continue simply because it has been done that way for a long time. The age of a practice is treated as evidence of its value.",
+      "alsoKnownAs": [
+        "Argument from tradition",
+        "Appeal to antiquity"
+      ],
+      "examples": [
+        "We've always done it this way, and it's worked fine. There's no reason to change now.",
+        "This teaching method has been used for centuries — it's stood the test of time.",
+        "Our ancestors knew best. Modern approaches are just fads that will pass.",
+        "Marriage has always been defined this way, so we shouldn't redefine it."
+      ],
+      "why": [
+        "Tradition provides comfort and a sense of stability. People often assume that practices which have persisted for a long time must have survived because they work, even though many outdated practices persist due to habit, cultural inertia, or lack of alternatives.",
+        "Appealing to tradition also evokes emotional attachments to identity and heritage, making it harder to question the practice without feeling like you're attacking the community itself."
+      ],
+      "whatToDo": [
+        "Ask whether the tradition is actually effective, or whether it simply persists because 'that's how it's always been done.'",
+        "Consider whether the circumstances that justified the tradition still apply today.",
+        "Recognize that many positive social changes required breaking with tradition — longevity alone doesn't make something right."
       ]
     }
   ]

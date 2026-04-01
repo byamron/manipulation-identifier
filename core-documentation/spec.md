@@ -21,19 +21,28 @@ Empower users to recognize manipulation in real-time as they browse the web. By 
 
 ## Supported Manipulation Tactics
 
-The tool detects 11 manipulation tactics:
+The tool detects 15 manipulation tactics across three categories:
 
-1. **Emotional Language** — Fear-mongering, outrage-inducing language
-2. **False Dichotomy** — Artificially limiting choices to two options
-3. **Cherry Picking** — Selective use of evidence
-4. **Fake Experts** — False appeals to authority
-5. **Red Herring** — Diverting attention from the real issue
-6. **Scapegoating** — Placing unwarranted blame on a group
-7. **Ad Hominem** — Attacking the person instead of the argument
-8. **Polarization** — Dividing into extreme opposing groups
-9. **Impersonation** — Deceiving by assuming another's identity
-10. **Slippery Slope** — Claiming small steps lead to disaster
-11. **Decontextualization** — Removing context to change meaning
+**Logical Fallacies (8):**
+1. **False Dichotomy** — Artificially limiting choices to two options
+2. **Slippery Slope** — Claiming small steps lead to disaster
+3. **Hasty Generalization** — Drawing broad conclusions from limited examples
+4. **Cherry Picking** — Selective use of evidence
+5. **Appeal to Authority** — Citing authority to settle arguments regardless of relevance
+6. **Appeal to Majority** — Arguing popularity equals truth
+7. **Appeal to Nature** — Arguing natural means good
+8. **Appeal to Tradition** — Arguing longevity means right
+
+**Rhetorical Manipulation (5):**
+9. **Emotional Language** — Fear-mongering, outrage-inducing language
+10. **Ad Hominem** — Attacking the person instead of the argument
+11. **Scapegoating** — Placing unwarranted blame on a group
+12. **Polarization** — Dividing into extreme opposing groups
+13. **Red Herring** — Diverting attention from the real issue
+
+**Credibility Attacks (2):**
+14. **Fake Experts** — Individuals conveying false expertise
+15. **Decontextualization** — Removing context to change meaning
 
 ## Technology Stack
 

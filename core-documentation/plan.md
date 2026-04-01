@@ -2,12 +2,14 @@
 
 ## Current Projects
 
-*(Empty — to be filled as work begins)*
+- **Side Panel Polish**: Keyboard navigation, animations, responsive sidebar, tab switching UX refinements.
 
 ---
 
 ## Shipped Features
 
+- **Mar 25, 2026**: Best-in-Class Overhaul — JSON structured output, BYOK architecture, Chrome Side Panel, fuzzy highlighting, content.js simplification (1850→250 lines), rate limiting, database indexes, test suite (56 tests)
+- **Mar 24, 2026**: Taxonomy expansion (11→15 tactics), codebase stabilization, XSS fixes, database.js, SOURCES.md
 - **Aug 12, 2025**: A/B Testing System & UI Cleanup
 - **Aug 12, 2025**: Navigation System & Manual Click Fix
 - **Aug 12, 2025**: Widget Flash Fix

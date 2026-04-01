@@ -1,6 +1,6 @@
-# Unified Taxonomy (WORKING DRAFT — not finalized)
+# Unified Taxonomy
 
-This is the proposed unified taxonomy merging our original 11 tactics with CoCoLoFa's 8 categories. It has not been implemented yet. Review and refine before integrating into `tactics.json` and the detection system.
+This is the finalized unified taxonomy merging our original 11 tactics with CoCoLoFa's 8 categories. Implemented in `tactics.json` and the detection system. See `SOURCES.md` for full citations and licensing details.
 
 ---
 
@@ -62,9 +62,9 @@ This is the proposed unified taxonomy merging our original 11 tactics with CoCoL
 
 ## Status
 
-- [ ] Finalize taxonomy (review groupings, naming, definitions)
-- [ ] Write full definitions, examples, and "whatToDo" for new tactics (3–5 examples each)
-- [ ] Merge CoCoLoFa examples into existing tactics (Slippery Slope, False Dichotomy, Red Herring)
-- [ ] Update `tactics.json` with final 15-tactic structure
-- [ ] Update detection prompts to use new taxonomy
-- [ ] Benchmark against CoCoLoFa test set
+- [x] Finalize taxonomy (review groupings, naming, definitions)
+- [x] Write full definitions, examples, and "whatToDo" for new tactics (3–5 examples each)
+- [x] Merge CoCoLoFa examples into existing tactics (Slippery Slope, False Dichotomy, Red Herring)
+- [x] Update `tactics.json` with final 15-tactic structure
+- [x] Update detection prompts to use new taxonomy (prompts auto-generate from tactics.js)
+- [ ] Benchmark against CoCoLoFa test set (requires author permission — see SOURCES.md)

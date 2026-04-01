@@ -1,21 +1,174 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Manipulation Identifier Options</title>
+  <meta charset="UTF-8">
+  <title>Manipulation Identifier — Settings</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 30px; }
-    label { font-weight: bold; }
-    input[type=text] { width: 350px; padding: 6px; margin: 10px 0; }
-    button { padding: 6px 16px; font-size: 14px; }
-    .status { margin-top: 10px; color: green; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 480px;
+      margin: 30px auto;
+      padding: 0 20px;
+      color: #1f2937;
+      line-height: 1.6;
+    }
+    h2 {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: #111827;
+    }
+    .section {
+      margin-bottom: 24px;
+      padding: 16px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #374151;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      color: #4b5563;
+    }
+    .hint {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 8px;
+      box-sizing: border-box;
+    }
+    input:focus {
+      outline: 2px solid #1a73e8;
+      outline-offset: -1px;
+    }
+    select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 8px;
+      box-sizing: border-box;
+    }
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    button {
+      padding: 8px 16px;
+      font-size: 13px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      color: #374151;
+    }
+    button:hover {
+      background: #f3f4f6;
+    }
+    .btn-primary {
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+    }
+    .btn-primary:hover {
+      background: #1557b0;
+    }
+    .status {
+      margin-top: 8px;
+      font-size: 13px;
+      min-height: 20px;
+    }
+    .status.success { color: #059669; }
+    .status.error { color: #dc2626; }
+    .mode-indicator {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .mode-indicator.byok {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .mode-indicator.server {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    .api-key-wrapper {
+      position: relative;
+    }
+    .toggle-visibility {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      background: none;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+      font-size: 12px;
+      padding: 2px 6px;
+    }
   </style>
 </head>
 <body>
-  <h2>Manipulation Identifier Options</h2>
-  <label for="serverUrl">Server URL:</label>
-  <input id="serverUrl" type="text" placeholder="http://localhost:3000">
-  <button id="saveBtn">Save</button>
-  <div class="status" id="status"></div>
+  <h2>Manipulation Identifier Settings</h2>
+
+  <div class="section">
+    <div class="section-title">
+      API Configuration
+      <span class="mode-indicator" id="modeIndicator"></span>
+    </div>
+
+    <label for="apiKey">OpenAI API Key</label>
+    <div class="hint">Enter your key to analyze directly (recommended). Get one at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></div>
+    <div class="api-key-wrapper">
+      <input type="password" id="apiKey" placeholder="sk-...">
+      <button class="toggle-visibility" id="toggleKey" type="button">Show</button>
+    </div>
+
+    <label for="model">Default Model</label>
+    <select id="model">
+      <option value="gpt-5-nano">GPT-5 Nano (fastest, cheapest)</option>
+      <option value="gpt-5-mini">GPT-5 Mini (balanced)</option>
+      <option value="gpt-5">GPT-5 (most capable)</option>
+    </select>
+
+    <div class="btn-row">
+      <button class="btn-primary" id="saveBtn">Save</button>
+      <button id="testBtn">Test Key</button>
+    </div>
+    <div class="status" id="apiStatus"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Analytics Server (optional)</div>
+    <label for="serverUrl">Server URL</label>
+    <div class="hint">If set, feedback and analytics are sent to this server. Leave blank to skip.</div>
+    <input type="text" id="serverUrl" placeholder="http://localhost:3000">
+    <button id="saveServerBtn">Save Server URL</button>
+    <div class="status" id="serverStatus"></div>
+  </div>
+
   <script src="options.js"></script>
 </body>
-</html> 
+</html>
