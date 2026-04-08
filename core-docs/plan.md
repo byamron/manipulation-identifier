@@ -74,6 +74,7 @@ These transform the experience from "it works" to "this is good."
 - Send highlights to content script incrementally too (or batch at the end)
 - Fallback: if streaming parsing fails, fall back to waiting for the complete response
 **Files:** `background.js` (callAnthropicDirect, handleAnalyze), `sidepanel.js` (storage listener, showResults)
+**Cost:** Zero. Streaming uses the same tokens and pricing as non-streaming — the only difference is chunked delivery. No BYOK cost impact.
 **Complexity:** High. This touches the core data flow. Test thoroughly with both short (no tactics) and long (5+ tactics) responses.
 
 #### 2.2 Category-colored page highlights
@@ -119,15 +120,13 @@ These make the product feel finished.
 - Keep the layout — just restyle the visual layer
 **Files:** `options.html`
 
-#### 3.2 First-run onboarding
-**Why:** First-time users see a cold "set up your API key" message. No explanation of value, no preview.
+#### 3.2 Improve setup state copy
+**Why:** First-time users see a wordy setup message that mentions "server URL" (power-user detail). Should be self-explanatory in one glance.
 **What to do:**
-- In `sidepanel.js` `showSetup()`, replace the current message with a brief onboarding flow:
-  - What this does (1 sentence + a small illustration or icon)
-  - What you'll see (mention highlights + tactic cards)
-  - Setup CTA ("Add your Anthropic API key to get started")
-- Keep it to one screen — no multi-step wizard
-**Files:** `sidepanel.js` (showSetup), `sidepanel.css` (onboarding styles)
+- In `sidepanel.js` `showSetup()`, tighten the copy to something like: "Highlights manipulation tactics on any page. Add your [Anthropic API key] to get started." — one sentence, one link
+- Remove the server URL mention from the setup state (it's in the options page for those who need it)
+- No onboarding flow or wizard — the product should be self-explanatory from the Analyze button + results
+**Files:** `sidepanel.js` (showSetup)
 
 #### 3.3 Humanize model selector
 **Why:** "Sonnet 4.6" vs "Haiku 4.5" means nothing to non-technical users.
