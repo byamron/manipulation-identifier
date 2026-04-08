@@ -4,6 +4,35 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 7: UI Restyle (April 2026)
+
+### Apr 7, 2026 — Restyle sidebar with DevPanel-inspired dark glass aesthetic
+
+**Branch:** sidebar-ui-restyle
+
+**What was done:**
+Rewrote sidepanel.css to adopt a dark, glass-morphism design language inspired by the DevPanel component from the ui-playground repo. The new style features a dark background (`#0e0e11`), monospace typography (SF Mono/Cascadia Code) for labels and metadata, a white-alpha color system for text and borders, tighter spacing (14px gaps), refined category accent colors tuned for dark backgrounds, thin scrollbar styling, and subtle interaction states using 0.12s transitions. All existing HTML structure and class names preserved — no JS changes needed.
+
+**Why:**
+The previous sidebar used a stock light-theme with generic Google Blue accents and system sans-serif fonts. The DevPanel's aesthetic — used across the ui-playground demos — has a more refined, technical character that better suits a power-user tool for identifying manipulation tactics.
+
+**Design decisions:**
+- Adopted a fully dark theme rather than adapting the DevPanel's glass morphism over a light background. The sidebar is a standalone panel (not overlaid on content), so solid dark with subtle raised surfaces reads better than transparency.
+- Used CSS custom properties (27 tokens in `:root`) for the entire color/spacing system, making future theme tweaks trivial.
+- Kept the sans-serif font (system stack) for body/content text but switched labels, buttons, metadata, and summaries to the DevPanel's monospace stack. This creates the same information hierarchy the DevPanel uses.
+- Kept category color bars at 3px width (same as original) with tuned-for-dark accent colors. Removed opacity modifiers to maintain scanability — the bars are the primary visual differentiator when skimming results.
+
+**Technical decisions:**
+- Custom select dropdown arrow via inline SVG data URI to replace the browser default (which renders poorly on dark backgrounds).
+- Thin scrollbar styling via both `scrollbar-width: thin` (Firefox) and `::-webkit-scrollbar` (Chromium) for consistency.
+- Error states use red-alpha overlays instead of the previous solid `#fef2f2` light background.
+
+**Tradeoffs:**
+- Dark-only for now — no light mode toggle. The DevPanel is dark-only too. A future preference toggle could use the CSS custom properties to swap palettes.
+- The monospace font stack (`SF Mono`, `Cascadia Code`, `Fira Code`) may not be installed on all systems; `ui-monospace` and `monospace` serve as fallbacks but render differently per OS.
+
+---
+
 ## Phase 6: API Provider Migration (April 2026)
 
 ### Apr 1, 2026 — Complete server-side Anthropic migration
