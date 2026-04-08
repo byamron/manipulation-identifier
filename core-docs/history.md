@@ -4,6 +4,32 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 8: Accuracy Measurement System (April 2026)
+
+### Apr 7, 2026 — Plan accuracy measurement and prompt tuning system
+
+**Branch:** sidebar-ui-restyle
+
+**What was done:**
+Designed a 5-phase plan for systematic accuracy measurement: (1) labeled test corpus (~120 examples), (2) evaluation harness (`npm run eval`), (3) prompt tuning workflow with versioned prompts, (4) strip all dev-only feedback code from shipped extension, (5) documentation updates.
+
+**Why:**
+The feedback system (database.js, server analytics, feedback UI) was built for development but has no path to improving detection — it just stores data. The user decided feedback should not ship (privacy by default), so the project needs a proper development-time measurement system instead.
+
+**Design decisions:**
+- Precision over recall as the primary metric, reflecting "accuracy over coverage — only flag with high confidence" product principle. Targets: precision >= 85%, recall >= 65%.
+- Quote fidelity tracked as a separate metric because non-verbatim quotes break the highlighting system.
+- Ambiguous corpus cases excluded from headline metrics to avoid contested annotations distorting numbers.
+- Test corpus format: one JSON file per example (not monolithic) for easy diffing, reviewing, and extending.
+- Evaluation harness reuses the same prompt/parse functions as the extension, not a reimplementation.
+
+**Tradeoffs:**
+- Chose ~120 examples as corpus size — large enough for per-tactic metrics to be meaningful, small enough for a solo developer to annotate and maintain. Each API call costs money, so the corpus can't be arbitrarily large.
+- 50% character overlap threshold for quote matching is a judgment call — too strict penalizes minor rephrasing, too loose lets misquotes pass. Can be tuned after seeing initial results.
+- Stripping feedback UI means no post-release signal. Acceptable because the prompt is universal (not personalized) and the eval harness provides the measurement loop during development.
+
+---
+
 ## Phase 7: UI Restyle & Bug Fixes (April 2026)
 
 ### Apr 7, 2026 — Restyle sidebar with DevPanel-inspired dark glass aesthetic
