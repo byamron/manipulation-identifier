@@ -4,7 +4,7 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
-## Phase 7: UI Restyle (April 2026)
+## Phase 7: UI Restyle & Bug Fixes (April 2026)
 
 ### Apr 7, 2026 — Restyle sidebar with DevPanel-inspired dark glass aesthetic
 
@@ -31,13 +31,45 @@ The previous sidebar used a stock light-theme with generic Google Blue accents a
 - Dark-only for now — no light mode toggle. The DevPanel is dark-only too. A future preference toggle could use the CSS custom properties to swap palettes.
 - The monospace font stack (`SF Mono`, `Cascadia Code`, `Fira Code`) may not be installed on all systems; `ui-monospace` and `monospace` serve as fallbacks but render differently per OS.
 
+### Apr 7, 2026 — Fix cross-node highlighting, fuzzy matching, and side panel scroll
+
+**Branch:** review-plugin-functionality
+
+**What was done:**
+Fixed four bugs that degraded the extension's core UX:
+1. **Cross-node quote matching**: Rewrote highlighting to use "text runs" — groups of text nodes under the same block-level ancestor. Quotes spanning inline elements (bold, links, italic) now highlight correctly across multiple DOM nodes.
+2. **3-tier fuzzy matcher**: Inlined the trigram-based fuzzy matcher from `highlight-matcher.js` into the content script (replacing the simpler 2-tier exact+normalized matcher). Quotes with minor formatting variations now match via Jaccard trigram similarity (threshold 0.85).
+3. **Side panel → page scroll**: Fixed broken `findAndScrollToHighlight` action (unhandled by content script) and incorrect `findHighlightIndex` mapping. Side panel now sends `SCROLL_TO` with `tactic` + `instanceIndex` directly to the content script, which resolves highlights by querying `[data-tactic]` attributes.
+4. **Multi-span highlight support**: `scrollToHighlight` now activates all spans sharing a highlight ID (for quotes that span multiple text nodes). Click handlers on highlights do the same.
+
+Also fixed: redundant ternary in `clearHighlights`, removed dead `findHighlightIndex` and `data-first-highlight-id`.
+
+**Why:**
+The extension's highlighting and navigation were broken in several compounding ways. Quotes crossing inline formatting boundaries (extremely common on real web pages) silently failed to highlight. Clicking a quote in the side panel sent an action the content script didn't handle, and the fallback used a highlight-ID mapping that assumed tactic-card order matched DOM order (it doesn't). These bugs meant the core feature — see manipulation highlighted on the page and navigate between side panel and highlights — didn't work reliably.
+
+**Design decisions:**
+- **Text runs over full-page concatenation**: Rather than concatenating the entire page text and matching globally, we group text nodes by their nearest block-level ancestor. This keeps match positions accurate (no cross-paragraph false matches) while enabling cross-node matching within the same paragraph/heading/list-item.
+- **Inline fuzzy matcher over module import**: Content scripts can't use ES module imports. The highlight-matcher.js file used `export` syntax and was never loaded. Inlining the functions into content.js was the only viable option without a build step.
+- **Direct `chrome.tabs.sendMessage` from side panel**: The side panel now sends scroll messages directly to the content script instead of routing through background.js. This removes the broken background.js forwarder from the critical path and is simpler.
+- **Shared highlight IDs for cross-node spans**: When a quote spans multiple text nodes, all resulting `<span>` elements share the same `data-highlight-id`. This lets `scrollToHighlight` and click handlers treat them as a single logical highlight.
+
+**Technical decisions:**
+- `BLOCK_TAGS` set includes all HTML block-level elements to correctly partition text runs
+- `scrollToInstance` deduplicates highlight IDs (since one match may produce multiple spans) before indexing by instance number
+- `SCROLL_TO` message handler accepts either `{ highlightId }` (backward compat with background.js forwarder) or `{ tactic, instanceIndex }` (new path from side panel)
+
+**Tradeoffs:**
+- The text-runs approach won't match quotes that span across block boundaries (e.g., across two paragraphs). This is intentional — cross-paragraph quotes from the LLM are likely extraction errors.
+- Inlining the fuzzy matcher duplicates code between content.js and highlight-matcher.js. Acceptable until a build step is introduced. The canonical version remains in highlight-matcher.js (tested), and content.js is the runtime copy.
+- Trigram fuzzy matching has O(n*m) complexity but is bounded by the 5000-char text limit and typically short-circuits at tier 1 or 2.
+
 ---
 
 ## Phase 6: API Provider Migration (April 2026)
 
 ### Apr 1, 2026 — Complete server-side Anthropic migration
 
-**Branch:** fix-anthropic-analysis
+**Branch:** fix-anthropic-analysis | **Commit:** 828762e
 
 **What was done:**
 Migrated the server proxy path (server.js) from OpenAI SDK to Anthropic SDK, completing the API migration that PR #2 started on the client side. The server now uses `@anthropic-ai/sdk`, accepts Claude model names, calls `anthropic.messages.create()`, and handles Anthropic-specific response/error formats. Also updated prompts.js to include JSON output instructions in the system prompt (replacing the removed OpenAI JSON schema), removed dead legacy prompt code, and updated CLAUDE.md.

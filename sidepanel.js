@@ -157,13 +157,13 @@
       } else if (e.key === 'Enter' && focused) {
         e.preventDefault();
         // Scroll to first instance highlight on page
-        const highlightId = focused.dataset.firstHighlightId;
-        if (highlightId) {
-          chrome.runtime.sendMessage({
+        const tactic = focused.dataset.tactic;
+        if (tactic) {
+          chrome.tabs.sendMessage(activeTabId, {
             action: MSG.SCROLL_TO,
-            tabId: activeTabId,
-            highlightId
-          });
+            tactic: tactic,
+            instanceIndex: 0
+          }).catch(() => {});
         }
       } else if (e.key === 'Escape') {
         // Collapse any expanded sections
@@ -300,14 +300,10 @@
       const categoryLabel = CATEGORY_LABELS[category] || category;
       const tacticInfo = tacticsData?.find(t => t.name === tactic.tactic);
 
-      // Find first highlight ID for keyboard nav
-      const firstHighlightId = `mi-hl-${idx}`;
-
       html += `
         <div class="tactic-card" tabindex="0" role="article"
              aria-label="${escapeHtml(tactic.tactic)}"
-             data-tactic="${escapeHtml(tactic.tactic)}"
-             data-first-highlight-id="${firstHighlightId}">
+             data-tactic="${escapeHtml(tactic.tactic)}">
           <div class="card-header">
             <div class="card-category-bar ${category}" title="${escapeHtml(categoryLabel)}"></div>
             <div class="card-content">
@@ -418,24 +414,11 @@
         const tactic = quote.dataset.highlightTactic;
         const instanceIdx = parseInt(quote.dataset.instanceIndex, 10);
 
-        // Find the corresponding highlight on the page
-        // Highlights are ordered: we need to find the Nth highlight for this tactic
-        const allHighlights = resultsArea.closest('body')?.querySelectorAll?.('.mi-highlight') || [];
-        // Use the tactic name + index to find the right highlight
-        // Send message to content script to find and scroll
-        // For now, search by tactic data attribute
         chrome.tabs.sendMessage(activeTabId, {
-          action: 'findAndScrollToHighlight',
+          action: MSG.SCROLL_TO,
           tactic: tactic,
           instanceIndex: instanceIdx
-        }).catch(() => {
-          // Fallback: just scroll to any highlight of this tactic
-          chrome.runtime.sendMessage({
-            action: MSG.SCROLL_TO,
-            tabId: activeTabId,
-            highlightId: `mi-hl-${findHighlightIndex(tactic, instanceIdx)}`
-          });
-        });
+        }).catch(() => {});
       });
     });
 
@@ -514,24 +497,6 @@
         }, 2000);
       });
     });
-  }
-
-  // Helper to find highlight index for a given tactic + instance
-  function findHighlightIndex(tactic, instanceIdx) {
-    // This is an approximation — highlights are ordered by DOM position
-    // We don't know the exact mapping without querying the content script
-    // For now, use a sequential counter
-    const results = resultsArea.querySelectorAll('.tactic-card');
-    let idx = 0;
-    for (const card of results) {
-      const cardTactic = card.dataset.tactic;
-      const instances = card.querySelectorAll('.instance');
-      for (let i = 0; i < instances.length; i++) {
-        if (cardTactic === tactic && i === instanceIdx) return idx;
-        idx++;
-      }
-    }
-    return 0;
   }
 
   // ── Scroll to card when highlight clicked on page ──

@@ -121,33 +121,177 @@
     return combined;
   }
 
-  // ── Find quote in a text node (exact + normalized) ──
+  // ── Fuzzy text matching (3-tier: exact, normalized, trigram) ──
 
-  function findQuoteInText(quote, nodeText) {
-    // Tier 1: Exact case-insensitive
-    const lowerText = nodeText.toLowerCase();
-    const lowerQuote = quote.toLowerCase();
-    const idx = lowerText.indexOf(lowerQuote);
-    if (idx !== -1) {
-      return { start: idx, end: idx + quote.length };
+  function trigrams(text) {
+    const result = new Set();
+    for (let i = 0; i <= text.length - 3; i++) {
+      result.add(text.slice(i, i + 3));
+    }
+    return result;
+  }
+
+  function trigramSimilarity(a, b) {
+    if (a.size === 0 && b.size === 0) return 1;
+    if (a.size === 0 || b.size === 0) return 0;
+    let intersection = 0;
+    for (const gram of a) {
+      if (b.has(gram)) intersection++;
+    }
+    const union = a.size + b.size - intersection;
+    return union === 0 ? 0 : intersection / union;
+  }
+
+  function mapNormalizedToOriginal(original, normalized, normStart, normLen) {
+    let normPos = 0;
+    let origStart = -1;
+    let origEnd = -1;
+    let i = 0;
+
+    // Skip leading whitespace that was trimmed by normalize
+    while (i < original.length && /\s/.test(original[i])) i++;
+
+    while (i < original.length && normPos < normStart + normLen) {
+      if (normPos === normStart) origStart = i;
+
+      const origChar = original[i];
+      const normChar = normalized[normPos];
+
+      if (origChar.toLowerCase() === normChar || normalizeText(origChar) === normChar) {
+        normPos++;
+        i++;
+      } else if (/\s/.test(origChar)) {
+        i++; // Extra whitespace collapsed during normalization
+      } else {
+        normPos++;
+        i++; // Character was normalized (quote/dash substitution)
+      }
     }
 
-    // Tier 2: Normalized
-    const normText = normalizeText(nodeText);
-    const normQuote = normalizeText(quote);
-    if (!normQuote) return null;
+    if (origStart === -1) return null;
+    origEnd = i;
+    return { start: origStart, end: origEnd };
+  }
 
-    const normIdx = normText.indexOf(normQuote);
-    if (normIdx !== -1) {
-      // Approximate mapping back to original positions
-      const ratio = nodeText.length / (normText.length || 1);
-      const approxStart = Math.round(normIdx * ratio);
-      const approxLen = Math.round(normQuote.length * ratio);
-      const approxEnd = Math.min(nodeText.length, approxStart + approxLen);
-      return { start: approxStart, end: approxEnd };
+  function findMatchInText(quote, text, threshold = 0.85) {
+    if (!quote || !text) return null;
+
+    // Tier 1: Exact match (case-insensitive)
+    const lowerText = text.toLowerCase();
+    const lowerQuote = quote.toLowerCase();
+    const exactIndex = lowerText.indexOf(lowerQuote);
+    if (exactIndex !== -1) {
+      return { start: exactIndex, end: exactIndex + quote.length };
+    }
+
+    // Tier 2: Normalized match
+    const normText = normalizeText(text);
+    const normQuote = normalizeText(quote);
+    if (normQuote.length === 0) return null;
+
+    const normIndex = normText.indexOf(normQuote);
+    if (normIndex !== -1) {
+      return mapNormalizedToOriginal(text, normText, normIndex, normQuote.length);
+    }
+
+    // Tier 3: Fuzzy match — sliding window with trigram similarity
+    if (normQuote.length < 3) return null;
+
+    const quoteTrigrams = trigrams(normQuote);
+    const windowSize = normQuote.length;
+    const minWindow = Math.max(3, Math.floor(windowSize * 0.7));
+    const maxWindow = Math.ceil(windowSize * 1.3);
+
+    let bestScore = 0;
+    let bestStart = -1;
+    let bestEnd = -1;
+
+    for (let winLen = minWindow; winLen <= maxWindow; winLen++) {
+      for (let j = 0; j <= normText.length - winLen; j++) {
+        const window = normText.slice(j, j + winLen);
+        const windowTri = trigrams(window);
+        const score = trigramSimilarity(quoteTrigrams, windowTri);
+        if (score > bestScore) {
+          bestScore = score;
+          bestStart = j;
+          bestEnd = j + winLen;
+        }
+      }
+    }
+
+    if (bestScore >= threshold) {
+      return mapNormalizedToOriginal(text, normText, bestStart, bestEnd - bestStart);
     }
 
     return null;
+  }
+
+  // ── Text runs (groups of text nodes under same block ancestor) ──
+
+  const BLOCK_TAGS = new Set([
+    'ADDRESS', 'ARTICLE', 'ASIDE', 'BLOCKQUOTE', 'DD', 'DETAILS',
+    'DIV', 'DL', 'DT', 'FIELDSET', 'FIGCAPTION', 'FIGURE', 'FOOTER',
+    'FORM', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'HEADER', 'HR',
+    'LI', 'MAIN', 'NAV', 'OL', 'P', 'PRE', 'SECTION', 'TABLE', 'UL',
+    'BR', 'TD', 'TH', 'TR'
+  ]);
+
+  function nearestBlockAncestor(node) {
+    let el = node.parentElement;
+    while (el && el !== document.body && !BLOCK_TAGS.has(el.tagName)) {
+      el = el.parentElement;
+    }
+    return el || document.body;
+  }
+
+  function getTextRuns() {
+    const textNodes = [];
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const parent = node.parentNode;
+        if (!parent) return NodeFilter.FILTER_REJECT;
+        const tag = parent.tagName;
+        if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT') {
+          return NodeFilter.FILTER_REJECT;
+        }
+        const role = parent.closest?.('[role]')?.getAttribute('role');
+        if (role === 'navigation' || role === 'contentinfo') {
+          return NodeFilter.FILTER_REJECT;
+        }
+        if (parent.closest?.('.mi-highlight')) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+    // Group consecutive text nodes by nearest block ancestor
+    const runs = [];
+    let currentNodes = [];
+    let currentBlock = null;
+
+    for (const node of textNodes) {
+      const block = nearestBlockAncestor(node);
+      if (block !== currentBlock && currentNodes.length > 0) {
+        runs.push(currentNodes);
+        currentNodes = [];
+      }
+      currentBlock = block;
+      currentNodes.push(node);
+    }
+    if (currentNodes.length > 0) runs.push(currentNodes);
+
+    return runs;
+  }
+
+  function buildRunText(nodes) {
+    let text = '';
+    const map = [];
+    for (const node of nodes) {
+      const nodeText = node.textContent;
+      map.push({ node, startInRun: text.length, endInRun: text.length + nodeText.length });
+      text += nodeText;
+    }
+    return { text, map };
   }
 
   // ── Highlighting ──
@@ -158,40 +302,27 @@
     clearHighlights();
     ensureHighlightStyles();
 
-    // Collect all text nodes
-    const textNodes = [];
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
-      acceptNode(node) {
-        const parent = node.parentNode;
-        if (!parent) return NodeFilter.FILTER_REJECT;
-        const tag = parent.tagName;
-        if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT') {
-          return NodeFilter.FILTER_REJECT;
-        }
-        if (parent.closest?.('.mi-highlight')) return NodeFilter.FILTER_REJECT;
-        return NodeFilter.FILTER_ACCEPT;
-      }
-    });
-    while (walker.nextNode()) textNodes.push(walker.currentNode);
+    const runs = getTextRuns();
+    let globalHighlightIndex = 0;
 
-    let highlightIndex = 0;
+    for (const runNodes of runs) {
+      const { text, map } = buildRunText(runNodes);
+      if (!text.trim()) continue;
 
-    for (const node of textNodes) {
-      const text = node.textContent;
+      // Find all matches in this run's concatenated text
       const matches = [];
-
       for (const tactic of detectedTactics) {
         for (const example of tactic.examples) {
           const quoteText = example.text || example.exact_quote;
           if (!quoteText) continue;
-          const match = findQuoteInText(quoteText, text);
+          const match = findMatchInText(quoteText, text);
           if (match) {
             matches.push({
               ...match,
               tactic: tactic.tactic,
               definition: tactic.definition,
               explanation: example.explanation,
-              quoteText: quoteText
+              quoteText
             });
           }
         }
@@ -207,55 +338,83 @@
         if (!last || m.start >= last.end) filtered.push(m);
       }
 
-      // Replace text node with highlighted spans
-      const parent = node.parentNode;
-      const wrapper = document.createDocumentFragment();
-      let lastIdx = 0;
-
+      // Assign a highlight ID per match (shared across spans for cross-node matches)
       for (const m of filtered) {
-        if (m.start > lastIdx) {
-          wrapper.appendChild(document.createTextNode(text.slice(lastIdx, m.start)));
+        m.hlId = globalHighlightIndex++;
+      }
+
+      // For each text node in the run, find overlapping matches and wrap
+      for (const entry of map) {
+        const nodeMatches = [];
+        for (const m of filtered) {
+          const overlapStart = Math.max(m.start, entry.startInRun);
+          const overlapEnd = Math.min(m.end, entry.endInRun);
+          if (overlapStart < overlapEnd) {
+            nodeMatches.push({
+              start: overlapStart - entry.startInRun,
+              end: overlapEnd - entry.startInRun,
+              hlId: m.hlId,
+              tactic: m.tactic,
+              definition: m.definition,
+              explanation: m.explanation,
+              quoteText: m.quoteText
+            });
+          }
         }
 
-        const span = document.createElement('span');
-        span.className = 'mi-highlight';
-        span.textContent = text.slice(m.start, m.end);
-        span.tabIndex = 0;
-        span.setAttribute('role', 'button');
-        span.setAttribute('aria-label', `${escapeHtml(m.tactic)}: ${escapeHtml(m.quoteText)}`);
-        span.dataset.highlightId = `mi-hl-${highlightIndex++}`;
-        span.dataset.tactic = m.tactic;
-        span.dataset.explanation = m.explanation;
-        span.dataset.definition = m.definition;
+        if (nodeMatches.length === 0) continue;
+        nodeMatches.sort((a, b) => a.start - b.start);
 
-        // Click → notify side panel
-        span.addEventListener('click', (e) => {
-          e.stopPropagation();
-          // Remove active from all, add to this one
-          document.querySelectorAll('.mi-highlight.mi-active').forEach(el => el.classList.remove('mi-active'));
-          span.classList.add('mi-active');
+        const node = entry.node;
+        const nodeText = node.textContent;
+        const parent = node.parentNode;
+        const frag = document.createDocumentFragment();
+        let lastIdx = 0;
 
-          chrome.runtime.sendMessage({
-            action: MSG.HIGHLIGHT_CLICKED,
-            tactic: m.tactic,
-            highlightId: span.dataset.highlightId,
-            text: span.textContent,
-            explanation: m.explanation
+        for (const nm of nodeMatches) {
+          if (nm.start > lastIdx) {
+            frag.appendChild(document.createTextNode(nodeText.slice(lastIdx, nm.start)));
+          }
+
+          const span = document.createElement('span');
+          span.className = 'mi-highlight';
+          span.textContent = nodeText.slice(nm.start, nm.end);
+          span.tabIndex = 0;
+          span.setAttribute('role', 'button');
+          span.setAttribute('aria-label', `${escapeHtml(nm.tactic)}: ${escapeHtml(nm.quoteText)}`);
+          span.dataset.highlightId = `mi-hl-${nm.hlId}`;
+          span.dataset.tactic = nm.tactic;
+          span.dataset.explanation = nm.explanation;
+          span.dataset.definition = nm.definition;
+
+          // Click → activate all spans for this match, notify side panel
+          span.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.mi-highlight.mi-active').forEach(el => el.classList.remove('mi-active'));
+            document.querySelectorAll(`[data-highlight-id="${span.dataset.highlightId}"]`)
+              .forEach(el => el.classList.add('mi-active'));
+
+            chrome.runtime.sendMessage({
+              action: MSG.HIGHLIGHT_CLICKED,
+              tactic: nm.tactic,
+              highlightId: span.dataset.highlightId,
+              text: nm.quoteText,
+              explanation: nm.explanation
+            });
           });
-        });
 
-        wrapper.appendChild(span);
-        lastIdx = m.end;
+          frag.appendChild(span);
+          lastIdx = nm.end;
+        }
+
+        if (lastIdx < nodeText.length) {
+          frag.appendChild(document.createTextNode(nodeText.slice(lastIdx)));
+        }
+
+        parent.replaceChild(frag, node);
       }
-
-      if (lastIdx < text.length) {
-        wrapper.appendChild(document.createTextNode(text.slice(lastIdx)));
-      }
-
-      parent.replaceChild(wrapper, node);
     }
 
-    // Build ordered highlights array
     allHighlights = Array.from(document.querySelectorAll('.mi-highlight'));
   }
 
@@ -266,7 +425,7 @@
     highlights.forEach(hl => {
       const parent = hl.parentNode;
       if (parent) {
-        parent.replaceChild(document.createTextNode(hl.textContent), parent.normalize ? hl : hl);
+        parent.replaceChild(document.createTextNode(hl.textContent), hl);
       }
     });
     // Normalize text nodes (merge adjacent text nodes)
@@ -274,22 +433,41 @@
     allHighlights = [];
   }
 
-  // ── Scroll to specific highlight ──
+  // ── Scroll to specific highlight (supports multi-span highlights) ──
 
   function scrollToHighlight(highlightId) {
-    const el = document.querySelector(`[data-highlight-id="${CSS.escape(highlightId)}"]`);
-    if (!el) return;
+    const els = document.querySelectorAll(`[data-highlight-id="${CSS.escape(highlightId)}"]`);
+    if (els.length === 0) return;
 
     // Remove active from all
     document.querySelectorAll('.mi-highlight.mi-active').forEach(h => h.classList.remove('mi-active'));
 
-    // Activate and scroll
-    el.classList.add('mi-active');
-    el.classList.add('mi-pulse');
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Activate all spans for this highlight (may span multiple nodes)
+    els.forEach(el => {
+      el.classList.add('mi-active');
+      el.classList.add('mi-pulse');
+      el.addEventListener('animationend', () => el.classList.remove('mi-pulse'), { once: true });
+    });
 
-    // Remove pulse after animation
-    el.addEventListener('animationend', () => el.classList.remove('mi-pulse'), { once: true });
+    els[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // ── Scroll to Nth instance of a tactic ──
+
+  function scrollToInstance(tactic, instanceIndex) {
+    const highlights = document.querySelectorAll(`.mi-highlight[data-tactic="${CSS.escape(tactic)}"]`);
+    // Collect unique highlight IDs (one match may have multiple spans)
+    const uniqueIds = [];
+    const seen = new Set();
+    for (const h of highlights) {
+      const id = h.dataset.highlightId;
+      if (!seen.has(id)) {
+        seen.add(id);
+        uniqueIds.push(id);
+      }
+    }
+    const targetId = uniqueIds[instanceIndex];
+    if (targetId) scrollToHighlight(targetId);
   }
 
   // ── Message listener ──
@@ -318,7 +496,11 @@
       }
 
       case MSG.SCROLL_TO: {
-        scrollToHighlight(message.highlightId);
+        if (message.tactic != null && message.instanceIndex != null) {
+          scrollToInstance(message.tactic, message.instanceIndex);
+        } else if (message.highlightId) {
+          scrollToHighlight(message.highlightId);
+        }
         sendResponse({ success: true });
         return false;
       }
