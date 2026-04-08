@@ -25,9 +25,9 @@
 
   /* Colors — white-alpha system */
   --text-primary: hsl(0, 0%, 95%);
-  --text-secondary: hsl(0, 0%, 78%);
-  --text-tertiary: hsl(240, 2%, 58%);
-  --text-muted: hsl(0, 0%, 38%);
+  --text-secondary: hsl(0, 0%, 80%);
+  --text-tertiary: hsl(240, 2%, 64%);
+  --text-muted: hsl(0, 0%, 48%);
 
   --surface-raised: rgba(255, 255, 255, 0.04);
   --surface-active: rgba(255, 255, 255, 0.08);
@@ -67,41 +67,26 @@ body {
 /* ── Controls ── */
 .controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding: 10px var(--panel-pad);
+  padding: 12px var(--panel-pad);
   background: transparent;
   border-bottom: 1px solid var(--panel-border);
   flex-shrink: 0;
 }
 
-.btn-settings {
-  background: none;
-  border: 1px solid transparent;
-  padding: 6px;
-  border-radius: 6px;
-  cursor: pointer;
-  color: var(--text-muted);
+.controls-row {
   display: flex;
+  gap: 8px;
+  width: 100%;
   align-items: center;
-  flex-shrink: 0;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-}
-
-.btn-settings:hover {
-  background: var(--surface-hover);
-  border-color: var(--panel-border);
-  color: var(--text-secondary);
-}
-
-.btn-settings:active {
-  background: var(--surface-active);
-  transform: scale(0.96);
 }
 
 .model-select {
   flex: 1;
-  padding: 6px 8px;
+  min-width: 0;
+  padding: 7px 24px 7px 10px;
   border: 1px solid var(--panel-border);
   border-radius: 6px;
   font-family: var(--font-mono);
@@ -112,10 +97,9 @@ body {
   transition: border-color 0.12s, background 0.12s;
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23616161' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%237a7a7a' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 8px center;
-  padding-right: 24px;
 }
 
 .model-select:focus {
@@ -128,8 +112,33 @@ body {
   color: var(--text-secondary);
 }
 
+.btn-settings {
+  background: none;
+  border: 1px solid var(--panel-border);
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.btn-settings:hover {
+  background: var(--surface-hover);
+  border-color: var(--panel-border-hover);
+  color: var(--text-secondary);
+}
+
+.btn-settings:active {
+  background: var(--surface-active);
+  transform: scale(0.96);
+}
+
 .btn-analyze {
-  padding: 6px 16px;
+  width: 100%;
+  padding: 8px 16px;
   background: var(--surface-active);
   color: var(--text-primary);
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -178,8 +187,8 @@ body {
 }
 
 .status-message {
-  padding: 20px var(--panel-pad);
-  text-align: center;
+  padding: 16px 0;
+  text-align: left;
   color: var(--text-tertiary);
   font-size: var(--font-size-base);
   line-height: 1.7;
@@ -314,7 +323,7 @@ body {
 .results-summary {
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
-  color: var(--text-muted);
+  color: var(--text-tertiary);
   margin-bottom: 12px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--panel-border);
@@ -432,7 +441,7 @@ body {
 .card-action-link {
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
-  color: var(--text-muted);
+  color: var(--text-tertiary);
   cursor: pointer;
   background: none;
   border: none;
@@ -469,7 +478,7 @@ body {
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin-bottom: 4px;
@@ -612,13 +621,3 @@ body {
   }
 }
 
-/* ── Responsive ── */
-@media (max-width: 400px) {
-  .controls {
-    flex-direction: column;
-  }
-
-  .model-select {
-    width: 100%;
-  }
-}
