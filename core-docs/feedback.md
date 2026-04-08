@@ -35,6 +35,26 @@ Increment from the last entry. Use `FB-0001`, `FB-0002`, etc.
 
 <!-- Add new entries below this line, newest first. -->
 
+### FB-0004: Always use full GitHub PR URLs
+**Date:** 2026-04-07
+**Source:** user preference
+
+**What was said:** Send full GitHub URLs for PRs (e.g. `https://github.com/...`), not shorthand like `owner/repo#123`.
+
+**Synthesized rule:** When creating, merging, or referencing a PR, always use the full URL so it's directly clickable.
+
+**Applies to:** workflow, communication
+
+### FB-0003: No feedback collection in shipped extension
+**Date:** 2026-04-07
+**Source:** user direction
+
+**What was said:** Feedback collection is only needed during development for prompt tuning. The shipped extension should not collect any user data. Once the prompt is accurate, the feedback UI, server analytics, and database should be stripped. This aligns with the "privacy by default" principle.
+
+**Synthesized rule:** The feedback system (database.js, feedback UI, analytics endpoints) is dev-only infrastructure. It must be removed before release. Design all measurement/tuning tools as development-time scripts (in eval/), not user-facing features.
+
+**Applies to:** architecture, product, privacy
+
 ### FB-0002: Keep onboarding minimal — product should be self-explanatory
 **Date:** 2026-04-07
 **Source:** user preference
