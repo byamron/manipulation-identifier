@@ -2,7 +2,7 @@
 
 ## Current Focus
 
-Side Panel Polish: keyboard navigation, animations, responsive sidebar, tab switching UX refinements.
+Bug fixes: cross-node highlighting, fuzzy matching, and side panel navigation now working. Ready for manual testing on real web pages.
 
 ## Handoff Notes
 
@@ -12,6 +12,7 @@ API provider migration (OpenAI → Anthropic) complete — both BYOK and server 
 
 ## Recently Completed
 
+- **Apr 7, 2026**: Fix cross-node highlighting, wire in fuzzy matcher, fix side panel → page scroll navigation, fix Enter key and quote-click scroll
 - **Apr 1, 2026**: Complete Anthropic migration — server.js migrated from OpenAI SDK to @anthropic-ai/sdk, prompts.js updated with JSON output instructions, dead code removed
 - **Apr 1, 2026**: Infrastructure migration — CLAUDE.md, agents, rules, skills, core-docs rename
 - **Mar 25, 2026**: Best-in-Class Overhaul — JSON structured output, BYOK architecture, Chrome Side Panel, fuzzy highlighting, content.js simplification (1850→250 lines), rate limiting, database indexes, test suite (56 tests)
