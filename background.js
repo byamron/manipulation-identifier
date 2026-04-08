@@ -189,8 +189,15 @@ async function handleAnalyze(tabId, model) {
   });
 
   try {
-    // Collect text from content script
-    const textResponse = await chrome.tabs.sendMessage(tabId, { action: MSG.COLLECT_TEXT });
+    // Collect text from content script (inject if needed)
+    let textResponse;
+    try {
+      textResponse = await chrome.tabs.sendMessage(tabId, { action: MSG.COLLECT_TEXT });
+    } catch {
+      // Content script not injected — inject it and retry
+      await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
+      textResponse = await chrome.tabs.sendMessage(tabId, { action: MSG.COLLECT_TEXT });
+    }
     const text = textResponse?.text;
 
     if (!text || text.trim().length < 50) {
@@ -231,6 +238,7 @@ async function handleAnalyze(tabId, model) {
 
     return result;
   } catch (error) {
+    console.error('[MI] Analysis failed:', error.message, error.status || '', error);
     // Persist error
     await chrome.storage.session.set({
       [`status_${tabId}`]: {
@@ -251,10 +259,13 @@ function mapErrorMessage(error) {
   if (status === 401) return 'Invalid API key. Update in Settings.';
   if (status === 402) return 'API quota exceeded. Check your Anthropic billing.';
   if (status === 429) return 'Too many requests. Try again in a minute.';
-  if (status >= 500) return 'Server error. Try again later.';
-  if (msg.includes('timeout')) return 'Request timed out. Try again.';
+  if (status >= 500) return 'API server error. Try again later.';
+  if (msg.includes('timeout') || msg.includes('AbortError')) return 'Request timed out. Try again.';
   if (msg.includes('NetworkError') || msg.includes('Failed to fetch')) {
-    return 'Could not reach the server. Check your connection.';
+    return 'Network error — could not reach the API. Check your connection.';
+  }
+  if (msg.includes('Receiving end does not exist') || msg.includes('Could not establish connection')) {
+    return 'Content script not loaded. Try refreshing the page first.';
   }
   return msg || 'An unexpected error occurred.';
 }
