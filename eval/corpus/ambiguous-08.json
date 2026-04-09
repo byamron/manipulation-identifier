@@ -1,0 +1,14 @@
+{
+  "id": "ambiguous-08",
+  "text": "If the city allows a single high-rise apartment building in our residential neighborhood, it sets a precedent. Developers will see that the zoning board is willing to make exceptions, and within a few years, we'll have a corridor of towers where single-family homes used to be. I've seen it happen in other neighborhoods. Once you open that door, it's very hard to close it again.",
+  "annotations": [
+    {
+      "tactic": "Slippery Slope",
+      "quote": "If the city allows a single high-rise apartment building in our residential neighborhood, it sets a precedent. Developers will see that the zoning board is willing to make exceptions, and within a few years, we'll have a corridor of towers where single-family homes used to be."
+    }
+  ],
+  "metadata": {
+    "type": "ambiguous",
+    "note": "Precedent-based reasoning is legitimate in legal and zoning contexts — precedent genuinely does influence future decisions. The speaker's chain of causation (one exception leads to many) is plausible rather than fantastical. This is borderline between a valid concern about institutional precedent and a slippery slope fallacy."
+  }
+}

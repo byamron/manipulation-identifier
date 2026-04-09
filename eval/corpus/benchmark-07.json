@@ -1,0 +1,15 @@
+{
+  "id": "benchmark-07",
+  "text": "A fitness coach who dropped 60 pounds over the past year is now offering personalized nutrition guidance to clients struggling with weight management. With no formal training in dietetics or nutritional science, she bases her meal plans on her own weight loss journey, claiming that her personal transformation gives her the authority to advise others on complex dietary needs.",
+  "annotations": [
+    {
+      "tactic": "Fake Experts",
+      "quote": "A fitness coach who dropped 60 pounds over the past year is now offering personalized nutrition guidance to clients struggling with weight management."
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "content-variation",
+    "note": "Direct port of the Fake Experts case that failed in benchmarks.md testing. A personal transformation is presented as expertise in a technical field. Tests whether the model catches non-obvious credential misrepresentation."
+  }
+}

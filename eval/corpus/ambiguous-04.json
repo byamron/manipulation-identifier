@@ -1,0 +1,18 @@
+{
+  "id": "ambiguous-04",
+  "text": "The mayor's proposal to build a new convention center downtown is a waste of taxpayer money. Every other city that has tried this — look at St. Louis, Hartford, Baltimore — ended up with a white elephant that never generated the promised economic returns. We should invest that $500 million in fixing our crumbling schools instead of chasing the same failed dream that has burned cities across the country.",
+  "annotations": [
+    {
+      "tactic": "Cherry Picking",
+      "quote": "Every other city that has tried this — look at St. Louis, Hartford, Baltimore — ended up with a white elephant"
+    },
+    {
+      "tactic": "Hasty Generalization",
+      "quote": "chasing the same failed dream that has burned cities across the country"
+    }
+  ],
+  "metadata": {
+    "type": "ambiguous",
+    "note": "The examples cited (St. Louis, Hartford, Baltimore) are real and genuinely illustrate the risk of convention center projects. The speaker could be cherry-picking failures while ignoring successes, or could be citing a representative pattern that urban economists have documented. The generalization is broad but not baseless — many convention centers have underperformed."
+  }
+}

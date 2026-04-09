@@ -1,0 +1,15 @@
+{
+  "id": "appeal-to-authority-03",
+  "text": "The city council's debate over fluoridating the municipal water supply took an unexpected turn Thursday when council member David Park cited a letter from retired four-star general Robert Haynes opposing the measure. \"General Haynes served this country with distinction for 35 years and he says fluoridation poses unacceptable risks,\" Park told the council. \"I think we should defer to someone with that level of leadership and judgment.\" Public health officials noted that General Haynes has no background in chemistry, toxicology, or public health, and that the overwhelming consensus among dental and medical professionals supports water fluoridation at recommended levels.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Authority",
+      "quote": "General Haynes served this country with distinction for 35 years and he says fluoridation poses unacceptable risks,\" Park told the council. \"I think we should defer to someone with that level of leadership and judgment."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Appeal to Authority",
+    "variant": "real-world-style"
+  }
+}

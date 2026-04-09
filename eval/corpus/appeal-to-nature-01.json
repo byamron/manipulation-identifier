@@ -1,0 +1,15 @@
+{
+  "id": "appeal-to-nature-01",
+  "text": "Why would you put synthetic chemicals into your body when nature has already provided everything we need? Our ancestors thrived for thousands of years without pharmaceuticals, relying entirely on plants and natural remedies. If it comes from the earth, your body knows how to use it. If it was made in a laboratory, it is foreign to your system and your body will reject it. Natural is always the safer choice.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Nature",
+      "quote": "If it comes from the earth, your body knows how to use it. If it was made in a laboratory, it is foreign to your system and your body will reject it. Natural is always the safer choice."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Appeal to Nature",
+    "variant": "textbook"
+  }
+}

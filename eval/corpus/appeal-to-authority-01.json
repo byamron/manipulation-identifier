@@ -1,0 +1,15 @@
+{
+  "id": "appeal-to-authority-01",
+  "text": "The debate over whether to restructure the public school system was settled last week when Nobel laureate Dr. Helen Marcus weighed in. Dr. Marcus, who won the Nobel Prize in Physics for her work on quantum entanglement, stated definitively that smaller class sizes do not improve educational outcomes. Given her extraordinary intellect and scientific credentials, there is really no reason to continue this discussion. If someone of her caliber says it, we should listen.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Authority",
+      "quote": "Dr. Marcus, who won the Nobel Prize in Physics for her work on quantum entanglement, stated definitively that smaller class sizes do not improve educational outcomes. Given her extraordinary intellect and scientific credentials, there is really no reason to continue this discussion."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Appeal to Authority",
+    "variant": "textbook"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "fake-experts-01",
+  "text": "Dr. Richard Stanton, a leading researcher at the Global Wellness Institute, says that drinking alkaline water can reverse the effects of aging at the cellular level. With over twenty years of experience in holistic health, Dr. Stanton has helped thousands of patients transform their lives. His groundbreaking protocol, available exclusively through his website, has been called a miracle by those who have tried it. The science is clear, according to Dr. Stanton, and mainstream medicine simply refuses to acknowledge it.",
+  "annotations": [
+    {
+      "tactic": "Fake Experts",
+      "quote": "Dr. Richard Stanton, a leading researcher at the Global Wellness Institute, says that drinking alkaline water can reverse the effects of aging at the cellular level. With over twenty years of experience in holistic health, Dr. Stanton has helped thousands of patients transform their lives."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Fake Experts",
+    "variant": "textbook"
+  }
+}

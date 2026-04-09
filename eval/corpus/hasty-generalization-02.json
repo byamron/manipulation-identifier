@@ -1,0 +1,15 @@
+{
+  "id": "hasty-generalization-02",
+  "text": "My family switched to a plant-based diet last month and we have already noticed more energy and better sleep. My neighbor did the same thing and says her joint pain has disappeared completely. It is pretty clear at this point that a plant-based diet is the cure for most of what ails the average person. If everyone made this simple change, we would see chronic disease rates plummet overnight. The evidence from our own lives is all the proof we need.",
+  "annotations": [
+    {
+      "tactic": "Hasty Generalization",
+      "quote": "It is pretty clear at this point that a plant-based diet is the cure for most of what ails the average person. If everyone made this simple change, we would see chronic disease rates plummet overnight."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Hasty Generalization",
+    "variant": "variation"
+  }
+}

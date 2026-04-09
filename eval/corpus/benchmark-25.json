@@ -1,0 +1,22 @@
+{
+  "id": "benchmark-25",
+  "text": "Opinion: Why We Must Return to Natural Medicine. The pharmaceutical industry is poisoning our children with cocktails of synthetic chemicals when nature has provided cures for millennia. A prominent wellness influencer with over two million followers recently published a report showing that herbal remedies outperform prescription drugs for chronic pain — and the medical establishment is terrified of this truth getting out. Our bodies were designed to heal themselves when given the right natural inputs: clean water, whole foods, sunlight, and rest. Instead, we pump ourselves full of laboratory-created pills with side effects that require more pills. Every parent who has watched their child suffer through the side effects of an unnecessary prescription knows in their gut that something is deeply, fundamentally wrong with a system that profits from keeping people sick.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Nature",
+      "quote": "Our bodies were designed to heal themselves when given the right natural inputs: clean water, whole foods, sunlight, and rest"
+    },
+    {
+      "tactic": "Fake Experts",
+      "quote": "A prominent wellness influencer with over two million followers recently published a report showing that herbal remedies outperform prescription drugs for chronic pain"
+    },
+    {
+      "tactic": "Emotional Language",
+      "quote": "Every parent who has watched their child suffer through the side effects of an unnecessary prescription knows in their gut that something is deeply, fundamentally wrong with a system that profits from keeping people sick"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "variant": "real-world-political"
+  }
+}

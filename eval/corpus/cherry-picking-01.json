@@ -1,0 +1,15 @@
+{
+  "id": "cherry-picking-01",
+  "text": "Our city's new policing strategy is a tremendous success. Since we implemented it six months ago, car thefts have dropped by 22%. The numbers speak for themselves. Critics who oppose this approach are ignoring the hard data that proves it works. This is exactly the kind of result-driven leadership our community needs.",
+  "annotations": [
+    {
+      "tactic": "Cherry Picking",
+      "quote": "Since we implemented it six months ago, car thefts have dropped by 22%. The numbers speak for themselves. Critics who oppose this approach are ignoring the hard data that proves it works."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Cherry Picking",
+    "variant": "textbook"
+  }
+}

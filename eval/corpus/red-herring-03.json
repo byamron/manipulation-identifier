@@ -1,0 +1,15 @@
+{
+  "id": "red-herring-03",
+  "text": "During a tense congressional hearing on data privacy practices, Senator Williams pressed the tech company's CEO about reports that user location data had been sold to third-party brokers without consent. The CEO acknowledged the importance of the question but pivoted to the company's recent investments. \"We've created over 50,000 jobs in the United States in the last two years alone and invested $8 billion in domestic data centers,\" he said. \"Our commitment to the American economy and American workers is unmatched in this industry.\" Senator Williams attempted to redirect, but the CEO continued to elaborate on the company's economic contributions for the remainder of his allotted time.",
+  "annotations": [
+    {
+      "tactic": "Red Herring",
+      "quote": "We've created over 50,000 jobs in the United States in the last two years alone and invested $8 billion in domestic data centers,\" he said. \"Our commitment to the American economy and American workers is unmatched in this industry."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Red Herring",
+    "variant": "real-world-style"
+  }
+}

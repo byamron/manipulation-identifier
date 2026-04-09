@@ -1,0 +1,26 @@
+{
+  "id": "benchmark-24",
+  "text": "Look at the numbers, folks. Last quarter the economy added 180,000 jobs, and that proves the current administration's policies are working brilliantly — never mind the sectors that shed workers or the revised figures from the quarter before. The chair of the Federal Reserve herself has said interest rates are stable, so clearly there is nothing to worry about on the inflation front. You either trust the economic data and support staying the course, or you want to recklessly gamble with the livelihoods of millions of families. And let's be honest about the opposition's economic spokesperson — the man couldn't balance his own household budget. He went through a personal bankruptcy fifteen years ago, so why would anyone listen to his policy proposals now?",
+  "annotations": [
+    {
+      "tactic": "Cherry Picking",
+      "quote": "Last quarter the economy added 180,000 jobs, and that proves the current administration's policies are working brilliantly — never mind the sectors that shed workers or the revised figures from the quarter before"
+    },
+    {
+      "tactic": "Appeal to Authority",
+      "quote": "The chair of the Federal Reserve herself has said interest rates are stable, so clearly there is nothing to worry about on the inflation front"
+    },
+    {
+      "tactic": "False Dichotomy",
+      "quote": "You either trust the economic data and support staying the course, or you want to recklessly gamble with the livelihoods of millions of families"
+    },
+    {
+      "tactic": "Ad Hominem",
+      "quote": "the man couldn't balance his own household budget. He went through a personal bankruptcy fifteen years ago, so why would anyone listen to his policy proposals now"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "variant": "real-world-political"
+  }
+}

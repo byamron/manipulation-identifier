@@ -1,0 +1,15 @@
+{
+  "id": "slippery-slope-02",
+  "text": "The school board is considering allowing students to use AI tools for research assignments. If we allow this, students will quickly start using AI to write entire essays. Then they will use it for exams. Eventually, an entire generation will graduate without ever having learned to think for themselves. We will be producing adults who cannot form an original thought or solve a basic problem without consulting a machine. This is how you destroy critical thinking in a society.",
+  "annotations": [
+    {
+      "tactic": "Slippery Slope",
+      "quote": "If we allow this, students will quickly start using AI to write entire essays. Then they will use it for exams. Eventually, an entire generation will graduate without ever having learned to think for themselves."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Slippery Slope",
+    "variant": "variation"
+  }
+}

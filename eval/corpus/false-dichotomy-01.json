@@ -1,0 +1,15 @@
+{
+  "id": "false-dichotomy-01",
+  "text": "We have two choices here: either we fully fund the military at the levels requested, or we leave our country completely defenseless against foreign threats. There is no middle ground on national security. You are either committed to protecting this nation or you are willing to let it fall.",
+  "annotations": [
+    {
+      "tactic": "False Dichotomy",
+      "quote": "either we fully fund the military at the levels requested, or we leave our country completely defenseless against foreign threats. There is no middle ground on national security."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "False Dichotomy",
+    "variant": "textbook"
+  }
+}

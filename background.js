@@ -181,10 +181,13 @@ async function handleAnalyze(tabId, model) {
   const settings = await getSettings();
   const useModel = model || settings.model;
 
-  // Write "analyzing" status
-  await chrome.storage.session.set({
-    [`status_${tabId}`]: { status: 'analyzing', timestamp: Date.now() }
+  const statusKey = `status_${tabId}`;
+  const startedAt = Date.now();
+  const writeStage = (stage) => chrome.storage.session.set({
+    [statusKey]: { status: 'analyzing', stage, startedAt, timestamp: Date.now() }
   });
+
+  await writeStage('collecting');
 
   try {
     // Collect text from content script (inject if needed)
@@ -202,13 +205,18 @@ async function handleAnalyze(tabId, model) {
       throw new Error('Not enough text content on this page to analyze.');
     }
 
+    await writeStage('calling_api');
+
     // Call API — BYOK if key exists, otherwise server proxy
+    const resultsKey = `results_${tabId}`;
     let result;
     if (settings.apiKey) {
       result = await callGeminiDirect(text, useModel, settings.apiKey);
     } else {
       result = await callServerProxy(text, useModel, settings.serverUrl);
     }
+
+    await writeStage('processing');
 
     // Persist results
     await chrome.storage.session.set({
@@ -221,6 +229,13 @@ async function handleAnalyze(tabId, model) {
       },
       [`status_${tabId}`]: { status: 'complete', timestamp: Date.now() }
     });
+
+    // Update extension icon badge
+    const count = result.results.length;
+    chrome.action.setBadgeText({ tabId, text: count > 0 ? String(count) : '' });
+    if (count > 0) {
+      chrome.action.setBadgeBackgroundColor({ tabId, color: '#ef5350' });
+    }
 
     // Send highlights to content script
     if (result.results.length > 0) {
@@ -303,6 +318,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.tabs.sendMessage(tabId, { action: MSG.CLEAR_HIGHLIGHTS })
       .then(() => {
         chrome.storage.session.remove([`results_${tabId}`, `status_${tabId}`]);
+        chrome.action.setBadgeText({ tabId, text: '' });
         sendResponse({ success: true });
       })
       .catch(() => sendResponse({ success: false }));

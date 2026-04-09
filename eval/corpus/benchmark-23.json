@@ -1,0 +1,26 @@
+{
+  "id": "benchmark-23",
+  "text": "My fellow citizens, let me be blunt about the crisis at our border. Every single day, waves of undocumented migrants are pouring across, and they are the reason your neighborhoods are becoming unrecognizable and unsafe. I visited one border town last week, and a local told me his car was broken into — that tells you everything you need to know about what unchecked migration does to a community. If we don't seal the border completely within the next six months, our hospitals will collapse under the weight of free care, our schools will be overrun, and American workers won't be able to find a single job in their own country. This is an invasion, plain and simple, and the bleeding-heart politicians who refuse to act have the blood of every victim on their hands.",
+  "annotations": [
+    {
+      "tactic": "Scapegoating",
+      "quote": "they are the reason your neighborhoods are becoming unrecognizable and unsafe"
+    },
+    {
+      "tactic": "Hasty Generalization",
+      "quote": "a local told me his car was broken into — that tells you everything you need to know about what unchecked migration does to a community"
+    },
+    {
+      "tactic": "Slippery Slope",
+      "quote": "If we don't seal the border completely within the next six months, our hospitals will collapse under the weight of free care, our schools will be overrun, and American workers won't be able to find a single job in their own country"
+    },
+    {
+      "tactic": "Emotional Language",
+      "quote": "This is an invasion, plain and simple, and the bleeding-heart politicians who refuse to act have the blood of every victim on their hands"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "variant": "real-world-political"
+  }
+}

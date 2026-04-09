@@ -1,0 +1,19 @@
+{
+  "id": "emotional-language-01",
+  "text": "Parents across the country are absolutely TERRIFIED tonight as a new threat emerges in our schools. This horrifying trend is putting our children in grave danger every single day, and the authorities are doing NOTHING to stop it. Your kids could be next. Every parent needs to see this before it's too late.",
+  "annotations": [
+    {
+      "tactic": "Emotional Language",
+      "quote": "Parents across the country are absolutely TERRIFIED tonight as a new threat emerges in our schools. This horrifying trend is putting our children in grave danger every single day, and the authorities are doing NOTHING to stop it."
+    },
+    {
+      "tactic": "Emotional Language",
+      "quote": "Your kids could be next. Every parent needs to see this before it's too late."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Emotional Language",
+    "variant": "textbook"
+  }
+}

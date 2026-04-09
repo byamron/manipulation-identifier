@@ -1,0 +1,15 @@
+{
+  "id": "appeal-to-majority-03",
+  "text": "A skincare brand's new advertising campaign leans heavily on social proof to drive conversions. The campaign's landing page prominently displays the tagline \"Join the 2 million women who have already made the switch\" alongside a real-time counter of purchases. Customer testimonials are organized under a banner reading \"The world's most trusted skincare brand\" with the subtext: \"When this many women choose the same product, it is not marketing. It is proof.\" Dermatologists interviewed for a consumer report noted that popularity is not a substitute for clinical evidence and that the product's key ingredient has limited peer-reviewed research supporting its advertised benefits.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Majority",
+      "quote": "When this many women choose the same product, it is not marketing. It is proof."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Appeal to Majority",
+    "variant": "real-world-style"
+  }
+}

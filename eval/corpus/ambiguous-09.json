@@ -1,0 +1,18 @@
+{
+  "id": "ambiguous-09",
+  "text": "The CEO of MegaCorp likes to talk about corporate responsibility, but this is the man who laid off 10,000 workers while giving himself a $25 million bonus. His new sustainability initiative is nothing more than a PR campaign designed to distract from the company's continued dumping of industrial waste into the river. Sometimes you have to look at who is speaking, not just what they are saying.",
+  "annotations": [
+    {
+      "tactic": "Ad Hominem",
+      "quote": "this is the man who laid off 10,000 workers while giving himself a $25 million bonus"
+    },
+    {
+      "tactic": "Red Herring",
+      "quote": "the company's continued dumping of industrial waste into the river"
+    }
+  ],
+  "metadata": {
+    "type": "ambiguous",
+    "note": "The speaker raises a genuine hypocrisy — the CEO's past actions are relevant to evaluating the sincerity of a sustainability initiative. The waste dumping is directly related to the sustainability claim, not a true red herring. However, pointing to character and past behavior rather than the merits of the initiative itself has the structure of ad hominem reasoning."
+  }
+}

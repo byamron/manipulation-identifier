@@ -1,0 +1,15 @@
+{
+  "id": "benchmark-13",
+  "text": "Don't bother listening to what the opposition candidate says about healthcare reform. She's a wealthy trust fund baby who has never had to worry about paying a medical bill in her entire pampered life. How could someone who grew up with a silver spoon possibly understand what real families go through?",
+  "annotations": [
+    {
+      "tactic": "Ad Hominem",
+      "quote": "She's a wealthy trust fund baby who has never had to worry about paying a medical bill in her entire pampered life."
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "content-variation",
+    "note": "Ad Hominem rephrased with different personal attack (wealth/privilege instead of academic background). Same structure: dismiss the argument by attacking the person's background."
+  }
+}

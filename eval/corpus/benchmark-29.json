@@ -1,0 +1,26 @@
+{
+  "id": "benchmark-29",
+  "text": "This administration's environmental record is nothing short of catastrophic. While they boast about planting a few thousand trees, they conveniently ignore that carbon emissions rose for the third straight year and two major waterways were reclassified as ecologically dead. A panel of scientists hand-picked by the governor's office declared the state's air quality 'satisfactory,' but independent researchers tell a very different story. The opposition leader, who has been pushing for stronger environmental protections, was recently mocked by the governor as 'someone who probably cries when a tree gets cut down' — as if caring about the air your children breathe is something to be ashamed of. Our rivers are dying, our forests are burning, and our leaders are laughing. The time for half-measures is over.",
+  "annotations": [
+    {
+      "tactic": "Cherry Picking",
+      "quote": "While they boast about planting a few thousand trees, they conveniently ignore that carbon emissions rose for the third straight year and two major waterways were reclassified as ecologically dead"
+    },
+    {
+      "tactic": "Appeal to Authority",
+      "quote": "A panel of scientists hand-picked by the governor's office declared the state's air quality 'satisfactory,'"
+    },
+    {
+      "tactic": "Ad Hominem",
+      "quote": "was recently mocked by the governor as 'someone who probably cries when a tree gets cut down'"
+    },
+    {
+      "tactic": "Emotional Language",
+      "quote": "Our rivers are dying, our forests are burning, and our leaders are laughing"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "variant": "real-world-political"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "appeal-to-nature-03",
+  "text": "A new line of baby products is marketing itself as the safer alternative for health-conscious parents. The brand's website emphasizes that every ingredient is \"sourced directly from nature\" and contrasts its formulations with what it calls \"the synthetic chemical cocktails found in mainstream baby shampoos and lotions.\" One product page reads: \"Your baby's skin was designed to interact with the natural world, not with chemicals synthesized in a factory. Our plant-derived formula works in harmony with your baby's biology, the way nature intended.\" Pediatric dermatologists have noted that the term \"natural\" is not regulated in cosmetics and that several natural plant extracts can cause allergic reactions in infants, while many synthetic ingredients have decades of safety data behind them.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Nature",
+      "quote": "Your baby's skin was designed to interact with the natural world, not with chemicals synthesized in a factory. Our plant-derived formula works in harmony with your baby's biology, the way nature intended."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Appeal to Nature",
+    "variant": "real-world-style"
+  }
+}

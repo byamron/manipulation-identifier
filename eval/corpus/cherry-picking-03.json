@@ -1,0 +1,15 @@
+{
+  "id": "cherry-picking-03",
+  "text": "In a press conference Wednesday, the governor touted the state's economic recovery, pointing to a record-high stock market index and a 3.1% unemployment rate. \"By every measure, this economy is roaring back,\" she told reporters, citing job creation numbers from the technology and finance sectors. Independent economists noted, however, that the governor's remarks omitted several key indicators: real wage growth remains flat, consumer debt has reached historic levels, and the labor force participation rate has dropped to its lowest point in two decades. The sectors she highlighted account for less than 15% of total state employment.",
+  "annotations": [
+    {
+      "tactic": "Cherry Picking",
+      "quote": "pointing to a record-high stock market index and a 3.1% unemployment rate. \"By every measure, this economy is roaring back,\" she told reporters, citing job creation numbers from the technology and finance sectors."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Cherry Picking",
+    "variant": "real-world-style"
+  }
+}
