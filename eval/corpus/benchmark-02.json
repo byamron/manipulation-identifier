@@ -1,0 +1,15 @@
+{
+  "id": "benchmark-02",
+  "text": "the immigrants are the ones taking all the good jobs and driving wages into the ground... its been happening for years and nobody in washington cares enough to stop it... they just keep coming and we keep suffering...",
+  "annotations": [
+    {
+      "tactic": "Scapegoating",
+      "quote": "the immigrants are the ones taking all the good jobs and driving wages into the ground"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "format-variation",
+    "note": "All lowercase, no proper punctuation, trailing ellipses — informal social media style. Tests that Scapegoating is detected regardless of poor formatting."
+  }
+}

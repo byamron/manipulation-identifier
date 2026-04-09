@@ -1,0 +1,14 @@
+{
+  "id": "ambiguous-02",
+  "text": "My grandmother always said that a family that eats dinner together stays together, and I think there's real wisdom in that. In our rush to modernize everything, we've lost touch with simple practices that held communities together for generations. I'm not saying we should reject progress, but maybe we shouldn't be so quick to throw away traditions that worked.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Tradition",
+      "quote": "simple practices that held communities together for generations"
+    }
+  ],
+  "metadata": {
+    "type": "ambiguous",
+    "note": "The speaker explicitly qualifies their position ('I'm not saying we should reject progress') and frames it as personal reflection rather than a prescriptive argument. The appeal to tradition is present but mild and self-aware. Could be read as thoughtful nostalgia rather than a fallacious argument."
+  }
+}

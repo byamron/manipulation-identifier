@@ -1,0 +1,15 @@
+{
+  "id": "benchmark-09",
+  "text": "We must make a decision now: we either fully fund our public transportation system or accept that our city will become a gridlocked, unlivable mess where nobody can get to work. Those are the only two paths forward.",
+  "annotations": [
+    {
+      "tactic": "False Dichotomy",
+      "quote": "we either fully fund our public transportation system or accept that our city will become a gridlocked, unlivable mess where nobody can get to work"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "content-variation",
+    "note": "False Dichotomy rephrased with different content (transportation instead of military/patriotism). Same structure: two extreme options presented as exhaustive."
+  }
+}

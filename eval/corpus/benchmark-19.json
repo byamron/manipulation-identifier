@@ -1,0 +1,15 @@
+{
+  "id": "benchmark-19",
+  "text": "Posted in r/parenting:\n\nMy sister-in-law fed my toddler a piece of candy and now I'm being told I'm overreacting?? First it's one piece of candy. Then it's soda. Then fast food every weekend. Then by the time my kid is ten, she'll have a full-blown sugar addiction and health problems for life. I've seen this exact pattern play out with my cousin's kids. Once you let people cross your boundaries, they NEVER stop.",
+  "annotations": [
+    {
+      "tactic": "Slippery Slope",
+      "quote": "First it's one piece of candy. Then it's soda. Then fast food every weekend. Then by the time my kid is ten, she'll have a full-blown sugar addiction and health problems for life."
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "format-content-variation",
+    "note": "Slippery Slope in Reddit post format with parenting content. Informal social media voice and domestic subject matter, very different from typical political examples."
+  }
+}

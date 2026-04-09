@@ -26,6 +26,24 @@
       .replace(/'/g, '&#039;');
   }
 
+  const TACTIC_CATEGORIES = {
+    'False Dichotomy': 'logical',
+    'Cherry Picking': 'logical',
+    'Slippery Slope': 'logical',
+    'Hasty Generalization': 'logical',
+    'Red Herring': 'logical',
+    'Emotional Language': 'rhetorical',
+    'Polarization': 'rhetorical',
+    'Appeal to Majority': 'rhetorical',
+    'Appeal to Nature': 'rhetorical',
+    'Appeal to Tradition': 'rhetorical',
+    'Scapegoating': 'rhetorical',
+    'Ad Hominem': 'credibility',
+    'Fake Experts': 'credibility',
+    'Appeal to Authority': 'credibility',
+    'Decontextualization': 'credibility'
+  };
+
   // ── Text normalization for matching ──
 
   function normalizeText(text) {
@@ -49,26 +67,54 @@
     if (document.getElementById('mi-highlight-style')) return;
     const style = document.createElement('style');
     style.id = 'mi-highlight-style';
+    // Category colors: tuned for visibility on both light and dark page backgrounds.
+    // Source of truth for RGB values: sidepanel.css --cat-logical/rhetorical/credibility.
     style.textContent = `
       .mi-highlight {
-        background-color: #fff3cd !important;
-        border: 1px solid #ffeaa7 !important;
         border-radius: 3px !important;
         padding: 1px 2px !important;
         transition: background 0.15s, border 0.15s;
         cursor: pointer !important;
       }
-      .mi-highlight:hover {
-        background-color: #ffe082 !important;
-        border-color: #ffd54f !important;
+      .mi-highlight.mi-logical {
+        background-color: rgba(91, 156, 245, 0.25) !important;
+        border: 1px solid rgba(91, 156, 245, 0.35) !important;
       }
-      .mi-highlight.mi-active {
-        background-color: #ffd54f !important;
-        border-color: #ffca28 !important;
+      .mi-highlight.mi-logical:hover {
+        background-color: rgba(91, 156, 245, 0.38) !important;
+        border-color: rgba(91, 156, 245, 0.50) !important;
+      }
+      .mi-highlight.mi-logical.mi-active {
+        background-color: rgba(91, 156, 245, 0.45) !important;
+        border-color: rgba(91, 156, 245, 0.60) !important;
+      }
+      .mi-highlight.mi-rhetorical {
+        background-color: rgba(232, 148, 58, 0.25) !important;
+        border: 1px solid rgba(232, 148, 58, 0.35) !important;
+      }
+      .mi-highlight.mi-rhetorical:hover {
+        background-color: rgba(232, 148, 58, 0.38) !important;
+        border-color: rgba(232, 148, 58, 0.50) !important;
+      }
+      .mi-highlight.mi-rhetorical.mi-active {
+        background-color: rgba(232, 148, 58, 0.45) !important;
+        border-color: rgba(232, 148, 58, 0.60) !important;
+      }
+      .mi-highlight.mi-credibility {
+        background-color: rgba(239, 83, 80, 0.22) !important;
+        border: 1px solid rgba(239, 83, 80, 0.32) !important;
+      }
+      .mi-highlight.mi-credibility:hover {
+        background-color: rgba(239, 83, 80, 0.35) !important;
+        border-color: rgba(239, 83, 80, 0.48) !important;
+      }
+      .mi-highlight.mi-credibility.mi-active {
+        background-color: rgba(239, 83, 80, 0.42) !important;
+        border-color: rgba(239, 83, 80, 0.58) !important;
       }
       @keyframes mi-pulse {
-        0%, 100% { background-color: #fff3cd; }
-        50% { background-color: #ffeb3b; }
+        0%, 100% { opacity: 0.7; }
+        50% { opacity: 1; }
       }
       .mi-highlight.mi-pulse {
         animation: mi-pulse 0.6s ease-in-out;
@@ -377,7 +423,8 @@
           }
 
           const span = document.createElement('span');
-          span.className = 'mi-highlight';
+          const category = TACTIC_CATEGORIES[nm.tactic] || 'logical';
+          span.className = `mi-highlight mi-${category}`;
           span.textContent = nodeText.slice(nm.start, nm.end);
           span.tabIndex = 0;
           span.setAttribute('role', 'button');

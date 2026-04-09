@@ -1,0 +1,14 @@
+{
+  "id": "ambiguous-10",
+  "text": "The new immigration policy is going to hurt the restaurant industry badly. I run a kitchen with twelve employees, and eight of them are immigrants who came here legally on work visas. These are skilled, dedicated people who show up every day and do work that most native-born Americans simply don't want to do. I've posted job listings for dishwashers and line cooks for months with almost no takers from local applicants. That is just the reality of this industry.",
+  "annotations": [
+    {
+      "tactic": "Hasty Generalization",
+      "quote": "work that most native-born Americans simply don't want to do"
+    }
+  ],
+  "metadata": {
+    "type": "ambiguous",
+    "note": "The claim that native-born Americans 'don't want to do' certain jobs is a common generalization. However, the speaker supports it with direct personal experience (months of unfilled job listings), which makes it closer to inductive reasoning from evidence than a baseless generalization. The phrasing is broad, but the underlying observation has empirical support in labor economics."
+  }
+}

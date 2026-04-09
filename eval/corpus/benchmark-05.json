@@ -1,0 +1,19 @@
+{
+  "id": "benchmark-05",
+  "text": "Q: What about critics who say this policy will hurt the middle class?\nA: Those critics are just bitter academics who have never run a business or met a payroll in their lives. They sit in their ivory towers and lecture the rest of us about economics while the REAL workers of this country suffer under their failed theories.",
+  "annotations": [
+    {
+      "tactic": "Ad Hominem",
+      "quote": "Those critics are just bitter academics who have never run a business or met a payroll in their lives."
+    },
+    {
+      "tactic": "Emotional Language",
+      "quote": "the REAL workers of this country suffer under their failed theories"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "format-variation",
+    "note": "Interview Q&A format instead of prose. Tests that Ad Hominem is detected in structured dialogue formatting."
+  }
+}

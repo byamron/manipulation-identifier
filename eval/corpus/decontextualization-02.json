@@ -1,0 +1,15 @@
+{
+  "id": "decontextualization-02",
+  "text": "A headline this week read: \"CEO says employees are replaceable.\" The quote spread rapidly across social media, prompting calls for boycotts. In the original interview, however, the CEO was discussing the company's investment in cross-training programs. Her full statement was: \"We have built our teams so that if someone takes parental leave or goes on vacation, their work continues smoothly. In that operational sense, we have made every role resilient, so no one person becomes a single point of failure. That benefits the employees as much as the company.\" The extracted phrase stripped away the entire context about employee welfare and work-life balance.",
+  "annotations": [
+    {
+      "tactic": "Decontextualization",
+      "quote": "A headline this week read: \"CEO says employees are replaceable.\" The quote spread rapidly across social media, prompting calls for boycotts."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Decontextualization",
+    "variant": "variation"
+  }
+}

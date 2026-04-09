@@ -1,0 +1,14 @@
+{
+  "id": "ambiguous-03",
+  "text": "Look, I'm no scientist, but my doctor told me that switching to a more plant-based diet helped a lot of his patients with similar cholesterol issues. He's been practicing medicine for thirty years and has seen thousands of patients. I decided to give it a try, and my numbers improved within three months. I think more people should at least consider it.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Authority",
+      "quote": "my doctor told me that switching to a more plant-based diet helped a lot of his patients with similar cholesterol issues"
+    }
+  ],
+  "metadata": {
+    "type": "ambiguous",
+    "note": "The speaker is citing a relevant authority (their own doctor, who has domain expertise) for a claim that is broadly supported by medical literature. This is closer to legitimate use of expert opinion than a fallacious appeal to authority. The speaker also frames it as personal experience rather than universal truth."
+  }
+}

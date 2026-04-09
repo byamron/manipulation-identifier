@@ -1,0 +1,19 @@
+{
+  "id": "polarization-01",
+  "text": "The people on the other side of this debate do not share our values. They want to tear down everything this country was built on. They mock our way of life, look down on our communities, and openly despise everything we hold dear. We cannot negotiate with people who see us as the enemy. It is time to stop pretending we can find common ground with those who want to destroy us.",
+  "annotations": [
+    {
+      "tactic": "Polarization",
+      "quote": "The people on the other side of this debate do not share our values. They want to tear down everything this country was built on. They mock our way of life, look down on our communities, and openly despise everything we hold dear."
+    },
+    {
+      "tactic": "Polarization",
+      "quote": "We cannot negotiate with people who see us as the enemy. It is time to stop pretending we can find common ground with those who want to destroy us."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Polarization",
+    "variant": "textbook"
+  }
+}

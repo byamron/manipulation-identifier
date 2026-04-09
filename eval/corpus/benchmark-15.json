@@ -1,0 +1,15 @@
+{
+  "id": "benchmark-15",
+  "text": "THREAD (1/3): ok so I just found out that the head of the new federal nutrition board is a lifestyle blogger with ZERO background in medicine or public health??? she wrote a book about 'intuitive eating' and now she's setting dietary guidelines for 330 million people. this is insane.",
+  "annotations": [
+    {
+      "tactic": "Fake Experts",
+      "quote": "the head of the new federal nutrition board is a lifestyle blogger with ZERO background in medicine or public health"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "format-content-variation",
+    "note": "Fake Experts in Twitter thread format with informal language. Both format (social media thread) and content (government appointment) differ from textbook examples."
+  }
+}

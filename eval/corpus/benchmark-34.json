@@ -1,0 +1,30 @@
+{
+  "id": "benchmark-34",
+  "text": "The senator's critics love to bring up his lack of military service, calling him a 'chicken hawk' who has no business shaping defense policy. That is a cheap personal attack meant to distract from the substance of his proposal. Meanwhile, a decorated four-star general endorsed the senator's veterans' benefits plan on national television, and that alone should settle the debate over whether it is sound policy. When challenged on the plan's projected costs, the senator's opponents immediately changed the subject to procurement scandals from the previous administration — problems that have nothing to do with the current proposal. The senator stated in a long interview that 'we need to carefully evaluate the long-term fiscal impact before expanding benefits,' but his words were clipped to just 'we need to evaluate before expanding benefits,' making it sound like he wants to delay help for veterans. Our brave men and women in uniform deserve better than this shameful political circus that treats their sacrifice as a bargaining chip.",
+  "annotations": [
+    {
+      "tactic": "Ad Hominem",
+      "quote": "calling him a 'chicken hawk' who has no business shaping defense policy. That is a cheap personal attack meant to distract from the substance of his proposal"
+    },
+    {
+      "tactic": "Appeal to Authority",
+      "quote": "a decorated four-star general endorsed the senator's veterans' benefits plan on national television, and that alone should settle the debate over whether it is sound policy"
+    },
+    {
+      "tactic": "Red Herring",
+      "quote": "the senator's opponents immediately changed the subject to procurement scandals from the previous administration — problems that have nothing to do with the current proposal"
+    },
+    {
+      "tactic": "Decontextualization",
+      "quote": "The senator stated in a long interview that 'we need to carefully evaluate the long-term fiscal impact before expanding benefits,' but his words were clipped to just 'we need to evaluate before expanding benefits,'"
+    },
+    {
+      "tactic": "Emotional Language",
+      "quote": "Our brave men and women in uniform deserve better than this shameful political circus that treats their sacrifice as a bargaining chip"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "variant": "real-world-political"
+  }
+}

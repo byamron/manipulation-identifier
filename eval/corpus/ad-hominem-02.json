@@ -1,0 +1,15 @@
+{
+  "id": "ad-hominem-02",
+  "text": "The new study on minimum wage was published by researchers at Greenfield University, but let us be honest about what that institution is. Greenfield is a second-tier school that most people have never even heard of. Their economics department has produced nothing of note in decades. Maybe if these researchers had positions at a serious university, their findings would be worth discussing. Until then, this is just noise from people who could not get hired anywhere better.",
+  "annotations": [
+    {
+      "tactic": "Ad Hominem",
+      "quote": "Greenfield is a second-tier school that most people have never even heard of. Their economics department has produced nothing of note in decades. Maybe if these researchers had positions at a serious university, their findings would be worth discussing."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Ad Hominem",
+    "variant": "variation"
+  }
+}

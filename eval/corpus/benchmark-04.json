@@ -1,0 +1,15 @@
+{
+  "id": "benchmark-04",
+  "text": "-- Professor James Morton (PhD, Harvard) -- a leading expert in nutritional biochemistry -- has confirmed that our supplement formula is clinically proven to boost cognitive function by up to 40%. --",
+  "annotations": [
+    {
+      "tactic": "Fake Experts",
+      "quote": "Professor James Morton (PhD, Harvard) -- a leading expert in nutritional biochemistry -- has confirmed that our supplement formula is clinically proven to boost cognitive function by up to 40%"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "format-variation",
+    "note": "Em-dash heavy formatting, parenthetical credentials. Tests Fake Experts detection with unusual punctuation styling."
+  }
+}

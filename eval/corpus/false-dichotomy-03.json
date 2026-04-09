@@ -1,0 +1,15 @@
+{
+  "id": "false-dichotomy-03",
+  "text": "The school board met Tuesday evening to discuss the proposed changes to the district's reading curriculum. Board member Karen Torres argued that the district faces a stark choice. \"We can adopt this evidence-based literacy program and give our students a fighting chance, or we can stick with the status quo and accept that a third of our kids will never read at grade level,\" Torres said during public comment. Several parents pushed back, noting that alternative programs exist and that the choice is not binary, but Torres maintained that delay itself amounts to choosing failure.",
+  "annotations": [
+    {
+      "tactic": "False Dichotomy",
+      "quote": "We can adopt this evidence-based literacy program and give our students a fighting chance, or we can stick with the status quo and accept that a third of our kids will never read at grade level"
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "False Dichotomy",
+    "variant": "real-world-style"
+  }
+}

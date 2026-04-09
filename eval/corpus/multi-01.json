@@ -1,0 +1,25 @@
+{
+  "id": "multi-01",
+  "text": "The radical environmentalists want to destroy our economy and send us back to the Stone Age. Either we drill for more oil now, or we watch as millions of hardworking Americans lose their jobs and their homes. These so-called 'climate scientists' — most of whom have never worked a real job in their lives — want you to believe that a slight temperature change is worth sacrificing everything our grandparents built. Wake up, people. Ninety percent of the country knows this green agenda is a scam.",
+  "annotations": [
+    {
+      "tactic": "Emotional Language",
+      "quote": "destroy our economy and send us back to the Stone Age"
+    },
+    {
+      "tactic": "False Dichotomy",
+      "quote": "Either we drill for more oil now, or we watch as millions of hardworking Americans lose their jobs and their homes."
+    },
+    {
+      "tactic": "Ad Hominem",
+      "quote": "These so-called 'climate scientists' — most of whom have never worked a real job in their lives"
+    },
+    {
+      "tactic": "Appeal to Majority",
+      "quote": "Ninety percent of the country knows this green agenda is a scam."
+    }
+  ],
+  "metadata": {
+    "type": "multi-tactic"
+  }
+}

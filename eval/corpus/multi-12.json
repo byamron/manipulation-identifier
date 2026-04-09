@@ -1,0 +1,25 @@
+{
+  "id": "multi-12",
+  "text": "The United States has the best healthcare system in the world, and anyone who tells you otherwise is pushing a socialist agenda. Nobel laureate Dr. Richard Marshall has said that American medical innovation is unmatched — we develop more drugs and treatments than any other country. Socialized medicine in Canada means waiting six months for an MRI. If we let the government take over healthcare, it'll start with price controls and end with rationing and death panels deciding who lives and who dies. The people pushing Medicare for All are the same radicals who want to defund the police and open our borders.",
+  "annotations": [
+    {
+      "tactic": "Cherry Picking",
+      "quote": "we develop more drugs and treatments than any other country"
+    },
+    {
+      "tactic": "Appeal to Authority",
+      "quote": "Nobel laureate Dr. Richard Marshall has said that American medical innovation is unmatched"
+    },
+    {
+      "tactic": "Slippery Slope",
+      "quote": "If we let the government take over healthcare, it'll start with price controls and end with rationing and death panels deciding who lives and who dies."
+    },
+    {
+      "tactic": "Scapegoating",
+      "quote": "The people pushing Medicare for All are the same radicals who want to defund the police and open our borders."
+    }
+  ],
+  "metadata": {
+    "type": "multi-tactic"
+  }
+}

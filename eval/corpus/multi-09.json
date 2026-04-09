@@ -1,0 +1,25 @@
+{
+  "id": "multi-09",
+  "text": "We've all seen the devastating footage from the latest school shooting. This is a uniquely American epidemic, and the gun lobby — led by morally bankrupt politicians who care more about NRA donations than dead children — refuses to act. When the other side talks about 'mental health,' they're just trying to distract you from the obvious solution: ban assault weapons. Australia did it and their mass shootings dropped to zero. If we don't act now, today's kindergartners will grow up doing active shooter drills instead of learning to read. This is the defining moral issue of our generation.",
+  "annotations": [
+    {
+      "tactic": "Emotional Language",
+      "quote": "morally bankrupt politicians who care more about NRA donations than dead children"
+    },
+    {
+      "tactic": "Red Herring",
+      "quote": "When the other side talks about 'mental health,' they're just trying to distract you from the obvious solution"
+    },
+    {
+      "tactic": "Cherry Picking",
+      "quote": "Australia did it and their mass shootings dropped to zero."
+    },
+    {
+      "tactic": "Slippery Slope",
+      "quote": "If we don't act now, today's kindergartners will grow up doing active shooter drills instead of learning to read."
+    }
+  ],
+  "metadata": {
+    "type": "multi-tactic"
+  }
+}

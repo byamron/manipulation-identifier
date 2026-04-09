@@ -1,0 +1,15 @@
+{
+  "id": "slippery-slope-03",
+  "text": "The city's proposal to convert two downtown parking lanes into protected bike corridors has sparked heated debate. At Wednesday's public hearing, business owner Frank Moretti warned that the project would be the beginning of the end for downtown commerce. \"First they take the parking lanes. Then they pedestrianize entire blocks. Then delivery trucks cannot get through, businesses lose customers, and storefronts go vacant. Within five years, downtown will be a ghost town,\" Moretti said. Transportation planners noted that similar conversions in Portland and Minneapolis actually increased foot traffic and retail revenue, but Moretti insisted those cities are not comparable.",
+  "annotations": [
+    {
+      "tactic": "Slippery Slope",
+      "quote": "First they take the parking lanes. Then they pedestrianize entire blocks. Then delivery trucks cannot get through, businesses lose customers, and storefronts go vacant. Within five years, downtown will be a ghost town"
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Slippery Slope",
+    "variant": "real-world-style"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "benchmark-12",
+  "text": "If we allow students to use AI tools for homework assignments, they'll stop learning to write entirely. Then they won't be able to think critically. Then employers won't hire them. Within a generation, we'll have produced a population that is completely dependent on machines for every cognitive task.",
+  "annotations": [
+    {
+      "tactic": "Slippery Slope",
+      "quote": "If we allow students to use AI tools for homework assignments, they'll stop learning to write entirely. Then they won't be able to think critically. Then employers won't hire them. Within a generation, we'll have produced a population that is completely dependent on machines for every cognitive task."
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "content-variation",
+    "note": "Slippery Slope rephrased in education/technology domain instead of economics. Same escalating chain of consequences from a single initial step."
+  }
+}

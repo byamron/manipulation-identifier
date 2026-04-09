@@ -1,0 +1,15 @@
+{
+  "id": "benchmark-08",
+  "text": "A retired plumber who cured his own chronic back pain through stretching exercises now runs a popular YouTube channel giving spinal health advice. Despite having no medical or physiotherapy qualifications, he tells his 500,000 subscribers that his methods are more effective than anything a doctor could prescribe, based purely on his own recovery.",
+  "annotations": [
+    {
+      "tactic": "Fake Experts",
+      "quote": "A retired plumber who cured his own chronic back pain through stretching exercises now runs a popular YouTube channel giving spinal health advice."
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "content-variation",
+    "note": "Second Fake Experts content variation. Different domain (physical therapy vs nutrition) but same pattern: personal experience claimed as professional expertise."
+  }
+}

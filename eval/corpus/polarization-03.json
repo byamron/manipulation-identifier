@@ -1,0 +1,19 @@
+{
+  "id": "polarization-03",
+  "text": "A popular political commentator's latest newsletter has drawn criticism for its framing of the education policy debate. \"The progressives want to rewrite history and indoctrinate your children with ideology. The conservatives want to preserve truth and protect parental rights. There is no middle ground here,\" the commentator wrote. The newsletter, which reaches an estimated 800,000 subscribers, goes on to describe supporters of the new curriculum as \"enemies of the family\" who \"hate traditional values and will not stop until every school is a propaganda factory.\" Several educators from both sides of the political spectrum called the characterization reductive and harmful to productive dialogue.",
+  "annotations": [
+    {
+      "tactic": "Polarization",
+      "quote": "The progressives want to rewrite history and indoctrinate your children with ideology. The conservatives want to preserve truth and protect parental rights. There is no middle ground here"
+    },
+    {
+      "tactic": "Polarization",
+      "quote": "enemies of the family\" who \"hate traditional values and will not stop until every school is a propaganda factory."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Polarization",
+    "variant": "real-world-style"
+  }
+}

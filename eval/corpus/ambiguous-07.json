@@ -1,0 +1,14 @@
+{
+  "id": "ambiguous-07",
+  "text": "I prefer to use natural remedies for minor ailments whenever possible — honey for a sore throat, ginger tea for nausea, lavender oil to help me relax before bed. I know these aren't substitutes for real medicine when something serious is going on, and I always see my doctor for anything beyond the basics. But for everyday wellness, I'd rather reach for something that comes from a plant than a pill.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Nature",
+      "quote": "I'd rather reach for something that comes from a plant than a pill."
+    }
+  ],
+  "metadata": {
+    "type": "ambiguous",
+    "note": "The speaker explicitly acknowledges the limits of natural remedies and defers to medical professionals for serious issues. The preference for 'natural' options is framed as personal choice rather than a universal argument. This is a mild, qualified appeal to nature that may not rise to the level of a manipulative tactic."
+  }
+}

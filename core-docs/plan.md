@@ -2,7 +2,7 @@
 
 ## Current Focus
 
-Accuracy measurement system (item 1.0). Build eval harness and test corpus so prompt improvements can be measured, then tune the prompt.
+Item 1.0 (eval harness and test corpus) is complete. Next steps: run baseline eval to establish current prompt performance, then begin item 1.1 (prompt tuning with few-shot examples and confidence scores).
 
 ## Handoff Notes
 
@@ -10,7 +10,13 @@ Accuracy measurement system (item 1.0). Build eval harness and test corpus so pr
 - `database.js` deleted, `better-sqlite3` removed. No more SQLite dependency.
 - All feedback/analytics endpoints and UI stripped. Server is analysis-only now.
 - `parseJsonResponse` returns `null` on failure in both background.js and server.js.
-- 57 tests pass.
+- Eval harness and 119-file test corpus shipped (item 1.0).
+- Run `npm run eval` to establish baseline metrics before starting 1.1.
+- Corpus uses `.cjs` extension throughout because package.json has `"type": "module"`.
+- Rate limited to 1 req/sec to avoid API cost spikes.
+- Results are gitignored (`eval/results/*.json`) -- only the harness and corpus are tracked.
+- All Priority 2 (Core UX) and Priority 3 (Polish) items shipped and review-polished.
+- 72 tests pass (15 new for streaming parsing).
 
 ---
 
@@ -20,37 +26,20 @@ Accuracy measurement system (item 1.0). Build eval harness and test corpus so pr
 
 These directly affect whether the product delivers on its promise. Ship these first.
 
-#### 1.0 Evaluation harness and test corpus
+#### 1.0 Evaluation harness and test corpus -- COMPLETE
 
-**Why:** The prompt is the single biggest lever, but there's no way to measure whether changes help or hurt. Every other item in Priority 1 depends on having a measurement system. Without it, prompt tuning is guesswork.
+**Status:** Shipped on `eval-harness-corpus` branch, Apr 8, 2026.
 
-**Key decision:** Precision is the primary metric (false positives erode trust more than misses). Feedback collection is dev-only — stripped before release (see 4.5). This aligns with "accuracy over coverage" and "privacy by default."
-
-**What to do:**
-
-*Test corpus (~120 labeled examples in `eval/corpus/`, one JSON per file):*
-- ~45 tactic-specific (3 per tactic: textbook, variation, real-world-style)
-- ~34 ported from existing benchmarks.md
-- ~15 multi-tactic passages
-- ~15 clean text (false positive controls)
-- ~10 ambiguous edge cases (excluded from headline metrics, reported separately)
-
-*Evaluation harness (`npm run eval`):*
-- Reads corpus, calls Anthropic API with same prompt functions as the extension
-- Scores: precision/recall/F1 per tactic + overall, quote fidelity (is exact_quote a substring?)
-- Matching: tactic name match AND >= 50% character overlap with annotation
-- Outputs console table + `eval/results/<timestamp>.json`
-- Surfaces false positives and false negatives explicitly
-
-*Prompt tuning workflow:*
-- Versioned prompt files in `eval/prompts/`
-- `npm run eval -- --prompt eval/prompts/v2.js` to test alternatives
-- `npm run eval:compare` for side-by-side metric diff
+**What was built:**
+- 119 corpus files in `eval/corpus/` (45 tactic-specific, 34 benchmark ports, 15 multi-tactic, 15 clean text, 10 ambiguous edge cases)
+- `eval/harness.cjs` — reads corpus, calls Anthropic API (rate-limited 1 req/sec), scores results
+- `eval/scorer.cjs` — character overlap matching (50% threshold), precision/recall/F1 per-tactic and overall, quote fidelity
+- `eval/reporter.cjs` — console table output + JSON persistence to `eval/results/`
+- `eval/compare.cjs` — side-by-side metric comparison between two eval runs
+- `eval/prompts/v1.cjs` — baseline prompt extracted from production
+- `npm run eval` and `npm run eval:compare` scripts in package.json
 
 **Targets:** Overall precision >= 85%, recall >= 65%, no tactic < 70% precision, quote fidelity >= 95%
-
-**Files:** New `eval/` directory (harness.js, scorer.js, reporter.js, compare.js, corpus/, prompts/)
-**Risk:** Corpus creation is labor-intensive (~120 annotated examples). API calls for eval runs cost money. Rate-limit to 1 req/sec.
 
 #### 1.1 Tune prompt with few-shot examples and confidence scores
 
@@ -223,7 +212,11 @@ All items completed (Apr 8, 2026). See `history.md` Phase 9 for details.
 
 ## Recently Completed
 
-- **Apr 8, 2026**: Complete Priority 4 — Infrastructure & Debt (all 6 items)
+- **Apr 9, 2026**: Complete Priority 4 — Infrastructure & Debt (all 6 items)
+- **Apr 8, 2026**: Build eval harness and 119-file test corpus (item 1.0) — measurement system for prompt tuning
+- **Apr 8, 2026**: Priority 2 review pass — streaming reliability, UX polish, test coverage (13 issues fixed, 15 new tests)
+- **Apr 7, 2026**: Priority 3 — Polish & Completeness (3.1–3.7): dark options page, minimal onboarding, human model labels, quote click affordance, improved empty state, category legend, keyboard shortcut hint
+- **Apr 7, 2026**: Priority 2 — Core UX: streaming API responses, category-colored highlights, icon badge, analysis progress stages
 - **Apr 7, 2026**: Fix controls layout for narrow panel, improve text contrast
 - **Apr 7, 2026**: Fix content script injection fallback, improve error messages
 - **Apr 7, 2026**: Remove duplicate title, move settings gear into controls bar

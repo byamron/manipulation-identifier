@@ -1,0 +1,15 @@
+{
+  "id": "false-dichotomy-02",
+  "text": "Companies today need to decide what kind of organization they want to be. You can prioritize shareholder returns and stay competitive, or you can chase trendy social initiatives and watch your stock price decline. The market does not reward indecision. Every dollar spent on programs that do not directly improve the bottom line is a dollar taken from investors who trusted you with their money.",
+  "annotations": [
+    {
+      "tactic": "False Dichotomy",
+      "quote": "You can prioritize shareholder returns and stay competitive, or you can chase trendy social initiatives and watch your stock price decline."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "False Dichotomy",
+    "variant": "variation"
+  }
+}

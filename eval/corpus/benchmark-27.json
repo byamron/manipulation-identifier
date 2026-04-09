@@ -1,0 +1,26 @@
+{
+  "id": "benchmark-27",
+  "text": "The foreign minister's recent speech was very clear. She said, and I quote, 'we must consider all options on the table.' That means the administration is ready to go to war — there is no other reasonable interpretation. If we allow even a single concession in these trade negotiations, it will embolden our adversaries to demand more, then to threaten our allies, and eventually to challenge our military presence in the entire region. We face a stark choice: project overwhelming strength now, or watch our global standing crumble into irrelevance within a decade. The lives of our service members and the safety of our homeland hang in the balance, and anyone who counsels patience is gambling with the future of every family in this country.",
+  "annotations": [
+    {
+      "tactic": "Decontextualization",
+      "quote": "She said, and I quote, 'we must consider all options on the table.' That means the administration is ready to go to war"
+    },
+    {
+      "tactic": "Slippery Slope",
+      "quote": "If we allow even a single concession in these trade negotiations, it will embolden our adversaries to demand more, then to threaten our allies, and eventually to challenge our military presence in the entire region"
+    },
+    {
+      "tactic": "False Dichotomy",
+      "quote": "We face a stark choice: project overwhelming strength now, or watch our global standing crumble into irrelevance within a decade"
+    },
+    {
+      "tactic": "Emotional Language",
+      "quote": "The lives of our service members and the safety of our homeland hang in the balance, and anyone who counsels patience is gambling with the future of every family in this country"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "variant": "real-world-political"
+  }
+}

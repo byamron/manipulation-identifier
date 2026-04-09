@@ -1,0 +1,15 @@
+{
+  "id": "hasty-generalization-01",
+  "text": "I hired a freelance developer from an online platform last year and the code was terrible. My colleague had a similar experience with a different freelancer from the same site. That proves it: freelance developers are unreliable and produce low-quality work. Any company that outsources to freelancers is asking for trouble. You are much better off hiring a full-time team, no matter the cost.",
+  "annotations": [
+    {
+      "tactic": "Hasty Generalization",
+      "quote": "That proves it: freelance developers are unreliable and produce low-quality work. Any company that outsources to freelancers is asking for trouble."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Hasty Generalization",
+    "variant": "textbook"
+  }
+}
