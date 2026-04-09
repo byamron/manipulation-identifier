@@ -4,7 +4,7 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
-## Phase 9: Core UX (April 2026)
+## Phase 10: Core UX (April 2026)
 
 ### Apr 8, 2026 — Review pass: fix streaming reliability, UX, and test coverage
 
@@ -77,6 +77,41 @@ These four items transform the UX from "it works" to "this is good." Streaming e
 - Streaming only works in BYOK mode. Server proxy mode still uses the non-streaming `fetchWithRetry` path because the server's `/analyze-content-with-model` endpoint doesn't support streaming. This is acceptable since BYOK is the recommended mode.
 - The streaming error path does not retry (unlike `fetchWithRetry`). If the initial request fails with 5xx/429, it throws immediately. Retry with streaming would require re-establishing the stream, which adds complexity for a rare case.
 - `extractCompleteTactics` re-scans the full accumulated text on each delta. For typical responses (<10 tactics), this is negligible. A production optimization would track the last scan position.
+
+---
+
+## Phase 9: Polish & Completeness (April 2026)
+
+### Apr 7, 2026 — Ship Priority 3: Polish & Completeness (3.1–3.7)
+
+**Branch:** polish-and-completeness
+
+**What was done:**
+Implemented all seven Priority 3 items to make the product feel finished:
+
+1. **3.1 Options page dark theme** — Rewrote inline `<style>` in `options.html` to use the same dark palette, monospace typography, surface colors, and border styles as `sidepanel.css`. Also corrected the server section hint (was "feedback and analytics", now "analysis requests are proxied").
+2. **3.2 First-run onboarding** — Replaced the three-paragraph setup message with a one-line description ("Detects manipulation tactics...") and a CTA link, per FB-0002.
+3. **3.3 Humanize model selector** — Changed labels from "Sonnet 4.6" / "Haiku 4.5" to "Thorough (Sonnet)" / "Quick (Haiku)" in both sidepanel.html and options.html.
+4. **3.4 Quote click affordance** — Added a subtle underline to `.instance-quote` that intensifies to accent color on hover, making quotes visually clickable.
+5. **3.5 Improved empty state** — Rewrote `showEmpty()` with positive framing ("looks clean") and a suggestion to try opinion pieces.
+6. **3.6 Category legend** — Added a row of three colored dots with labels (Logical, Rhetorical, Credibility) below the results summary.
+7. **3.7 Keyboard shortcut** — Added a platform-aware shortcut hint (`Cmd+Shift+M` on Mac, `Ctrl+Shift+M` elsewhere) to the ready state message with styled `<kbd>` element.
+
+**Why:**
+These items were the "feel finished" layer — the gap between "it works" and "this is a product." The options page dark theme was the most impactful since it's the first thing new users see during setup.
+
+**Design decisions:**
+- Options page reuses the exact color values from sidepanel.css (not CSS custom properties) because options.html uses inline styles and doesn't import sidepanel.css. This means the palette is duplicated, but the two pages are visually consistent.
+- Onboarding kept to two lines per FB-0002's "product should be self-explanatory" rule.
+- Model labels use "Thorough/Quick" as the primary descriptor with model name in parentheses, balancing accessibility for non-technical users with clarity for technical ones.
+- Quote affordance uses a permanent subtle underline (not hover-only) because hover-only affordance is invisible until interaction, defeating the purpose.
+- Empty state keeps it brief — positive framing without over-explaining what "no results" means.
+
+**Tradeoffs:**
+- Duplicating color values between options.html and sidepanel.css is tech debt. A shared CSS file or CSS custom properties in a shared sheet would be cleaner, but options.html's inline `<style>` makes that impractical without a build step.
+- The keyboard shortcut detects platform via `navigator.platform` to show `Cmd` (Mac) or `Ctrl` (Windows/Linux). `navigator.platform` is deprecated but still reliable in Chrome extension contexts; the modern async alternative isn't worth the complexity.
+
+**Files changed:** `options.html`, `sidepanel.html`, `sidepanel.js`, `sidepanel.css`
 
 ---
 

@@ -210,6 +210,21 @@ body {
   border-color: var(--accent);
 }
 
+.shortcut-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.shortcut-hint kbd {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  padding: 1px 5px;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  background: var(--surface-raised);
+  color: var(--text-tertiary);
+}
+
 /* Loading skeleton */
 .skeleton {
   padding: 16px var(--panel-pad);
@@ -335,6 +350,34 @@ body {
   letter-spacing: 0.03em;
 }
 
+/* ── Category Legend ── */
+.category-legend {
+  display: flex;
+  gap: 14px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  letter-spacing: 0.03em;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-dot.logical { background: var(--cat-logical); }
+.legend-dot.rhetorical { background: var(--cat-rhetorical); }
+.legend-dot.credibility { background: var(--cat-credibility); }
+
 /* ── Tactic Card ── */
 .tactic-card {
   background: var(--surface-raised);
@@ -422,11 +465,15 @@ body {
   word-break: break-word;
   cursor: pointer;
   padding: 3px 0;
-  transition: color 0.12s;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.25);
+  text-underline-offset: 2px;
+  transition: color 0.12s, text-decoration-color 0.12s;
 }
 
 .instance-quote:hover {
   color: var(--accent);
+  text-decoration-color: var(--accent);
 }
 
 .instance-quote.non-interactive {
@@ -620,12 +667,12 @@ body {
   animation: cardFadeIn 0.25s ease forwards;
 }
 
-.tactic-card:nth-child(1) { animation-delay: 0ms; }
-.tactic-card:nth-child(2) { animation-delay: 40ms; }
-.tactic-card:nth-child(3) { animation-delay: 80ms; }
-.tactic-card:nth-child(4) { animation-delay: 120ms; }
-.tactic-card:nth-child(5) { animation-delay: 160ms; }
-.tactic-card:nth-child(n+6) { opacity: 1; transform: none; animation: none; }
+.tactic-card:nth-child(1 of .tactic-card) { animation-delay: 0ms; }
+.tactic-card:nth-child(2 of .tactic-card) { animation-delay: 40ms; }
+.tactic-card:nth-child(3 of .tactic-card) { animation-delay: 80ms; }
+.tactic-card:nth-child(4 of .tactic-card) { animation-delay: 120ms; }
+.tactic-card:nth-child(5 of .tactic-card) { animation-delay: 160ms; }
+.tactic-card:nth-child(n+6 of .tactic-card) { opacity: 1; transform: none; animation: none; }
 
 @keyframes cardFadeIn {
   to {

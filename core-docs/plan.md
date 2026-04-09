@@ -277,6 +277,7 @@ Fix before scaling. Can be done in any order.
 ## Recently Completed
 
 - **Apr 8, 2026**: Priority 2 review pass — streaming reliability, UX polish, test coverage (13 issues fixed, 15 new tests)
+- **Apr 7, 2026**: Priority 3 — Polish & Completeness (3.1–3.7): dark options page, minimal onboarding, human model labels, quote click affordance, improved empty state, category legend, keyboard shortcut hint
 - **Apr 7, 2026**: Priority 2 — Core UX: streaming API responses, category-colored highlights, icon badge, analysis progress stages
 - **Apr 7, 2026**: Fix controls layout for narrow panel, improve text contrast
 - **Apr 7, 2026**: Fix content script injection fallback, improve error messages
