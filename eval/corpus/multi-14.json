@@ -1,0 +1,25 @@
+{
+  "id": "multi-14",
+  "text": "The gender wage gap is a complete myth invented by activists who don't understand basic economics. Professor Alan Whitmore from the National Labor Policy Institute has debunked it thoroughly — when you control for job type, hours worked, and experience, the gap virtually disappears. One female software engineer I know makes more than all her male colleagues. The real problem is that feminists are trying to force women into careers they don't naturally want. Women have always been drawn to caregiving and nurturing roles — it's in their biology. If we keep pushing this narrative, companies will start hiring based on quotas instead of merit, and the best candidates will be passed over.",
+  "annotations": [
+    {
+      "tactic": "Fake Experts",
+      "quote": "Professor Alan Whitmore from the National Labor Policy Institute has debunked it thoroughly"
+    },
+    {
+      "tactic": "Hasty Generalization",
+      "quote": "One female software engineer I know makes more than all her male colleagues."
+    },
+    {
+      "tactic": "Appeal to Nature",
+      "quote": "Women have always been drawn to caregiving and nurturing roles — it's in their biology."
+    },
+    {
+      "tactic": "Slippery Slope",
+      "quote": "If we keep pushing this narrative, companies will start hiring based on quotas instead of merit, and the best candidates will be passed over."
+    }
+  ],
+  "metadata": {
+    "type": "multi-tactic"
+  }
+}

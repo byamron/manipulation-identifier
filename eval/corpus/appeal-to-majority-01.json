@@ -1,0 +1,19 @@
+{
+  "id": "appeal-to-majority-01",
+  "text": "Over 80 million people worldwide have downloaded this meditation app. That kind of adoption does not happen unless the product genuinely works. With tens of millions of satisfied users, the results speak for themselves. If you are still skeptical about whether daily meditation can reduce anxiety and improve focus, just look at the numbers. Eighty million people cannot be wrong.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Majority",
+      "quote": "That kind of adoption does not happen unless the product genuinely works. With tens of millions of satisfied users, the results speak for themselves."
+    },
+    {
+      "tactic": "Appeal to Majority",
+      "quote": "Eighty million people cannot be wrong."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Appeal to Majority",
+    "variant": "textbook"
+  }
+}

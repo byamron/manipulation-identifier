@@ -1,0 +1,15 @@
+{
+  "id": "appeal-to-tradition-01",
+  "text": "This company has used the same management structure for over fifty years, and it has served us well through recessions, market shifts, and leadership changes. There is no reason to reorganize now just because some consultant thinks flat hierarchies are trendy. If it has worked for half a century, the burden of proof is on anyone who wants to change it. Traditions survive because they work, and ours are no exception.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Tradition",
+      "quote": "If it has worked for half a century, the burden of proof is on anyone who wants to change it. Traditions survive because they work, and ours are no exception."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Appeal to Tradition",
+    "variant": "textbook"
+  }
+}

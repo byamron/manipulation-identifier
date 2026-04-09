@@ -1,0 +1,22 @@
+{
+  "id": "benchmark-28",
+  "text": "The overwhelming majority of citizens — poll after poll shows numbers above seventy percent — want the government to rein in Big Tech. The people have spoken, and the case is closed. These Silicon Valley billionaires are the ones responsible for the mental health crisis destroying an entire generation of teenagers. They built addictive algorithms on purpose, and now they hide behind free speech arguments while our kids suffer. I spoke with one mother whose daughter developed an eating disorder after spending time on a social media platform, and her story is proof that every single one of these apps is designed to harm children for profit. We need to hold these companies accountable before it is too late.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Majority",
+      "quote": "The overwhelming majority of citizens — poll after poll shows numbers above seventy percent — want the government to rein in Big Tech. The people have spoken, and the case is closed"
+    },
+    {
+      "tactic": "Scapegoating",
+      "quote": "These Silicon Valley billionaires are the ones responsible for the mental health crisis destroying an entire generation of teenagers"
+    },
+    {
+      "tactic": "Hasty Generalization",
+      "quote": "I spoke with one mother whose daughter developed an eating disorder after spending time on a social media platform, and her story is proof that every single one of these apps is designed to harm children for profit"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "variant": "real-world-political"
+  }
+}

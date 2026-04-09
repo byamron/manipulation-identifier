@@ -1,0 +1,29 @@
+{
+  "id": "multi-13",
+  "text": "Local business owners are being crushed by out-of-touch bureaucrats who have never signed the front of a paycheck. A bakery in Portland had to close last week because of new regulations — proof that government red tape is strangling small business in America. Meanwhile, when concerned citizens raise legitimate complaints about rising commercial rents, the city council pivots to talking about bike lanes and green spaces. This city was built by shopkeepers and tradespeople, not by consultants with MBAs. Either we roll back these regulations immediately, or we can kiss Main Street goodbye forever.",
+  "annotations": [
+    {
+      "tactic": "Ad Hominem",
+      "quote": "out-of-touch bureaucrats who have never signed the front of a paycheck"
+    },
+    {
+      "tactic": "Hasty Generalization",
+      "quote": "A bakery in Portland had to close last week because of new regulations — proof that government red tape is strangling small business in America."
+    },
+    {
+      "tactic": "Red Herring",
+      "quote": "the city council pivots to talking about bike lanes and green spaces"
+    },
+    {
+      "tactic": "Appeal to Tradition",
+      "quote": "This city was built by shopkeepers and tradespeople, not by consultants with MBAs."
+    },
+    {
+      "tactic": "False Dichotomy",
+      "quote": "Either we roll back these regulations immediately, or we can kiss Main Street goodbye forever."
+    }
+  ],
+  "metadata": {
+    "type": "multi-tactic"
+  }
+}

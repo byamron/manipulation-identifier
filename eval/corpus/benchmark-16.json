@@ -1,0 +1,19 @@
+{
+  "id": "benchmark-16",
+  "text": "From: Community Alert Network\nSubject: URGENT — Your neighborhood is at risk\n\nDear Resident,\n\nYou need to decide TODAY. Sign our petition to block the proposed waste facility, or prepare for your home value to plummet, your children to breathe toxic air, and your neighborhood to become a dumping ground for the entire county. There is no third option.\n\nAct now before it's too late.\n\n— The Committee for Neighborhood Safety",
+  "annotations": [
+    {
+      "tactic": "False Dichotomy",
+      "quote": "Sign our petition to block the proposed waste facility, or prepare for your home value to plummet, your children to breathe toxic air, and your neighborhood to become a dumping ground for the entire county. There is no third option."
+    },
+    {
+      "tactic": "Emotional Language",
+      "quote": "your children to breathe toxic air, and your neighborhood to become a dumping ground"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "format-content-variation",
+    "note": "False Dichotomy in email newsletter format. Different structure (formal letter) and content (local zoning) from typical examples."
+  }
+}

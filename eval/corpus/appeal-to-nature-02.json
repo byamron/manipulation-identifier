@@ -1,0 +1,15 @@
+{
+  "id": "appeal-to-nature-02",
+  "text": "We have been feeding our dog a raw food diet for the past year and the difference is remarkable. His coat is shinier, he has more energy, and his vet says his bloodwork has never looked better. It makes sense when you think about it. Dogs are descended from wolves who ate raw meat in the wild. Kibble is a processed, industrial product that has nothing to do with how dogs are meant to eat. Getting back to what is natural is always going to produce better health outcomes for any animal, including humans.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Nature",
+      "quote": "Dogs are descended from wolves who ate raw meat in the wild. Kibble is a processed, industrial product that has nothing to do with how dogs are meant to eat. Getting back to what is natural is always going to produce better health outcomes for any animal, including humans."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Appeal to Nature",
+    "variant": "variation"
+  }
+}

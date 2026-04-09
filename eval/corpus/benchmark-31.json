@@ -1,0 +1,26 @@
+{
+  "id": "benchmark-31",
+  "text": "The trade representative said last month that 'tariffs remain one tool among many in our negotiating toolkit.' Now her opponents are running around claiming she admitted tariffs don't work, which is a blatant distortion of what she actually said. When pressed on the real impact of the new tariff schedule, the opposition pivoted to talking about the national debt — a completely separate issue designed to distract you from the fact that their own trade record was abysmal. One factory in the Midwest closed after the tariffs took effect, and suddenly every pundit on cable news declared that American manufacturing is dead. By that logic, a single restaurant closing proves the entire food industry is collapsing. Seventy-eight percent of voters in manufacturing districts support these tariffs, and the will of those communities should count for something.",
+  "annotations": [
+    {
+      "tactic": "Decontextualization",
+      "quote": "The trade representative said last month that 'tariffs remain one tool among many in our negotiating toolkit.' Now her opponents are running around claiming she admitted tariffs don't work"
+    },
+    {
+      "tactic": "Red Herring",
+      "quote": "the opposition pivoted to talking about the national debt — a completely separate issue designed to distract you from the fact that their own trade record was abysmal"
+    },
+    {
+      "tactic": "Hasty Generalization",
+      "quote": "One factory in the Midwest closed after the tariffs took effect, and suddenly every pundit on cable news declared that American manufacturing is dead"
+    },
+    {
+      "tactic": "Appeal to Majority",
+      "quote": "Seventy-eight percent of voters in manufacturing districts support these tariffs, and the will of those communities should count for something"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "variant": "real-world-political"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "benchmark-33",
+  "text": "The energy debate in this country has been hijacked by extremists on both sides, and it is tearing us apart. On one side you have people who want to ban every fossil fuel tomorrow regardless of the consequences, and on the other you have people who deny any environmental problem exists at all. The governor's office points to a single quarter of declining emissions as proof that current policies are working, while conveniently ignoring that annual emissions hit a ten-year high and three coal plants received operating extensions. Wind and solar are the natural sources of energy — the sun and the wind have powered human civilization since the beginning of time, and returning to them is simply aligning ourselves with how the world was meant to work. You cannot be both pro-economy and pro-environment, so pick a side and stop pretending compromise is possible.",
+  "annotations": [
+    {
+      "tactic": "Polarization",
+      "quote": "On one side you have people who want to ban every fossil fuel tomorrow regardless of the consequences, and on the other you have people who deny any environmental problem exists at all"
+    },
+    {
+      "tactic": "Cherry Picking",
+      "quote": "The governor's office points to a single quarter of declining emissions as proof that current policies are working, while conveniently ignoring that annual emissions hit a ten-year high and three coal plants received operating extensions"
+    },
+    {
+      "tactic": "Appeal to Nature",
+      "quote": "Wind and solar are the natural sources of energy — the sun and the wind have powered human civilization since the beginning of time, and returning to them is simply aligning ourselves with how the world was meant to work"
+    },
+    {
+      "tactic": "False Dichotomy",
+      "quote": "You cannot be both pro-economy and pro-environment, so pick a side and stop pretending compromise is possible"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "variant": "real-world-political"
+  }
+}

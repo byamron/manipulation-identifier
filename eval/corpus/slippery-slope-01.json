@@ -1,0 +1,15 @@
+{
+  "id": "slippery-slope-01",
+  "text": "If we start requiring background checks for private gun sales, it is only a matter of time before the government creates a national firearms registry. Once they have a registry, confiscation is inevitable. History has shown us exactly where this leads: an unarmed population at the mercy of a tyrannical state. What starts as a reasonable-sounding regulation ends with the complete erosion of your Second Amendment rights.",
+  "annotations": [
+    {
+      "tactic": "Slippery Slope",
+      "quote": "If we start requiring background checks for private gun sales, it is only a matter of time before the government creates a national firearms registry. Once they have a registry, confiscation is inevitable."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Slippery Slope",
+    "variant": "textbook"
+  }
+}

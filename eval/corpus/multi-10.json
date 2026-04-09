@@ -1,0 +1,25 @@
+{
+  "id": "multi-10",
+  "text": "The mainstream media doesn't want you to know the truth about artificial intelligence. While they celebrate every new chatbot, leading AI researcher Dr. Helena Voss from the Digital Ethics Foundation has warned that these systems are already replacing human workers at an alarming rate. A warehouse in Nevada laid off 500 employees last month after deploying robots. That's what's coming for all of us. You're either going to learn to work with AI right now, or you'll be unemployable within five years. Every major CEO in the country is already planning for a workforce without you in it.",
+  "annotations": [
+    {
+      "tactic": "Fake Experts",
+      "quote": "leading AI researcher Dr. Helena Voss from the Digital Ethics Foundation has warned"
+    },
+    {
+      "tactic": "Hasty Generalization",
+      "quote": "A warehouse in Nevada laid off 500 employees last month after deploying robots. That's what's coming for all of us."
+    },
+    {
+      "tactic": "False Dichotomy",
+      "quote": "You're either going to learn to work with AI right now, or you'll be unemployable within five years."
+    },
+    {
+      "tactic": "Emotional Language",
+      "quote": "Every major CEO in the country is already planning for a workforce without you in it."
+    }
+  ],
+  "metadata": {
+    "type": "multi-tactic"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "id": "multi-02",
+  "text": "Our premium detox supplement is trusted by Dr. James Holloway, a world-renowned wellness pioneer with over thirty years of experience in holistic healing. Unlike the toxic chemicals Big Pharma pushes on you, our formula uses only pure, all-natural ingredients sourced from ancient Amazonian traditions that indigenous communities have relied on for centuries. If you don't start cleansing your body today, the buildup of everyday toxins will only get worse — leading to chronic fatigue, weight gain, and potentially serious disease. Over five million customers have already made the switch. Don't be the last one still poisoning yourself.",
+  "annotations": [
+    {
+      "tactic": "Fake Experts",
+      "quote": "Dr. James Holloway, a world-renowned wellness pioneer with over thirty years of experience in holistic healing"
+    },
+    {
+      "tactic": "Appeal to Nature",
+      "quote": "Unlike the toxic chemicals Big Pharma pushes on you, our formula uses only pure, all-natural ingredients sourced from ancient Amazonian traditions"
+    },
+    {
+      "tactic": "Appeal to Tradition",
+      "quote": "ancient Amazonian traditions that indigenous communities have relied on for centuries"
+    },
+    {
+      "tactic": "Slippery Slope",
+      "quote": "If you don't start cleansing your body today, the buildup of everyday toxins will only get worse — leading to chronic fatigue, weight gain, and potentially serious disease."
+    },
+    {
+      "tactic": "Appeal to Majority",
+      "quote": "Over five million customers have already made the switch. Don't be the last one still poisoning yourself."
+    }
+  ],
+  "metadata": {
+    "type": "multi-tactic"
+  }
+}

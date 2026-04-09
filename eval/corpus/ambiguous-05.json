@@ -1,0 +1,14 @@
+{
+  "id": "ambiguous-05",
+  "text": "Everybody I've talked to in this neighborhood is worried about the proposed halfway house on Oak Street. We collected over 400 signatures on our petition, which represents more than half the residents on this side of town. This isn't about being heartless — we all want people to get a second chance. But we have a right to be concerned about property values and safety in the community where we're raising our families.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Majority",
+      "quote": "We collected over 400 signatures on our petition, which represents more than half the residents on this side of town."
+    }
+  ],
+  "metadata": {
+    "type": "ambiguous",
+    "note": "In a democratic context, citing community consensus through a petition is a legitimate way to demonstrate public concern, not necessarily a fallacious appeal to majority. The speaker also acknowledges the other side and frames the concern as reasonable rather than absolute. However, the number of signatures does not determine whether the concern is factually valid."
+  }
+}

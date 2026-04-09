@@ -1,0 +1,25 @@
+{
+  "id": "multi-03",
+  "text": "Let's be real about the immigration debate. A study from the Heritage Foundation shows that each undocumented immigrant costs taxpayers $70,000 over their lifetime. Meanwhile, the open-borders crowd — led by coastal elites who have never lived next to an overwhelmed emergency room — wants you to ignore the crime wave sweeping our cities. Last month, an undocumented individual was arrested for armed robbery in Houston. If this doesn't prove that weak border policies are turning every American neighborhood into a war zone, nothing will.",
+  "annotations": [
+    {
+      "tactic": "Cherry Picking",
+      "quote": "A study from the Heritage Foundation shows that each undocumented immigrant costs taxpayers $70,000 over their lifetime."
+    },
+    {
+      "tactic": "Scapegoating",
+      "quote": "the open-borders crowd — led by coastal elites who have never lived next to an overwhelmed emergency room — wants you to ignore the crime wave sweeping our cities"
+    },
+    {
+      "tactic": "Hasty Generalization",
+      "quote": "Last month, an undocumented individual was arrested for armed robbery in Houston."
+    },
+    {
+      "tactic": "Slippery Slope",
+      "quote": "If this doesn't prove that weak border policies are turning every American neighborhood into a war zone, nothing will."
+    }
+  ],
+  "metadata": {
+    "type": "multi-tactic"
+  }
+}

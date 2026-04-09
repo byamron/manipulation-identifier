@@ -1,0 +1,15 @@
+{
+  "id": "benchmark-03",
+  "text": "If we raise the minimum wage even ONE dollar,\nsmall businesses will close.\nUnemployment will skyrocket.\nThe economy will COLLAPSE.\nMark my words.",
+  "annotations": [
+    {
+      "tactic": "Slippery Slope",
+      "quote": "If we raise the minimum wage even ONE dollar,\nsmall businesses will close.\nUnemployment will skyrocket.\nThe economy will COLLAPSE."
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "format-variation",
+    "note": "Line-break-separated escalation rather than flowing prose. Tests that Slippery Slope is detected in fragmented formatting."
+  }
+}

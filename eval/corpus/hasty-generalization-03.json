@@ -1,0 +1,15 @@
+{
+  "id": "hasty-generalization-03",
+  "text": "A recent opinion piece in the Metro Daily has drawn criticism from statisticians and social scientists. The column, titled \"The Remote Work Myth,\" cited three companies that reported declining productivity after adopting permanent remote work policies and concluded that remote work fundamentally does not work for any organization. \"These cases make it clear: employees who work from home are less productive, less engaged, and less committed to their employers,\" the author wrote. Critics pointed out that the three companies cited are all in the same industry, that numerous large-scale studies have found mixed or positive results for remote work, and that drawing a universal conclusion from three anecdotes is methodologically unsound.",
+  "annotations": [
+    {
+      "tactic": "Hasty Generalization",
+      "quote": "These cases make it clear: employees who work from home are less productive, less engaged, and less committed to their employers"
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Hasty Generalization",
+    "variant": "real-world-style"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "benchmark-32",
+  "text": "Our criminal justice system has kept communities safe for over two hundred years, and now a handful of activists with no law enforcement experience want to tear it down overnight. A retired police captain — who also happens to run a private security consulting firm — released a study showing that every city that reduced police funding saw violent crime increase. If we start with so-called 'modest reforms' to sentencing guidelines, it won't stop there. Next they'll demand we close prisons, then eliminate bail, and before you know it, dangerous felons will be walking the streets of your neighborhood with no consequences whatsoever. Think about your children walking to school. Think about your elderly parents living alone. That is what is at stake, and anyone who tells you otherwise is either naive or lying to your face.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Tradition",
+      "quote": "Our criminal justice system has kept communities safe for over two hundred years, and now a handful of activists with no law enforcement experience want to tear it down overnight"
+    },
+    {
+      "tactic": "Fake Experts",
+      "quote": "A retired police captain — who also happens to run a private security consulting firm — released a study showing that every city that reduced police funding saw violent crime increase"
+    },
+    {
+      "tactic": "Slippery Slope",
+      "quote": "If we start with so-called 'modest reforms' to sentencing guidelines, it won't stop there. Next they'll demand we close prisons, then eliminate bail, and before you know it, dangerous felons will be walking the streets of your neighborhood with no consequences whatsoever"
+    },
+    {
+      "tactic": "Emotional Language",
+      "quote": "Think about your children walking to school. Think about your elderly parents living alone. That is what is at stake"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "variant": "real-world-political"
+  }
+}

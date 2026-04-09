@@ -1,0 +1,15 @@
+{
+  "id": "decontextualization-01",
+  "text": "A widely shared clip shows the senator saying \"I don't think we should help these people\" during a committee hearing. The clip has been viewed millions of times with the caption \"Senator refuses to help disaster victims.\" However, the full exchange reveals the senator was discussing a proposed amendment to redirect FEMA funds to a different program, and the complete quote was: \"I don't think we should help these people by cutting funding from existing disaster relief. That would hurt the very communities we are trying to serve.\" The truncated clip removes the critical second half of the sentence entirely.",
+  "annotations": [
+    {
+      "tactic": "Decontextualization",
+      "quote": "A widely shared clip shows the senator saying \"I don't think we should help these people\" during a committee hearing. The clip has been viewed millions of times with the caption \"Senator refuses to help disaster victims.\""
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Decontextualization",
+    "variant": "textbook"
+  }
+}

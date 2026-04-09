@@ -6,6 +6,50 @@ Detailed documentation of shipped features, organized by development phase.
 
 ## Phase 8: Accuracy Measurement System (April 2026)
 
+### Apr 8, 2026 — Build evaluation harness and test corpus (item 1.0)
+
+**Branch:** eval-harness-corpus | **Commit:** pending (not yet committed)
+
+**What was done:**
+Built the complete evaluation harness and 119-file test corpus for measuring manipulation detection accuracy. This is the measurement infrastructure that all prompt tuning (item 1.1) depends on.
+
+Files created:
+- `eval/harness.cjs` — Main runner: reads corpus, calls Anthropic API (rate-limited 1 req/sec), scores results
+- `eval/scorer.cjs` — Scoring logic: character overlap matching (50% threshold), precision/recall/F1 per-tactic and overall, quote fidelity
+- `eval/reporter.cjs` — Console table output + JSON result persistence to `eval/results/`
+- `eval/compare.cjs` — Side-by-side metric comparison between two eval runs
+- `eval/prompts/v1.cjs` — Baseline prompt extracted from production (reads tactics.json directly)
+- 119 corpus files in `eval/corpus/`: 45 tactic-specific (3 per tactic: textbook, variation, real-world-style), 34 benchmark ports (format/content/real-world political), 15 multi-tactic passages, 15 clean text (false positive controls), 10 ambiguous edge cases
+
+Files modified:
+- `package.json` — Added `eval` and `eval:compare` scripts
+- `.gitignore` — Added `eval/results/*.json`
+
+Usage: `npm run eval`, `npm run eval -- --prompt eval/prompts/v2.cjs`, `npm run eval -- --filter "emotional"`, `npm run eval -- --model claude-haiku-4-5-20251001`, `npm run eval:compare file1.json file2.json`
+
+**Why:**
+The prompt is the single biggest lever for detection quality, but there was no way to measure whether changes help or hurt. Per-tactic precision/recall, overall F1, and quote fidelity metrics are needed before any tuning work can begin. Without this, prompt changes are guesswork. This was explicitly identified as the prerequisite for items 1.1 through 1.4 and for stripping the dev-only feedback system (4.5).
+
+**Design decisions:**
+- Used `.cjs` extension for all eval files because `package.json` has `"type": "module"` — CommonJS files need the explicit extension to be parsed correctly by Node.js. This avoids the alternative of adding complex ESM-to-CJS interop.
+- Reads `tactics.json` directly (via `require()`) instead of importing `tactics.js` (which is ESM). This avoids module compatibility issues and keeps the eval harness self-contained.
+- One JSON file per corpus example (not a monolithic file) for easy diffing, reviewing, and extending — same rationale as documented in the Apr 7 planning entry.
+- Ambiguous edge cases (10 files) are reported separately and excluded from headline metrics to avoid contested annotations distorting precision/recall numbers.
+
+**Technical decisions:**
+- Scorer uses longest common substring for character overlap calculation — more robust than token-level or word-level matching because it handles partial quotes and minor rephrasing without artificial tokenization boundaries.
+- Greedy matching algorithm (best overlap first) prevents a poor match from "claiming" a prediction and blocking a better match from being recognized. Without this, match order could suppress true positives.
+- Quote fidelity returns 1.0 for clean texts (no predictions = no failures). This prevents clean-text files from artificially inflating or deflating the quote fidelity metric.
+- Rate limited to 1 request per second to avoid Anthropic API rate limits and to keep eval run costs predictable (119 calls at current Sonnet pricing).
+
+**Tradeoffs:**
+- 50% character overlap threshold is a judgment call. Too strict penalizes minor rephrasing by the model; too loose lets actual misquotes pass as matches. The threshold can be tuned after seeing initial baseline results, but 50% was chosen as a conservative starting point that allows substantial but not arbitrary deviation from the annotation.
+- Corpus size of 119 examples is a balance: large enough for per-tactic metrics to be statistically meaningful (3+ examples per tactic), small enough that a solo developer can annotate and maintain them, and cheap enough to run frequently (~119 API calls per eval run).
+- The eval prompt (`v1.cjs`) reads `tactics.json` directly rather than reusing the extension's `buildSystemPrompt()` function from `background.js`. This creates slight divergence risk (if the production prompt changes and v1.cjs doesn't), but avoids pulling in Chrome extension APIs that don't exist in a Node.js context. The tradeoff is acceptable because eval prompts are versioned and compared explicitly.
+- `.gitignore` excludes `eval/results/*.json` to avoid committing potentially large result files. The downside is that baseline results must be shared manually or re-generated, but this prevents accidental commits of verbose JSON output.
+
+---
+
 ### Apr 7, 2026 — Plan accuracy measurement and prompt tuning system
 
 **Branch:** sidebar-ui-restyle

@@ -1,0 +1,26 @@
+{
+  "id": "benchmark-30",
+  "text": "Let me tell you what this tax debate is really about. The coastal elites and their Wall Street donors want to keep every last dollar while the rest of us struggle to put food on the table and keep a roof over our heads. You have exactly two options in this election: vote for our plan that puts money back in working families' pockets, or vote for their plan that funnels your hard-earned wages straight into the offshore accounts of billionaires. There is no third option. This is a war between the people and the powerful, between ordinary families fighting to survive and a privileged class that has rigged the system in their favor for decades. Which side are you on?",
+  "annotations": [
+    {
+      "tactic": "Scapegoating",
+      "quote": "The coastal elites and their Wall Street donors want to keep every last dollar while the rest of us struggle to put food on the table"
+    },
+    {
+      "tactic": "False Dichotomy",
+      "quote": "You have exactly two options in this election: vote for our plan that puts money back in working families' pockets, or vote for their plan that funnels your hard-earned wages straight into the offshore accounts of billionaires"
+    },
+    {
+      "tactic": "Polarization",
+      "quote": "This is a war between the people and the powerful, between ordinary families fighting to survive and a privileged class that has rigged the system in their favor for decades"
+    },
+    {
+      "tactic": "Emotional Language",
+      "quote": "struggle to put food on the table and keep a roof over our heads"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "variant": "real-world-political"
+  }
+}

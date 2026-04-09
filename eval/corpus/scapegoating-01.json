@@ -1,0 +1,15 @@
+{
+  "id": "scapegoating-01",
+  "text": "The reason our healthcare system is collapsing is simple: it is being overwhelmed by immigrants who come here and take advantage of services they never paid into. Our hospitals are overcrowded, wait times are through the roof, and it is all because we refuse to close the border. If we stopped the flood of people coming in, our doctors and nurses would have the resources they need to take care of actual citizens.",
+  "annotations": [
+    {
+      "tactic": "Scapegoating",
+      "quote": "it is being overwhelmed by immigrants who come here and take advantage of services they never paid into. Our hospitals are overcrowded, wait times are through the roof, and it is all because we refuse to close the border."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Scapegoating",
+    "variant": "textbook"
+  }
+}

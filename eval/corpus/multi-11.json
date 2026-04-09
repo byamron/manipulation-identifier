@@ -1,0 +1,29 @@
+{
+  "id": "multi-11",
+  "text": "Our organic skincare line is the only honest option left in an industry drowning in synthetic poisons. For generations, women used simple plant-based remedies passed down from their grandmothers, and they had beautiful, healthy skin without a single lab-created chemical. Today's dermatologists — who are nothing more than salespeople for pharmaceutical corporations — will tell you that you need retinol and acids, but what they won't tell you is that those products are destroying your skin barrier over time. Nine out of ten of our customers say they've seen dramatic improvements within weeks. Trust what nature provides.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Nature",
+      "quote": "Our organic skincare line is the only honest option left in an industry drowning in synthetic poisons."
+    },
+    {
+      "tactic": "Appeal to Tradition",
+      "quote": "For generations, women used simple plant-based remedies passed down from their grandmothers, and they had beautiful, healthy skin without a single lab-created chemical."
+    },
+    {
+      "tactic": "Ad Hominem",
+      "quote": "Today's dermatologists — who are nothing more than salespeople for pharmaceutical corporations"
+    },
+    {
+      "tactic": "Slippery Slope",
+      "quote": "those products are destroying your skin barrier over time"
+    },
+    {
+      "tactic": "Appeal to Majority",
+      "quote": "Nine out of ten of our customers say they've seen dramatic improvements within weeks."
+    }
+  ],
+  "metadata": {
+    "type": "multi-tactic"
+  }
+}

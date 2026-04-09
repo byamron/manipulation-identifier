@@ -1,0 +1,15 @@
+{
+  "id": "cherry-picking-02",
+  "text": "Many people worry about the environmental impact of our manufacturing process, but let me share some encouraging numbers. Our factory's water usage per unit has decreased by 30% over the past three years, and we have planted over 10,000 trees near our facilities. We are deeply committed to sustainability and these investments show that commitment clearly. We believe industry can be a force for environmental good.",
+  "annotations": [
+    {
+      "tactic": "Cherry Picking",
+      "quote": "Our factory's water usage per unit has decreased by 30% over the past three years, and we have planted over 10,000 trees near our facilities. We are deeply committed to sustainability and these investments show that commitment clearly."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Cherry Picking",
+    "variant": "variation"
+  }
+}

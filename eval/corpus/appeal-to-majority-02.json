@@ -1,0 +1,15 @@
+{
+  "id": "appeal-to-majority-02",
+  "text": "Every parent in our neighborhood sends their kids to Westlake Academy. It is the school that families in this area choose, and there is a reason for that. When you see that level of consensus among educated, involved parents who have done their research, it tells you something. Going against that collective judgment and choosing a different school would be an unusual decision that most families in our community would find hard to understand.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Majority",
+      "quote": "When you see that level of consensus among educated, involved parents who have done their research, it tells you something. Going against that collective judgment and choosing a different school would be an unusual decision that most families in our community would find hard to understand."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Appeal to Majority",
+    "variant": "variation"
+  }
+}

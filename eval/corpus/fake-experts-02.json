@@ -1,0 +1,19 @@
+{
+  "id": "fake-experts-02",
+  "text": "As a mother of three and someone who has spent years researching vaccines on her own, I can tell you that the ingredients in childhood immunizations are far more dangerous than the diseases they claim to prevent. I have read hundreds of studies and consulted with naturopathic practitioners who confirm what the pharmaceutical industry does not want you to know. My blog has been visited by over two million people, and the community we have built knows more about this topic than most pediatricians.",
+  "annotations": [
+    {
+      "tactic": "Fake Experts",
+      "quote": "As a mother of three and someone who has spent years researching vaccines on her own, I can tell you that the ingredients in childhood immunizations are far more dangerous than the diseases they claim to prevent."
+    },
+    {
+      "tactic": "Fake Experts",
+      "quote": "I have read hundreds of studies and consulted with naturopathic practitioners who confirm what the pharmaceutical industry does not want you to know."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Fake Experts",
+    "variant": "variation"
+  }
+}

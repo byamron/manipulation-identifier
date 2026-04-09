@@ -1,0 +1,21 @@
+{
+  "id": "multi-04",
+  "text": "The education system in this country is in complete meltdown. You're either for school choice and giving parents real power, or you're siding with the corrupt teachers' unions that are holding our kids hostage. Just look at Finland — they overhauled their schools decades ago and now they lead the world. One mother in Ohio pulled her son out of public school, and within six months his grades went from D's to straight A's. That tells you everything you need to know about government-run education.",
+  "annotations": [
+    {
+      "tactic": "Emotional Language",
+      "quote": "The education system in this country is in complete meltdown."
+    },
+    {
+      "tactic": "False Dichotomy",
+      "quote": "You're either for school choice and giving parents real power, or you're siding with the corrupt teachers' unions that are holding our kids hostage."
+    },
+    {
+      "tactic": "Hasty Generalization",
+      "quote": "One mother in Ohio pulled her son out of public school, and within six months his grades went from D's to straight A's. That tells you everything you need to know about government-run education."
+    }
+  ],
+  "metadata": {
+    "type": "multi-tactic"
+  }
+}

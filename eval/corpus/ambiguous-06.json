@@ -1,0 +1,14 @@
+{
+  "id": "ambiguous-06",
+  "text": "Senator Richardson's plan to cap insulin prices sounds compassionate, but let's not forget that this is the same senator who accepted $1.2 million from pharmaceutical PACs over the last election cycle. His sudden concern for patients is convenient timing given his upcoming re-election campaign. I think voters deserve to know about these financial ties before taking his proposal at face value.",
+  "annotations": [
+    {
+      "tactic": "Ad Hominem",
+      "quote": "this is the same senator who accepted $1.2 million from pharmaceutical PACs over the last election cycle"
+    }
+  ],
+  "metadata": {
+    "type": "ambiguous",
+    "note": "Pointing out a politician's financial conflicts of interest is a legitimate form of accountability journalism and civic discourse. However, it is being used here to undermine the policy proposal itself rather than engaging with its merits, which makes it function like an ad hominem. The line between relevant context and character attack is genuinely blurry in political discourse."
+  }
+}

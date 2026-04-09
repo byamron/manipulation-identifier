@@ -1,0 +1,19 @@
+{
+  "id": "benchmark-10",
+  "text": "The undocumented workers flooding into our state are the reason your property taxes keep going up and your kids' classrooms are overcrowded. They consume public resources without contributing, and the politicians you elected are too cowardly to do anything about it.",
+  "annotations": [
+    {
+      "tactic": "Scapegoating",
+      "quote": "The undocumented workers flooding into our state are the reason your property taxes keep going up and your kids' classrooms are overcrowded."
+    },
+    {
+      "tactic": "Emotional Language",
+      "quote": "flooding into our state"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "content-variation",
+    "note": "Scapegoating rephrased with different specific consequences (property taxes, classrooms instead of jobs/wages). Tests synonym substitution for the same tactic."
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "multi-05",
+  "text": "I can't believe people are still debating vaccines. My neighbor's kid got vaccinated and developed autism within three months — coincidence? I don't think so. As renowned immunologist Dr. Tara Whitfield from the Institute for Natural Health has explained, the human body was designed to fight disease on its own without injecting synthetic chemicals. For thousands of years, civilizations thrived without a single vaccine. Now suddenly Big Pharma wants us to believe we can't survive without their products? Meanwhile, anyone who dares question the narrative gets silenced and called an 'anti-vaxxer' — as if asking questions makes you a bad person.",
+  "annotations": [
+    {
+      "tactic": "Hasty Generalization",
+      "quote": "My neighbor's kid got vaccinated and developed autism within three months — coincidence? I don't think so."
+    },
+    {
+      "tactic": "Fake Experts",
+      "quote": "As renowned immunologist Dr. Tara Whitfield from the Institute for Natural Health has explained"
+    },
+    {
+      "tactic": "Appeal to Nature",
+      "quote": "the human body was designed to fight disease on its own without injecting synthetic chemicals"
+    },
+    {
+      "tactic": "Appeal to Tradition",
+      "quote": "For thousands of years, civilizations thrived without a single vaccine."
+    }
+  ],
+  "metadata": {
+    "type": "multi-tactic"
+  }
+}

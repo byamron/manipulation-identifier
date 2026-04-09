@@ -1,0 +1,29 @@
+{
+  "id": "multi-06",
+  "text": "The tech industry is engaged in the most terrifying assault on privacy in human history. Silicon Valley billionaires — people like Mark Zuckerberg, who couldn't even look a senator in the eye during testimony — are harvesting your personal data and selling it to the highest bidder. Sure, they point to their privacy policies, but while they talk about 'transparency,' countries like China are already using the same technology for total surveillance of their citizens. If we allow one more data breach to go unpunished, we will sleepwalk into a surveillance state where every thought is monitored. Everyone agrees that Big Tech has too much power.",
+  "annotations": [
+    {
+      "tactic": "Emotional Language",
+      "quote": "The tech industry is engaged in the most terrifying assault on privacy in human history."
+    },
+    {
+      "tactic": "Ad Hominem",
+      "quote": "people like Mark Zuckerberg, who couldn't even look a senator in the eye during testimony"
+    },
+    {
+      "tactic": "Red Herring",
+      "quote": "countries like China are already using the same technology for total surveillance of their citizens"
+    },
+    {
+      "tactic": "Slippery Slope",
+      "quote": "If we allow one more data breach to go unpunished, we will sleepwalk into a surveillance state where every thought is monitored."
+    },
+    {
+      "tactic": "Appeal to Majority",
+      "quote": "Everyone agrees that Big Tech has too much power."
+    }
+  ],
+  "metadata": {
+    "type": "multi-tactic"
+  }
+}

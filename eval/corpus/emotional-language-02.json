@@ -1,0 +1,19 @@
+{
+  "id": "emotional-language-02",
+  "text": "The proposed budget cuts would leave vulnerable families out in the cold, struggling to put food on the table while bureaucrats in Washington enjoy their comfortable salaries. It is heartbreaking to think about the single mothers who will have to choose between heating their homes and feeding their children this winter. We cannot turn a blind eye to this cruelty disguised as fiscal responsibility.",
+  "annotations": [
+    {
+      "tactic": "Emotional Language",
+      "quote": "leave vulnerable families out in the cold, struggling to put food on the table while bureaucrats in Washington enjoy their comfortable salaries"
+    },
+    {
+      "tactic": "Emotional Language",
+      "quote": "It is heartbreaking to think about the single mothers who will have to choose between heating their homes and feeding their children this winter. We cannot turn a blind eye to this cruelty disguised as fiscal responsibility."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Emotional Language",
+    "variant": "variation"
+  }
+}

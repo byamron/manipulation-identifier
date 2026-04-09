@@ -1,0 +1,15 @@
+{
+  "id": "benchmark-22",
+  "text": "Text message screenshot:\n\nFYI — just saw that literally everyone in our friend group is switching to the new iPhone. Even Jake and he HATED Apple. I know you said you were happy with your Android but idk... sometimes when everyone moves in one direction there's a reason. Just saying. Don't want you to be the only one left out when we're all on iMessage.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Majority",
+      "quote": "literally everyone in our friend group is switching to the new iPhone"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "format-content-variation",
+    "note": "Appeal to Majority in text message format with consumer technology content. Casual peer pressure rather than political rhetoric, very different register from textbook examples."
+  }
+}
