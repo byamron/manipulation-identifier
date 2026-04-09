@@ -1,6 +1,10 @@
 /**
  * Fuzzy text matching for highlighting manipulation quotes in page text.
  * Pure functions, no DOM dependency.
+ *
+ * Test-only module: this is the testable copy of the matching logic.
+ * The canonical runtime version lives in content.js (inlined because content
+ * scripts cannot use ES module imports). Keep both in sync when editing.
  */
 
 /**

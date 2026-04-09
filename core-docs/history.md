@@ -4,6 +4,37 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 9: Infrastructure & Debt Cleanup (April 2026)
+
+### Apr 7, 2026 — Complete Priority 4: Infrastructure & Debt
+
+**Branch:** strip-infra-debt (from 6ab7c26)
+
+**What was done:**
+Completed all 6 items in Priority 4 (Infrastructure & Debt):
+
+1. **4.1 — Fix server.js error handler position:** Moved Express error handling middleware from before routes to after all route definitions, where Express requires it to function.
+2. **4.2 — Hash cache keys:** Replaced raw 5KB+ string cache keys with SHA-256 hashes using `crypto.createHash()`.
+3. **4.3 — Clean up dead files:** Added ownership comments to `prompts.js` (server-only), `tactics.js` (server-only), and `highlight-matcher.js` (test-only; canonical version is in content.js).
+4. **4.4 — Update spec.md and benchmarks.md:** Removed GPT model references from benchmarks.md, replaced with current Claude stack and placeholder for eval harness results. Updated spec.md to remove feedback/analytics/SQLite references.
+5. **4.5 — Strip dev-only feedback code:** SAFETY — Deleted `database.js`, removed `better-sqlite3` dependency, removed all feedback endpoints (`/submit-instance-feedback`, `/report-missing-manipulation`), removed all analytics endpoints (`/analytics/*`), removed feedback UI (rating buttons, textarea, submit handler) from sidepanel.js, removed feedback CSS from sidepanel.css, updated options.html server section wording, updated CLAUDE.md.
+6. **4.6 — Normalize parseJsonResponse:** Both `background.js` and `server.js` now return `null` on parse failure (previously background.js returned `[]`). Callers handle the null — server.js falls back to regex parser, background.js falls back to empty array.
+
+**Why:**
+Priority 4 items are infrastructure debt that should be fixed before scaling. The feedback system in particular was dev-only code that violated "privacy by default" (FB-0003) and had no path to improving detection.
+
+**Design decisions:**
+- Kept backward-compat `/analyze-content` endpoint — it's a real analysis route, not feedback.
+- `parseJsonResponse` returns `null` uniformly on failure; callers decide the fallback. This separates "parse failed" from "no tactics found" (which returns `[]`).
+- `highlight-matcher.js` kept as a separate file (not merged into content.js) because content scripts can't use ES module imports, and the test suite needs the module version.
+- Health endpoint simplified to sync (no db queries) — just returns cache size and uptime.
+
+**Tradeoffs:**
+- Stripping feedback means no post-release user signal. Accepted because the eval harness (item 1.0) replaces feedback as the measurement tool, and BYOK mode made the feedback endpoints unreachable anyway.
+- Duplication between highlight-matcher.js and content.js is accepted and documented rather than eliminated, because content scripts fundamentally can't import ES modules.
+
+---
+
 ## Phase 8: Accuracy Measurement System (April 2026)
 
 ### Apr 7, 2026 — Plan accuracy measurement and prompt tuning system

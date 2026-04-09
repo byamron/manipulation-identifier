@@ -21,12 +21,12 @@ Before proceeding, read:
 
 2. **Follow existing patterns** -- the side panel uses vanilla JS with message passing via MSG constants from shared.js. Content script is minimal (highlighting + text collection only). Keep this separation.
 
-3. **Keep content.js thin** -- content.js was deliberately reduced from 1850 to ~250 lines. All UI (cards, feedback, controls) lives in the side panel. Don't move UI logic back into content.js.
+3. **Keep content.js thin** -- content.js was deliberately reduced from 1850 to ~250 lines. All UI (cards, controls) lives in the side panel. Don't move UI logic back into content.js.
 
 4. **Document UI feedback loops** -- if the user corrects your implementation, document the failed approach and working solution in `core-docs/feedback.md`.
 
 ## Constraints
 
 - Side panel CSS uses semantic class names, no inline styles.
-- Colors for tactic categories are defined in shared.js (CATEGORY_COLORS). Don't hardcode elsewhere.
+- Colors for tactic categories are defined as CSS custom properties in sidepanel.css (`--cat-logical`, `--cat-rhetorical`, `--cat-credibility`). Don't hardcode elsewhere.
 - The extension must work on all http/https pages. Test edge cases (long pages, no text, restricted pages).

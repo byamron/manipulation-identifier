@@ -112,7 +112,7 @@ function parseJsonResponse(rawContent) {
     const cleaned = rawContent.replace(/^```json\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
     const parsed = JSON.parse(cleaned);
     const detected = parsed.tactics_detected;
-    if (!Array.isArray(detected)) return [];
+    if (!Array.isArray(detected)) return null;
 
     return detected
       .filter(t => t.tactic_name && t.definition && Array.isArray(t.instances) && t.instances.length > 0)
@@ -125,7 +125,7 @@ function parseJsonResponse(rawContent) {
         }))
       }));
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -155,7 +155,7 @@ async function callAnthropicDirect(text, model, apiKey) {
   if (!content) throw new Error('No response from Anthropic');
 
   return {
-    results: parseJsonResponse(content),
+    results: parseJsonResponse(content) || [],
     rawResponse: content,
     tokensUsed: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
     model: model

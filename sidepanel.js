@@ -167,7 +167,7 @@
         }
       } else if (e.key === 'Escape') {
         // Collapse any expanded sections
-        resultsArea.querySelectorAll('.card-learn-more.expanded, .card-feedback.expanded')
+        resultsArea.querySelectorAll('.card-learn-more.expanded')
           .forEach(el => el.classList.remove('expanded'));
       }
     });
@@ -323,10 +323,10 @@
               </div>
             `).join('')}
           </div>
+          ${tacticInfo ? `
           <div class="card-actions">
-            ${tacticInfo ? `<button class="card-action-link learn-more-toggle">Learn more</button>` : ''}
-            <button class="card-action-link feedback-toggle">Was this accurate?</button>
-          </div>
+            <button class="card-action-link learn-more-toggle">Learn more</button>
+          </div>` : ''}
           ${tacticInfo ? `
           <div class="card-learn-more">
             ${tacticInfo.why?.length ? `
@@ -347,15 +347,6 @@
             ` : ''}
           </div>
           ` : ''}
-          <div class="card-feedback">
-            <div class="feedback-options">
-              <button class="feedback-btn" data-value="accurate">Accurate</button>
-              <button class="feedback-btn" data-value="inaccurate">Inaccurate</button>
-              <button class="feedback-btn" data-value="uncertain">Uncertain</button>
-            </div>
-            <textarea class="feedback-comment" placeholder="Optional comment..." rows="2"></textarea>
-            <button class="feedback-submit">Submit</button>
-          </div>
         </div>
       `;
     });
@@ -434,69 +425,6 @@
       });
     });
 
-    // Feedback toggle
-    resultsArea.querySelectorAll('.feedback-toggle').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const card = btn.closest('.tactic-card');
-        const feedback = card.querySelector('.card-feedback');
-        if (feedback) {
-          feedback.classList.toggle('expanded');
-        }
-      });
-    });
-
-    // Feedback buttons
-    resultsArea.querySelectorAll('.feedback-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const group = btn.closest('.feedback-options');
-        group.querySelectorAll('.feedback-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-      });
-    });
-
-    // Feedback submit
-    resultsArea.querySelectorAll('.feedback-submit').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const card = btn.closest('.tactic-card');
-        const feedback = card.querySelector('.card-feedback');
-        const selected = feedback.querySelector('.feedback-btn.selected');
-        if (!selected) return;
-
-        const rating = selected.dataset.value;
-        const comment = feedback.querySelector('.feedback-comment').value.trim();
-        const tactic = card.dataset.tactic;
-
-        // Submit feedback to server (if configured)
-        try {
-          const settings = await new Promise(resolve => {
-            chrome.storage.local.get(['serverUrl'], r => resolve(r));
-          });
-          const serverUrl = settings.serverUrl;
-          if (serverUrl) {
-            await fetch(`${serverUrl.replace(/\/$/, '')}/submit-instance-feedback`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                detectedTactic: tactic,
-                modelUsed: modelSelect.value,
-                userRating: rating,
-                userComments: comment,
-                pageUrl: (await chrome.tabs.get(activeTabId)).url,
-                highlightedText: '',
-                originalFullText: ''
-              })
-            });
-          }
-        } catch { /* non-critical */ }
-
-        // Show thanks
-        feedback.innerHTML = '<div class="feedback-thanks">Thank you for your feedback!</div>';
-        setTimeout(() => {
-          feedback.classList.remove('expanded');
-          feedback.innerHTML = '';
-        }, 2000);
-      });
-    });
   }
 
   // ── Scroll to card when highlight clicked on page ──

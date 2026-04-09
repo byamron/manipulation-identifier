@@ -6,7 +6,7 @@ function parseJsonResponse(rawContent) {
     const parsed = JSON.parse(cleaned);
     const detected = parsed.tactics_detected;
 
-    if (!Array.isArray(detected)) return [];
+    if (!Array.isArray(detected)) return null;
 
     return detected
       .filter(t => t.tactic_name && t.definition && Array.isArray(t.instances) && t.instances.length > 0)
@@ -84,9 +84,9 @@ describe('parseJsonResponse', () => {
     expect(parseJsonResponse('{unclosed')).toBeNull();
   });
 
-  test('should return empty array if tactics_detected is not an array', () => {
+  test('should return null if tactics_detected is not an array', () => {
     const input = JSON.stringify({ tactics_detected: 'not an array' });
-    expect(parseJsonResponse(input)).toEqual([]);
+    expect(parseJsonResponse(input)).toBeNull();
   });
 
   test('should skip tactics without required fields', () => {

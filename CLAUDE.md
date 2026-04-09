@@ -12,7 +12,7 @@ A Chrome extension that detects and highlights manipulative language on web page
 - **Language/UI:** JavaScript, Chrome Side Panel (sidepanel.js/html/css)
 - **Backend:** Node.js + Express (server.js)
 - **Key APIs:** Anthropic Claude API (Sonnet 4.6, Haiku 4.5), supports BYOK (bring your own key) and server proxy modes
-- **Persistence:** Chrome Storage API (settings + session results), SQLite via database.js (feedback)
+- **Persistence:** Chrome Storage API (settings + session results)
 
 ## Product Principles
 
@@ -61,4 +61,4 @@ Code doesn't ship unless it meets these standards simultaneously:
 - **Accurate:** Detection matches benchmarks. No regressions in tactic identification.
 - **Performant:** Analysis completes within 30s timeout. Side panel renders instantly.
 - **Clean:** Follows project conventions. No dead code.
-- **Tested:** 56+ tests pass. New features include tests.
+- **Tested:** 57 tests pass. New features include tests.

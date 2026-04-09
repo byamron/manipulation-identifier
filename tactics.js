@@ -1,3 +1,5 @@
+// Server-only: loads tactics.json for the Express backend (prompts.js).
+// The extension loads tactics.json directly at runtime via chrome.runtime.getURL().
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';

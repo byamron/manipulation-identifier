@@ -19,7 +19,7 @@ Empower users to recognize manipulation in real-time as they browse the web. By 
 - **Side panel UI** -- Chrome Side Panel with dark, DevTools-inspired aesthetic
 - **Inline highlighting** -- Highlights manipulative text directly on the page with click-to-navigate
 - **BYOK architecture** -- Users provide their own Anthropic API key (no server required)
-- **Optional server proxy** -- Express backend for centralized analytics, caching, and feedback collection
+- **Optional server proxy** -- Express backend for centralized caching and analysis
 
 ## Supported Manipulation Tactics
 
@@ -51,8 +51,8 @@ The tool detects 15 manipulation tactics across three categories:
 - **Platform**: Chrome Extension (Manifest V3)
 - **UI**: Chrome Side Panel (sidepanel.js/html/css)
 - **AI**: Anthropic Claude API (Sonnet 4.6, Haiku 4.5) via BYOK or server proxy
-- **Backend**: Node.js + Express (optional, for analytics and feedback)
-- **Storage**: Chrome Storage API (settings + session results), SQLite (feedback)
+- **Backend**: Node.js + Express (optional, for server proxy mode with caching)
+- **Storage**: Chrome Storage API (settings + session results)
 - **Matching**: 3-tier fuzzy text matching (exact, normalized, trigram similarity)
 
 ## Current Status

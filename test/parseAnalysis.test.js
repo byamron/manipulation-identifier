@@ -1,6 +1,6 @@
 // Test parseAnalysisResponse in isolation (extracted from server.js)
 // We re-implement the function here to avoid importing the full server
-// (which starts listening on a port and requires database/OpenAI setup).
+// (which starts listening on a port at import time).
 
 function parseAnalysisResponse(manipulativeLanguage) {
   if (manipulativeLanguage.trim() === "No manipulation tactics detected.") {

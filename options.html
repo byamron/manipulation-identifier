@@ -160,9 +160,9 @@
   </div>
 
   <div class="section">
-    <div class="section-title">Analytics Server (optional)</div>
+    <div class="section-title">Server Proxy (optional)</div>
     <label for="serverUrl">Server URL</label>
-    <div class="hint">If set, feedback and analytics are sent to this server. Leave blank to skip.</div>
+    <div class="hint">If set, analysis requests are proxied through this server. When both an API key and server URL are configured, the API key takes priority. Leave blank to use BYOK mode.</div>
     <input type="text" id="serverUrl" placeholder="http://localhost:3000">
     <button id="saveServerBtn">Save Server URL</button>
     <div class="status" id="serverStatus"></div>
