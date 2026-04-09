@@ -211,10 +211,8 @@
     updateButton('Analyze', false);
     statusArea.innerHTML = `
       <div class="status-message">
-        <strong>Welcome to Manipulation Identifier</strong><br><br>
-        This tool detects manipulation tactics in web page text using AI analysis.<br><br>
-        To get started, <a href="#" id="setupLink">set up your Anthropic API key</a> in Settings,
-        or configure a server URL.
+        Detects manipulation tactics in web page text using AI.<br>
+        <a href="#" id="setupLink">Add your Anthropic API key</a> to get started.
       </div>
     `;
     resultsArea.innerHTML = '';
@@ -227,9 +225,11 @@
   function showReady() {
     currentState = 'ready';
     updateButton('Analyze', true);
+    const modifier = /Mac|iPhone|iPad/.test(navigator.platform) ? 'Cmd' : 'Ctrl';
     statusArea.innerHTML = `
       <div class="status-message">
-        Click <strong>Analyze</strong> to scan this page for manipulation tactics.
+        Click <strong>Analyze</strong> to scan this page for manipulation tactics.<br>
+        <span class="shortcut-hint">Tip: use <kbd>${modifier}+Shift+M</kbd> to open this panel anytime.</span>
       </div>
     `;
     resultsArea.innerHTML = '';
@@ -293,6 +293,7 @@
     // Summary
     const totalInstances = results.reduce((sum, t) => sum + t.examples.length, 0);
     let html = `<div class="results-summary">${results.length} tactic${results.length !== 1 ? 's' : ''} detected &middot; ${totalInstances} instance${totalInstances !== 1 ? 's' : ''}${model ? ` &middot; ${escapeHtml(model)}` : ''}</div>`;
+    html += `<div class="category-legend"><span class="legend-item"><span class="legend-dot logical"></span>Logical</span><span class="legend-item"><span class="legend-dot rhetorical"></span>Rhetorical</span><span class="legend-item"><span class="legend-dot credibility"></span>Credibility</span></div>`;
 
     // Cards
     results.forEach((tactic, idx) => {
@@ -370,9 +371,8 @@
     updateButton('Clear', true, true);
     statusArea.innerHTML = `
       <div class="status-message">
-        No manipulation tactics detected on this page.<br><br>
-        This doesn't necessarily mean the content is free of bias —
-        it means none of the ${tacticsData?.length || 15} tracked tactics were found with confidence.
+        No manipulation tactics detected — this content looks clean.<br><br>
+        Try analyzing a news article or opinion piece with strong claims.
       </div>
     `;
     resultsArea.innerHTML = '';
