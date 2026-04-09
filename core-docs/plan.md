@@ -2,14 +2,16 @@
 
 ## Current Focus
 
-Priority 3 — Polish & Completeness (items 3.1–3.7). All items shipped.
+Priority 1 — Accuracy & Trust (items 1.0–1.4). Build eval harness and test corpus, then tune prompt.
 
 ## Handoff Notes
 
-- Sidebar UI restyle shipped (dark glass aesthetic, contrast fixes, narrow-panel layout).
-- Content script injection fallback added.
-- Branch protection updated to allow merge without human review.
-- Accuracy measurement plan designed. Ready to implement starting with 1.0.
+- All Priority 2 (Core UX) items shipped and review-polished.
+- Streaming uses SSE with incremental JSON parsing, append-only DOM rendering, 150ms debounce, and per-chunk timeout reset.
+- `fetchStreamWithRetry` handles 5xx/429 retry for the initial connection; `reader.cancel()` ensures cleanup.
+- Stage timestamps carry `startedAt` so elapsed timer is correct on tab re-entry.
+- Shared `renderTacticCard(tactic, { interactive })` eliminates card HTML duplication.
+- 72 tests pass (15 new for streaming parsing).
 
 ---
 
@@ -274,7 +276,9 @@ Fix before scaling. Can be done in any order.
 
 ## Recently Completed
 
+- **Apr 8, 2026**: Priority 2 review pass — streaming reliability, UX polish, test coverage (13 issues fixed, 15 new tests)
 - **Apr 7, 2026**: Priority 3 — Polish & Completeness (3.1–3.7): dark options page, minimal onboarding, human model labels, quote click affordance, improved empty state, category legend, keyboard shortcut hint
+- **Apr 7, 2026**: Priority 2 — Core UX: streaming API responses, category-colored highlights, icon badge, analysis progress stages
 - **Apr 7, 2026**: Fix controls layout for narrow panel, improve text contrast
 - **Apr 7, 2026**: Fix content script injection fallback, improve error messages
 - **Apr 7, 2026**: Remove duplicate title, move settings gear into controls bar

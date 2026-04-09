@@ -271,6 +271,11 @@ body {
   letter-spacing: 0.04em;
 }
 
+.skeleton-timer.standalone {
+  margin-top: 0;
+  padding: 8px var(--panel-pad);
+}
+
 @keyframes shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
@@ -469,6 +474,14 @@ body {
 .instance-quote:hover {
   color: var(--accent);
   text-decoration-color: var(--accent);
+}
+
+.instance-quote.non-interactive {
+  cursor: default;
+}
+
+.instance-quote.non-interactive:hover {
+  color: var(--text-secondary);
 }
 
 .instance-explanation {

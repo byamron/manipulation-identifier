@@ -16,6 +16,8 @@
   let currentState = 'ready'; // ready | analyzing | results | empty | error | setup | unsupported
   let analyzeTimer = null;
   let tacticsData = null; // Loaded from tactics.json for "Learn more"
+  let streamingRenderedCount = 0;
+  let streamingDebounceTimer = null;
 
   // ── Init ──
   async function init() {
@@ -61,11 +63,12 @@
       const status = data[`status_${activeTabId}`];
 
       if (status?.status === 'analyzing') {
-        // Check for timeout
-        if (Date.now() - status.timestamp > 45000) {
+        // Check for timeout — use startedAt (stable) not timestamp (per-stage)
+        const analysisStart = status.startedAt || status.timestamp;
+        if (Date.now() - analysisStart > 45000) {
           showError('Analysis may have timed out. Try again.');
         } else {
-          showAnalyzing(status.timestamp);
+          showAnalyzing(analysisStart, status.stage);
         }
       } else if (results?.results?.length > 0) {
         showResults(results.results, results.model);
@@ -110,8 +113,16 @@
         const newStatus = changes[statusKey].newValue;
         if (!newStatus) return;
 
-        if (newStatus.status === 'analyzing' && currentState !== 'analyzing') {
-          showAnalyzing(newStatus.timestamp);
+        if (newStatus.status === 'analyzing') {
+          if (currentState !== 'analyzing') {
+            showAnalyzing(newStatus.startedAt || newStatus.timestamp, newStatus.stage);
+          } else {
+            // Update stage label without resetting the timer
+            const timerEl = document.getElementById('analyzeTimerDisplay');
+            if (timerEl && newStatus.stage) {
+              timerEl.dataset.stage = newStatus.stage;
+            }
+          }
         } else if (newStatus.status === 'error') {
           showError(newStatus.error);
         } else if (newStatus.status === 'complete' && changes[resultsKey]) {
@@ -125,7 +136,12 @@
       } else if (changes[resultsKey] && !changes[statusKey]) {
         const results = changes[resultsKey].newValue;
         if (results?.results?.length > 0) {
-          showResults(results.results, results.model);
+          if (results.streaming) {
+            // Streaming partial results — show incrementally while still analyzing
+            showStreamingResults(results.results, results.model);
+          } else {
+            showResults(results.results, results.model);
+          }
         }
       }
     });
@@ -225,6 +241,8 @@
   function showReady() {
     currentState = 'ready';
     updateButton('Analyze', true);
+    streamingRenderedCount = 0;
+    clearTimeout(streamingDebounceTimer);
     const modifier = /Mac|iPhone|iPad/.test(navigator.platform) ? 'Cmd' : 'Ctrl';
     statusArea.innerHTML = `
       <div class="status-message">
@@ -247,10 +265,17 @@
     resultsArea.innerHTML = '';
   }
 
-  function showAnalyzing(startTimestamp) {
+  const STAGE_LABELS = {
+    collecting: 'Collecting text...',
+    calling_api: 'Analyzing with Claude...',
+    processing: 'Processing results...'
+  };
+
+  function showAnalyzing(startTimestamp, stage) {
     currentState = 'analyzing';
     updateButton('Analyzing...', false);
     const start = startTimestamp || Date.now();
+    const stageText = STAGE_LABELS[stage] || 'Analyzing...';
 
     statusArea.innerHTML = `
       <div class="skeleton">
@@ -263,7 +288,7 @@
           <div class="skeleton-line short"></div>
           <div class="skeleton-line"></div>
         </div>
-        <div class="skeleton-timer" id="analyzeTimerDisplay">Analyzing...</div>
+        <div class="skeleton-timer" id="analyzeTimerDisplay">${stageText}</div>
       </div>
     `;
     resultsArea.innerHTML = '';
@@ -274,7 +299,8 @@
       const elapsed = Math.floor((Date.now() - start) / 1000);
       const timerEl = document.getElementById('analyzeTimerDisplay');
       if (timerEl) {
-        timerEl.textContent = `Analyzing... ${elapsed}s`;
+        const currentLabel = timerEl.dataset.stage ? (STAGE_LABELS[timerEl.dataset.stage] || 'Analyzing...') : stageText;
+        timerEl.textContent = `${currentLabel} ${elapsed}s`;
       }
       // Timeout check
       if (elapsed > 45) {
@@ -284,85 +310,130 @@
     }, 1000);
   }
 
+  // ── Shared card renderer ──
+
+  function renderTacticCard(tactic, { interactive = true } = {}) {
+    const category = TACTIC_CATEGORIES[tactic.tactic] || 'logical';
+    const categoryLabel = CATEGORY_LABELS[category] || category;
+    const tacticInfo = interactive ? tacticsData?.find(t => t.name === tactic.tactic) : null;
+
+    return `
+      <div class="tactic-card" tabindex="0" role="article"
+           aria-label="${escapeHtml(tactic.tactic)}"
+           data-tactic="${escapeHtml(tactic.tactic)}">
+        <div class="card-header">
+          <div class="card-category-bar ${category}" title="${escapeHtml(categoryLabel)}"></div>
+          <div class="card-content">
+            <div class="card-tactic-name">${escapeHtml(tactic.tactic)}</div>
+            <div class="card-definition">${escapeHtml(tactic.definition)}</div>
+          </div>
+        </div>
+        <div class="card-instances">
+          ${tactic.examples.map((ex, i) => `
+            <div class="instance">
+              <div class="instance-quote${interactive ? '' : ' non-interactive'}"
+                   ${interactive ? `data-highlight-tactic="${escapeHtml(tactic.tactic)}" data-instance-index="${i}" title="Click to scroll to this text on the page"` : ''}>
+                "${escapeHtml(ex.text)}"
+              </div>
+              <div class="instance-explanation">${escapeHtml(ex.explanation)}</div>
+            </div>
+          `).join('')}
+        </div>
+        ${interactive ? `
+        <div class="card-actions">
+          ${tacticInfo ? `<button class="card-action-link learn-more-toggle">Learn more</button>` : ''}
+          <button class="card-action-link feedback-toggle">Was this accurate?</button>
+        </div>
+        ${tacticInfo ? `
+        <div class="card-learn-more">
+          ${tacticInfo.why?.length ? `
+            <div class="learn-more-section">
+              <div class="learn-more-label">Why this matters</div>
+              <div class="learn-more-text">
+                <ul>${tacticInfo.why.map(w => `<li>${escapeHtml(w)}</li>`).join('')}</ul>
+              </div>
+            </div>
+          ` : ''}
+          ${tacticInfo.whatToDo?.length ? `
+            <div class="learn-more-section">
+              <div class="learn-more-label">What you can do</div>
+              <div class="learn-more-text">
+                <ul>${tacticInfo.whatToDo.map(w => `<li>${escapeHtml(w)}</li>`).join('')}</ul>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+        ` : ''}
+        <div class="card-feedback">
+          <div class="feedback-options">
+            <button class="feedback-btn" data-value="accurate">Accurate</button>
+            <button class="feedback-btn" data-value="inaccurate">Inaccurate</button>
+            <button class="feedback-btn" data-value="uncertain">Uncertain</button>
+          </div>
+          <textarea class="feedback-comment" placeholder="Optional comment..." rows="2"></textarea>
+          <button class="feedback-submit">Submit</button>
+        </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
   function showResults(results, model) {
     currentState = 'results';
     clearInterval(analyzeTimer);
+    clearTimeout(streamingDebounceTimer);
     updateButton('Clear', true, true);
     statusArea.innerHTML = '';
+    streamingRenderedCount = 0;
 
-    // Summary
     const totalInstances = results.reduce((sum, t) => sum + t.examples.length, 0);
     let html = `<div class="results-summary">${results.length} tactic${results.length !== 1 ? 's' : ''} detected &middot; ${totalInstances} instance${totalInstances !== 1 ? 's' : ''}${model ? ` &middot; ${escapeHtml(model)}` : ''}</div>`;
     html += `<div class="category-legend"><span class="legend-item"><span class="legend-dot logical"></span>Logical</span><span class="legend-item"><span class="legend-dot rhetorical"></span>Rhetorical</span><span class="legend-item"><span class="legend-dot credibility"></span>Credibility</span></div>`;
-
-    // Cards
-    results.forEach((tactic, idx) => {
-      const category = TACTIC_CATEGORIES[tactic.tactic] || 'logical';
-      const categoryLabel = CATEGORY_LABELS[category] || category;
-      const tacticInfo = tacticsData?.find(t => t.name === tactic.tactic);
-
-      html += `
-        <div class="tactic-card" tabindex="0" role="article"
-             aria-label="${escapeHtml(tactic.tactic)}"
-             data-tactic="${escapeHtml(tactic.tactic)}">
-          <div class="card-header">
-            <div class="card-category-bar ${category}" title="${escapeHtml(categoryLabel)}"></div>
-            <div class="card-content">
-              <div class="card-tactic-name">${escapeHtml(tactic.tactic)}</div>
-              <div class="card-definition">${escapeHtml(tactic.definition)}</div>
-            </div>
-          </div>
-          <div class="card-instances">
-            ${tactic.examples.map((ex, i) => `
-              <div class="instance">
-                <div class="instance-quote" data-highlight-tactic="${escapeHtml(tactic.tactic)}"
-                     data-instance-index="${i}"
-                     title="Click to scroll to this text on the page">
-                  "${escapeHtml(ex.text)}"
-                </div>
-                <div class="instance-explanation">${escapeHtml(ex.explanation)}</div>
-              </div>
-            `).join('')}
-          </div>
-          <div class="card-actions">
-            ${tacticInfo ? `<button class="card-action-link learn-more-toggle">Learn more</button>` : ''}
-            <button class="card-action-link feedback-toggle">Was this accurate?</button>
-          </div>
-          ${tacticInfo ? `
-          <div class="card-learn-more">
-            ${tacticInfo.why?.length ? `
-              <div class="learn-more-section">
-                <div class="learn-more-label">Why this matters</div>
-                <div class="learn-more-text">
-                  <ul>${tacticInfo.why.map(w => `<li>${escapeHtml(w)}</li>`).join('')}</ul>
-                </div>
-              </div>
-            ` : ''}
-            ${tacticInfo.whatToDo?.length ? `
-              <div class="learn-more-section">
-                <div class="learn-more-label">What you can do</div>
-                <div class="learn-more-text">
-                  <ul>${tacticInfo.whatToDo.map(w => `<li>${escapeHtml(w)}</li>`).join('')}</ul>
-                </div>
-              </div>
-            ` : ''}
-          </div>
-          ` : ''}
-          <div class="card-feedback">
-            <div class="feedback-options">
-              <button class="feedback-btn" data-value="accurate">Accurate</button>
-              <button class="feedback-btn" data-value="inaccurate">Inaccurate</button>
-              <button class="feedback-btn" data-value="uncertain">Uncertain</button>
-            </div>
-            <textarea class="feedback-comment" placeholder="Optional comment..." rows="2"></textarea>
-            <button class="feedback-submit">Submit</button>
-          </div>
-        </div>
-      `;
-    });
+    html += results.map(t => renderTacticCard(t, { interactive: true })).join('');
 
     resultsArea.innerHTML = html;
     attachCardListeners();
+  }
+
+  function showStreamingResults(results, model) {
+    // Debounce: batch rapid updates into a single DOM write
+    clearTimeout(streamingDebounceTimer);
+    streamingDebounceTimer = setTimeout(() => {
+      applyStreamingResults(results, model);
+    }, 150);
+  }
+
+  function applyStreamingResults(results, model) {
+    // Guard: only apply if still analyzing (debounced call may fire after completion)
+    if (currentState !== 'analyzing') return;
+
+    // Collapse skeleton on first streaming result
+    if (streamingRenderedCount === 0 && results.length > 0) {
+      statusArea.innerHTML = `
+        <div class="skeleton-timer standalone" id="analyzeTimerDisplay">
+          Analyzing with Claude...
+        </div>
+      `;
+      // Transfer stage data to new timer element
+      const timerEl = document.getElementById('analyzeTimerDisplay');
+      if (timerEl) timerEl.dataset.stage = 'calling_api';
+    }
+
+    // Ensure summary row exists
+    let summary = resultsArea.querySelector('.results-summary');
+    if (!summary) {
+      summary = document.createElement('div');
+      summary.className = 'results-summary';
+      resultsArea.prepend(summary);
+    }
+    const totalInstances = results.reduce((sum, t) => sum + t.examples.length, 0);
+    summary.textContent = `${results.length} tactic${results.length !== 1 ? 's' : ''} so far \u00b7 ${totalInstances} instance${totalInstances !== 1 ? 's' : ''}`;
+
+    // Append only new cards (don't re-render existing ones)
+    for (let i = streamingRenderedCount; i < results.length; i++) {
+      resultsArea.insertAdjacentHTML('beforeend', renderTacticCard(results[i], { interactive: false }));
+    }
+    streamingRenderedCount = results.length;
   }
 
   function showEmpty() {
