@@ -34,24 +34,24 @@ A Chrome extension that detects manipulative language on any web page and highli
 
 ### Configure your API key
 
-The extension calls OpenAI directly from the browser (BYOK mode). No backend server required for basic use.
+The extension calls Anthropic directly from the browser (BYOK mode). No backend server required.
 
 1. Right-click the extension icon → **Options** (or go to `chrome://extensions` → Manipulation Identifier → Details → Extension options)
-2. Enter your OpenAI API key (get one at [platform.openai.com/api-keys](https://platform.openai.com/api-keys))
-3. Choose a model — GPT-5 Nano is the fastest and cheapest; GPT-5 is the most capable
+2. Enter your Anthropic API key (get one at [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys))
+3. Choose a model — Sonnet 4.6 is the most accurate; Haiku 4.5 is faster and cheaper
 4. Click **Save**, then **Test Key** to verify
 
 ### Optional: run the backend server
 
-If you prefer to route requests through a local server instead of calling OpenAI directly:
+If you prefer to route requests through a local server instead of calling Anthropic directly:
 
 ```
 npm install
-cp .env.example .env   # add your OPENAI_API_KEY
+cp .env.example .env   # add your ANTHROPIC_API_KEY
 npm start              # starts on http://localhost:3000
 ```
 
-Then enter `http://localhost:3000` as the Server URL in the extension's settings. The extension will use the server proxy instead of calling OpenAI directly.
+Then enter `http://localhost:3000` as the Server URL in the extension's settings. The extension will use the server proxy instead of calling Anthropic directly. When both an API key and server URL are set, BYOK (API key) takes priority.
 
 ## Running Tests
 
@@ -59,13 +59,13 @@ Then enter `http://localhost:3000` as the Server URL in the extension's settings
 npm test
 ```
 
-Runs 56 tests across 5 suites covering highlight matching, response parsing, prompt construction, and taxonomy validation.
+Runs 57 tests across 5 suites covering highlight matching, response parsing, prompt construction, and taxonomy validation.
 
 ## Requirements
 
 - Chrome 116+
 - Node.js 18+ (only if using the backend server)
-- An OpenAI API key
+- An Anthropic API key
 
 ## Project Structure
 
@@ -78,9 +78,8 @@ Runs 56 tests across 5 suites covering highlight matching, response parsing, pro
 ├── highlight-matcher.js   Fuzzy text matching for inline highlights
 ├── options.html/js        Settings page — API key, model, server URL
 ├── server.js              Optional Express backend proxy
-├── database.js            SQLite feedback storage (server mode)
 ├── tactics.json           15 tactic definitions with examples
-├── prompts.js             Prompt templates for LLM analysis
+├── prompts.js             Server-only prompt templates
 ├── test/                  Jest test suites
 └── core-docs/             Project documentation (history, plan, spec)
 ```

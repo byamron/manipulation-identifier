@@ -1,3 +1,5 @@
+// Server-only: builds the system prompt for the Express backend (server.js).
+// The extension builds its own prompt in background.js via buildSystemPrompt().
 // Import full description of tactics
 import { tactics } from './tactics.js';
 

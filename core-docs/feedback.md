@@ -53,6 +53,8 @@ Increment from the last entry. Use `FB-0001`, `FB-0002`, etc.
 
 **Synthesized rule:** The feedback system (database.js, feedback UI, analytics endpoints) is dev-only infrastructure. It must be removed before release. Design all measurement/tuning tools as development-time scripts (in eval/), not user-facing features.
 
+**Status:** Executed in Priority 4.5 (Apr 2026). Full teardown documented in `history.md` Phase 11, "Feedback System Teardown" section — includes complete inventory of what was removed, DB schema, endpoint contracts, and design considerations for future reintroduction. The last commit with the full feedback system is `6ab7c26`.
+
 **Applies to:** architecture, product, privacy
 
 ### FB-0002: Keep onboarding minimal — product should be self-explanatory
