@@ -170,17 +170,17 @@
       <span class="mode-indicator" id="modeIndicator"></span>
     </div>
 
-    <label for="apiKey">Anthropic API Key</label>
-    <div class="hint">Enter your key to analyze directly (recommended). Get one at <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a></div>
+    <label for="apiKey">Gemini API Key</label>
+    <div class="hint">Free API key for direct analysis. <a href="https://aistudio.google.com/apikey" target="_blank">Get one at Google AI Studio</a></div>
     <div class="api-key-wrapper">
-      <input type="password" id="apiKey" placeholder="sk-ant-...">
+      <input type="password" id="apiKey" placeholder="AIza...">
       <button class="toggle-visibility" id="toggleKey" type="button">Show</button>
     </div>
 
     <label for="model">Default Model</label>
     <select id="model">
-      <option value="claude-sonnet-4-6">Thorough (Sonnet) — recommended</option>
-      <option value="claude-haiku-4-5-20251001">Quick (Haiku) — faster, lighter</option>
+      <option value="gemini-2.5-flash">Gemini 2.5 Flash (recommended)</option>
+      <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite (faster)</option>
     </select>
 
     <div class="btn-row">

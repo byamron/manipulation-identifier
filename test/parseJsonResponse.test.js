@@ -109,7 +109,7 @@ describe('parseJsonResponse', () => {
     expect(result[0].tactic).toBe('Valid');
   });
 
-  test('should strip markdown json fences from Anthropic responses', () => {
+  test('should strip markdown json fences from LLM responses', () => {
     const input = '```json\n' + JSON.stringify({
       tactics_detected: [{
         tactic_name: 'Emotional Language',

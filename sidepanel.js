@@ -22,12 +22,12 @@
   // ── Init ──
   async function init() {
     // Load saved model preference
-    chrome.storage.local.get(['selectedModel', 'anthropicApiKey', 'serverUrl'], (result) => {
+    chrome.storage.local.get(['selectedModel', 'geminiApiKey', 'serverUrl'], (result) => {
       if (result.selectedModel && modelSelect.querySelector(`option[value="${result.selectedModel}"]`)) {
         modelSelect.value = result.selectedModel;
       }
       // Check if setup is needed (no API key and no server URL)
-      const hasKey = !!result.anthropicApiKey;
+      const hasKey = !!result.geminiApiKey;
       const hasServer = !!result.serverUrl;
       if (!hasKey && !hasServer) {
         showSetup();
@@ -228,7 +228,7 @@
     statusArea.innerHTML = `
       <div class="status-message">
         Detects manipulation tactics in web page text using AI.<br>
-        <a href="#" id="setupLink">Add your Anthropic API key</a> to get started.
+        <a href="#" id="setupLink">Add your Gemini API key</a> to get started.
       </div>
     `;
     resultsArea.innerHTML = '';
@@ -267,7 +267,7 @@
 
   const STAGE_LABELS = {
     collecting: 'Collecting text...',
-    calling_api: 'Analyzing with Claude...',
+    calling_api: 'Analyzing with Gemini...',
     processing: 'Processing results...'
   };
 
@@ -374,8 +374,14 @@
     statusArea.innerHTML = '';
     streamingRenderedCount = 0;
 
+    // Summary
+    const MODEL_LABELS = {
+      'gemini-2.5-flash': 'Flash 2.5',
+      'gemini-2.5-flash-lite': 'Flash Lite 2.5'
+    };
     const totalInstances = results.reduce((sum, t) => sum + t.examples.length, 0);
-    let html = `<div class="results-summary">${results.length} tactic${results.length !== 1 ? 's' : ''} detected &middot; ${totalInstances} instance${totalInstances !== 1 ? 's' : ''}${model ? ` &middot; ${escapeHtml(model)}` : ''}</div>`;
+    const modelLabel = MODEL_LABELS[model] || model;
+    let html = `<div class="results-summary">${results.length} tactic${results.length !== 1 ? 's' : ''} detected &middot; ${totalInstances} instance${totalInstances !== 1 ? 's' : ''}${model ? ` &middot; ${escapeHtml(modelLabel)}` : ''}</div>`;
     html += `<div class="category-legend"><span class="legend-item"><span class="legend-dot logical"></span>Logical</span><span class="legend-item"><span class="legend-dot rhetorical"></span>Rhetorical</span><span class="legend-item"><span class="legend-dot credibility"></span>Credibility</span></div>`;
     html += results.map(t => renderTacticCard(t, { interactive: true })).join('');
 
@@ -399,7 +405,7 @@
     if (streamingRenderedCount === 0 && results.length > 0) {
       statusArea.innerHTML = `
         <div class="skeleton-timer standalone" id="analyzeTimerDisplay">
-          Analyzing with Claude...
+          Analyzing with Gemini...
         </div>
       `;
       // Transfer stage data to new timer element

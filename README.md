@@ -34,24 +34,24 @@ A Chrome extension that detects manipulative language on any web page and highli
 
 ### Configure your API key
 
-The extension calls Anthropic directly from the browser (BYOK mode). No backend server required.
+The extension calls Google Gemini directly from the browser (BYOK mode). No backend server required for basic use.
 
 1. Right-click the extension icon → **Options** (or go to `chrome://extensions` → Manipulation Identifier → Details → Extension options)
-2. Enter your Anthropic API key (get one at [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys))
-3. Choose a model — Sonnet 4.6 is the most accurate; Haiku 4.5 is faster and cheaper
+2. Enter your Gemini API key (get one free at [aistudio.google.com/apikey](https://aistudio.google.com/apikey))
+3. Choose a model — Flash Lite is faster; Flash is more accurate
 4. Click **Save**, then **Test Key** to verify
 
 ### Optional: run the backend server
 
-If you prefer to route requests through a local server instead of calling Anthropic directly:
+If you prefer to route requests through a local server instead of calling Gemini directly:
 
 ```
 npm install
-cp .env.example .env   # add your ANTHROPIC_API_KEY
+cp .env.example .env   # add your GEMINI_API_KEY
 npm start              # starts on http://localhost:3000
 ```
 
-Then enter `http://localhost:3000` as the Server URL in the extension's settings. The extension will use the server proxy instead of calling Anthropic directly. When both an API key and server URL are set, BYOK (API key) takes priority.
+Then enter `http://localhost:3000` as the Server URL in the extension's settings. The extension will use the server proxy instead of calling Gemini directly. When both an API key and server URL are set, BYOK (API key) takes priority.
 
 ## Running Tests
 
@@ -65,7 +65,7 @@ Runs 57 tests across 5 suites covering highlight matching, response parsing, pro
 
 - Chrome 116+
 - Node.js 18+ (only if using the backend server)
-- An Anthropic API key
+- A Google Gemini API key (free at [aistudio.google.com](https://aistudio.google.com/apikey))
 
 ## Project Structure
 

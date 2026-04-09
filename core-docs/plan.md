@@ -32,7 +32,7 @@ These directly affect whether the product delivers on its promise. Ship these fi
 
 **What was built:**
 - 119 corpus files in `eval/corpus/` (45 tactic-specific, 34 benchmark ports, 15 multi-tactic, 15 clean text, 10 ambiguous edge cases)
-- `eval/harness.cjs` — reads corpus, calls Anthropic API (rate-limited 1 req/sec), scores results
+- `eval/harness.cjs` — reads corpus, calls Gemini API (rate-limited 1 req/sec), scores results
 - `eval/scorer.cjs` — character overlap matching (50% threshold), precision/recall/F1 per-tactic and overall, quote fidelity
 - `eval/reporter.cjs` — console table output + JSON persistence to `eval/results/`
 - `eval/compare.cjs` — side-by-side metric comparison between two eval runs
@@ -89,7 +89,7 @@ All four items shipped and review-polished. See history.md Phase 10 for details.
 - **2.1 Streaming API responses** — SSE with incremental JSON parsing, append-only DOM rendering, 150ms debounce, per-chunk timeout reset, fetchStreamWithRetry for 5xx/429
 - **2.2 Category-colored page highlights** — Blue (logical), orange (rhetorical), red (credibility) with hover/active states
 - **2.3 Extension icon badge** — Tactic count badge after analysis, clears on highlight removal
-- **2.4 Analysis progress stages** — "Collecting text..." → "Analyzing with Claude..." → "Processing results..."
+- **2.4 Analysis progress stages** — "Collecting text..." → "Analyzing with Gemini..." → "Processing results..."
 
 ---
 
@@ -99,7 +99,7 @@ All seven items shipped. See history.md Phase 9 for details.
 
 - **3.1 Options page dark theme** — Dark palette matching sidepanel.css
 - **3.2 First-run onboarding** — One-line description + CTA (per FB-0002)
-- **3.3 Humanize model selector** — "Thorough (Sonnet)" / "Quick (Haiku)"
+- **3.3 Humanize model selector** — "Flash 2.5 (Recommended)" / "Flash Lite 2.5 (Faster)"
 - **3.4 Quote click affordance** — Subtle underline, accent color on hover
 - **3.5 Improved empty state** — Positive framing + suggestion
 - **3.6 Category legend** — Colored dots with labels below results summary
@@ -143,6 +143,8 @@ All items completed (Apr 8, 2026). See `history.md` Phase 9 for details.
 - **Apr 7, 2026**: Fix content script injection fallback, improve error messages
 - **Apr 7, 2026**: Remove duplicate title, move settings gear into controls bar
 - **Apr 7, 2026**: Restyle sidebar UI with DevPanel-inspired dark glass aesthetic
+- **Apr 8, 2026**: Switch LLM provider from Anthropic to Google Gemini (free tier)
+- **Apr 7, 2026**: Fix cross-node highlighting, fuzzy matching, side panel navigation
 - **Apr 1, 2026**: Complete Anthropic migration — server.js + BYOK on Claude API
 - **Apr 1, 2026**: Infrastructure migration — CLAUDE.md, agents, rules, core-docs
 

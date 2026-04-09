@@ -5,8 +5,9 @@ const CONFIG = {
   TIMEOUT_MS: 30000,
   MAX_RETRIES: 2,
   RETRY_DELAY_MS: 1000,
-  DEFAULT_MODEL: 'claude-sonnet-4-6',
-  DEFAULT_SERVER_URL: 'http://localhost:3000'
+  DEFAULT_MODEL: 'gemini-2.5-flash',
+  DEFAULT_SERVER_URL: 'http://localhost:3000',
+  GEMINI_API_BASE: 'https://generativelanguage.googleapis.com/v1beta/models'
 };
 
 // Open side panel on extension icon click
@@ -62,10 +63,10 @@ async function fetchWithRetry(url, options, retries = CONFIG.MAX_RETRIES) {
 // Get settings from storage
 async function getSettings() {
   return new Promise(resolve => {
-    chrome.storage.local.get(['serverUrl', 'anthropicApiKey', 'selectedModel'], result => {
+    chrome.storage.local.get(['serverUrl', 'geminiApiKey', 'selectedModel'], result => {
       resolve({
         serverUrl: result.serverUrl || CONFIG.DEFAULT_SERVER_URL,
-        apiKey: result.anthropicApiKey || null,
+        apiKey: result.geminiApiKey || null,
         model: result.selectedModel || CONFIG.DEFAULT_MODEL
       });
     });
@@ -129,195 +130,32 @@ function parseJsonResponse(rawContent) {
   }
 }
 
-// Parse SSE stream from Anthropic API
-async function* parseSSEStream(reader) {
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop(); // Keep incomplete line in buffer
-
-    let eventType = null;
-    for (const line of lines) {
-      if (line.startsWith('event: ')) {
-        eventType = line.slice(7).trim();
-      } else if (line.startsWith('data: ') && eventType) {
-        try {
-          yield { event: eventType, data: JSON.parse(line.slice(6)) };
-        } catch { /* skip malformed JSON */ }
-        eventType = null;
-      } else if (line === '') {
-        eventType = null;
-      }
-    }
-  }
-}
-
-// Extract complete tactic objects from accumulated JSON text
-function extractCompleteTactics(accumulated) {
-  // Find the start of the tactics array
-  const arrayStart = accumulated.indexOf('[');
-  if (arrayStart === -1) return [];
-
-  const text = accumulated.slice(arrayStart + 1);
-  const tactics = [];
-  let depth = 0;
-  let objectStart = -1;
-
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (ch === '"') {
-      // Skip string contents
-      i++;
-      while (i < text.length && text[i] !== '"') {
-        if (text[i] === '\\') i++; // Skip escaped char
-        i++;
-      }
-    } else if (ch === '{') {
-      if (depth === 0) objectStart = i;
-      depth++;
-    } else if (ch === '}') {
-      depth--;
-      if (depth === 0 && objectStart !== -1) {
-        const objectStr = text.slice(objectStart, i + 1);
-        try {
-          const obj = JSON.parse(objectStr);
-          if (obj.tactic_name && obj.definition && Array.isArray(obj.instances)) {
-            tactics.push(obj);
-          }
-        } catch { /* incomplete or malformed */ }
-        objectStart = -1;
-      }
-    }
-  }
-
-  return tactics;
-}
-
-// Fetch streaming response with retry on 5xx/429 (matches fetchWithRetry behavior)
-async function fetchStreamWithRetry(url, options, retries = CONFIG.MAX_RETRIES) {
-  const controller = new AbortController();
-  let timeoutId = setTimeout(() => controller.abort(), CONFIG.TIMEOUT_MS);
-
-  try {
-    const response = await fetch(url, { ...options, signal: controller.signal });
-
-    if (!response.ok) {
-      clearTimeout(timeoutId);
-      const status = response.status;
-      if ((status >= 500 || status === 429) && retries > 0) {
-        const backoff = CONFIG.RETRY_DELAY_MS * Math.pow(2, CONFIG.MAX_RETRIES - retries);
-        await delay(backoff);
-        return fetchStreamWithRetry(url, options, retries - 1);
-      }
-      let errorBody;
-      try { errorBody = await response.json(); } catch { errorBody = {}; }
-      const err = new Error(errorBody.error?.message || errorBody.error || `Server error: ${status}`);
-      err.status = status;
-      throw err;
-    }
-
-    return { response, controller, timeoutId };
-  } catch (error) {
-    clearTimeout(timeoutId);
-    if (error.name === 'AbortError') {
-      throw new Error('Request timeout — the server took too long to respond.');
-    }
-    if (retries > 0 && !error.status) {
-      const backoff = CONFIG.RETRY_DELAY_MS * Math.pow(2, CONFIG.MAX_RETRIES - retries);
-      await delay(backoff);
-      return fetchStreamWithRetry(url, options, retries - 1);
-    }
-    throw error;
-  }
-}
-
-// Call Anthropic directly (BYOK mode) with streaming
-async function callAnthropicDirect(text, model, apiKey, onPartialResults) {
+// Call Gemini directly (BYOK mode)
+async function callGeminiDirect(text, model, apiKey) {
   const tactics = await loadTactics();
+  const url = `${CONFIG.GEMINI_API_BASE}/${model}:generateContent`;
 
-  const { response, controller, timeoutId } = await fetchStreamWithRetry(
-    'https://api.anthropic.com/v1/messages',
-    {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: model,
-        max_tokens: 4096,
-        stream: true,
-        system: buildSystemPrompt(tactics),
-        messages: [
-          { role: 'user', content: buildUserPrompt(text) }
-        ]
-      })
-    }
-  );
+  const data = await fetchWithRetry(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey
+    },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: buildSystemPrompt(tactics) }] },
+      contents: [{ role: 'user', parts: [{ text: buildUserPrompt(text) }] }],
+      generationConfig: { maxOutputTokens: 4096 }
+    })
+  });
 
-  // Process stream — reset timeout on each chunk, cancel reader on error
-  const reader = response.body.getReader();
-  let accumulated = '';
-  let inputTokens = 0;
-  let outputTokens = 0;
-  let lastEmittedCount = 0;
-  let activeTimeout = timeoutId;
+  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!content) throw new Error('No response from Gemini');
 
-  const resetTimeout = () => {
-    clearTimeout(activeTimeout);
-    activeTimeout = setTimeout(() => controller.abort(), CONFIG.TIMEOUT_MS);
-  };
-
-  try {
-    for await (const { event, data } of parseSSEStream(reader)) {
-      resetTimeout();
-
-      if (event === 'content_block_delta' && data.delta?.type === 'text_delta') {
-        accumulated += data.delta.text;
-
-        // Try to extract complete tactics incrementally
-        if (onPartialResults) {
-          const completeTactics = extractCompleteTactics(accumulated);
-          if (completeTactics.length > lastEmittedCount) {
-            lastEmittedCount = completeTactics.length;
-            const parsed = completeTactics
-              .filter(t => t.instances.length > 0)
-              .map(t => ({
-                tactic: t.tactic_name,
-                definition: t.definition,
-                examples: t.instances.map(inst => ({
-                  text: inst.exact_quote,
-                  explanation: inst.explanation
-                }))
-              }));
-            onPartialResults(parsed);
-          }
-        }
-      } else if (event === 'message_start') {
-        inputTokens = data.message?.usage?.input_tokens || 0;
-      } else if (event === 'message_delta') {
-        outputTokens = data.usage?.output_tokens || 0;
-      }
-    }
-  } finally {
-    clearTimeout(activeTimeout);
-    reader.cancel().catch(() => {});
-  }
-
-  if (!accumulated) throw new Error('No response from Anthropic');
-
+  const usage = data.usageMetadata;
   return {
-    results: parseJsonResponse(accumulated) || [],
-    rawResponse: accumulated,
-    tokensUsed: inputTokens + outputTokens,
+    results: parseJsonResponse(content) || [],
+    rawResponse: content,
+    tokensUsed: (usage?.promptTokenCount || 0) + (usage?.candidatesTokenCount || 0),
     model: model
   };
 }
@@ -373,17 +211,7 @@ async function handleAnalyze(tabId, model) {
     const resultsKey = `results_${tabId}`;
     let result;
     if (settings.apiKey) {
-      result = await callAnthropicDirect(text, useModel, settings.apiKey, (partialResults) => {
-        // Emit partial results to session storage for incremental rendering
-        chrome.storage.session.set({
-          [resultsKey]: {
-            results: partialResults,
-            model: useModel,
-            streaming: true,
-            timestamp: Date.now()
-          }
-        });
-      });
+      result = await callGeminiDirect(text, useModel, settings.apiKey);
     } else {
       result = await callServerProxy(text, useModel, settings.serverUrl);
     }
@@ -441,9 +269,8 @@ function mapErrorMessage(error) {
   const msg = error.message || '';
   const status = error.status;
 
-  if (status === 401) return 'Invalid API key. Update in Settings.';
-  if (status === 402) return 'API quota exceeded. Check your Anthropic billing.';
-  if (status === 429) return 'Too many requests. Try again in a minute.';
+  if (status === 401 || status === 403) return 'Invalid API key. Check Settings.';
+  if (status === 429) return 'Rate limited. Wait a minute and try again.';
   if (status >= 500) return 'API server error. Try again later.';
   if (msg.includes('timeout') || msg.includes('AbortError')) return 'Request timed out. Try again.';
   if (msg.includes('NetworkError') || msg.includes('Failed to fetch')) {

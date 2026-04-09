@@ -13,12 +13,12 @@ Empower users to recognize manipulation in real-time as they browse the web. By 
 ## Core Features
 
 - **Full-page analysis** -- Analyzes visible text content on any webpage (up to 5000 characters)
-- **AI-powered detection** -- Uses Anthropic Claude (Sonnet 4.6 / Haiku 4.5) for manipulation detection
+- **AI-powered detection** -- Uses Google Gemini (Flash 2.5 / Flash Lite 2.5) for manipulation detection
 - **Multi-tactic recognition** -- Identifies multiple overlapping tactics in single passages
 - **Educational explanations** -- Explains why content is manipulative, not just that it is
 - **Side panel UI** -- Chrome Side Panel with dark, DevTools-inspired aesthetic
 - **Inline highlighting** -- Highlights manipulative text directly on the page with click-to-navigate
-- **BYOK architecture** -- Users provide their own Anthropic API key (no server required)
+- **BYOK architecture** -- Users provide their own Gemini API key (no server required)
 - **Optional server proxy** -- Express backend for centralized caching and analysis
 
 ## Supported Manipulation Tactics
@@ -50,7 +50,7 @@ The tool detects 15 manipulation tactics across three categories:
 
 - **Platform**: Chrome Extension (Manifest V3)
 - **UI**: Chrome Side Panel (sidepanel.js/html/css)
-- **AI**: Anthropic Claude API (Sonnet 4.6, Haiku 4.5) via BYOK or server proxy
+- **AI**: Google Gemini API (Flash 2.5, Flash Lite 2.5) via BYOK or server proxy
 - **Backend**: Node.js + Express (optional, for server proxy mode with caching)
 - **Storage**: Chrome Storage API (settings + session results)
 - **Matching**: 3-tier fuzzy text matching (exact, normalized, trigram similarity)
