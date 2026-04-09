@@ -2,7 +2,7 @@
 
 ## Current Focus
 
-Accuracy measurement system (item 1.0). Build eval harness and test corpus so prompt improvements can be measured, then tune the prompt.
+Priority 3 — Polish & Completeness (items 3.1–3.7). All items shipped.
 
 ## Handoff Notes
 
@@ -274,6 +274,7 @@ Fix before scaling. Can be done in any order.
 
 ## Recently Completed
 
+- **Apr 7, 2026**: Priority 3 — Polish & Completeness (3.1–3.7): dark options page, minimal onboarding, human model labels, quote click affordance, improved empty state, category legend, keyboard shortcut hint
 - **Apr 7, 2026**: Fix controls layout for narrow panel, improve text contrast
 - **Apr 7, 2026**: Fix content script injection fallback, improve error messages
 - **Apr 7, 2026**: Remove duplicate title, move settings gear into controls bar
