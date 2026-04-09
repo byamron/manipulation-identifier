@@ -76,113 +76,34 @@ These directly affect whether the product delivers on its promise. Ship these fi
 - Test that the fuzzy matcher still works with newlines in the concatenated text (it should — `normalizeText` collapses whitespace)
 **Files:** `content.js` (collectText)
 
-#### 1.4 Fix test suite ✓
-Already resolved — `package.json` has `"type": "module"` and `--experimental-vm-modules` in the test script. All 57 tests pass across 5 suites.
+#### 1.4 Fix test suite -- COMPLETE
+
+**Status:** Fixed on main. 72 tests pass across 6 suites (resolved ESM import errors, added streaming tests).
 
 ---
 
-### Priority 2 — Core UX
+### Priority 2 — Core UX -- COMPLETE
 
-These transform the experience from "it works" to "this is good."
+All four items shipped and review-polished. See history.md Phase 10 for details.
 
-#### 2.1 Streaming API responses
-**Why:** Analysis takes 5-30 seconds. Users stare at a skeleton loader. With streaming, the first tactic card can appear in 2-3s — transforming dead wait into progressive reveal.
-**What to do:**
-- In `background.js`, switch `callAnthropicDirect()` to use Anthropic's streaming API (`stream: true` in the request, or use the SDK's `messages.stream()`)
-- Parse partial JSON as content chunks arrive. Strategy: accumulate text, attempt JSON parse after each `content_block_delta`, emit partial results when a complete tactic object is detected
-- Store partial results to session storage as they arrive so the side panel can render incrementally
-- In `sidepanel.js`, update the storage listener to handle incremental result updates — append new tactic cards as they arrive rather than replacing all at once
-- Send highlights to content script incrementally too (or batch at the end)
-- Fallback: if streaming parsing fails, fall back to waiting for the complete response
-**Files:** `background.js` (callAnthropicDirect, handleAnalyze), `sidepanel.js` (storage listener, showResults)
-**Complexity:** High. This touches the core data flow. Test thoroughly with both short (no tactics) and long (5+ tactics) responses.
-
-#### 2.2 Category-colored page highlights
-**Why:** All highlights are the same yellow. The category color system (blue/orange/red) exists in the side panel but is invisible on the page. Category colors would let users scan an article and immediately see the manipulation landscape.
-**What to do:**
-- In `content.js`, add the `TACTIC_CATEGORIES` mapping (already inlined partially — need the full map from `shared.js`)
-- In `ensureHighlightStyles()`, add category-specific highlight classes: `.mi-highlight.mi-logical`, `.mi-highlight.mi-rhetorical`, `.mi-highlight.mi-credibility`
-- Use semi-transparent category colors that work on both light and dark page backgrounds: logical = `rgba(91, 156, 245, 0.18)`, rhetorical = `rgba(232, 148, 58, 0.18)`, credibility = `rgba(239, 83, 80, 0.18)`
-- In the highlight creation loop, look up the tactic's category and add the appropriate class
-- Hover/active states should intensify the category color
-**Files:** `content.js` (ensureHighlightStyles, highlightResults, TACTIC_CATEGORIES)
-
-#### 2.3 Extension icon badge
-**Why:** No way to tell from the toolbar whether a page has been analyzed or how many tactics were found. A badge count ("3") gives ambient awareness.
-**What to do:**
-- In `background.js`, after `handleAnalyze()` completes successfully, call `chrome.action.setBadgeText({ tabId, text: String(result.results.length) })` and `chrome.action.setBadgeBackgroundColor({ tabId, color: '#ef5350' })`
-- When results are cleared, call `chrome.action.setBadgeText({ tabId, text: '' })`
-- Show "0" in a neutral color (gray) when analysis finds nothing, or leave blank
-- On tab switch, badge should reflect that tab's state (Chrome handles this automatically via `tabId`)
-**Files:** `background.js` (handleAnalyze, CLEAR_HIGHLIGHTS handler)
-
-#### 2.4 Analysis progress stages
-**Why:** "Analyzing... 12s" gives no indication of what's happening. Even approximate stages reduce perceived wait time.
-**What to do:**
-- In `background.js`, write intermediate status updates to session storage during `handleAnalyze()`:
-  - After text collection: `{ status: 'analyzing', stage: 'collected', timestamp }`
-  - Before API call: `{ status: 'analyzing', stage: 'calling_api', timestamp }`
-  - After API response: `{ status: 'analyzing', stage: 'processing', timestamp }`
-- In `sidepanel.js`, the storage listener already watches status changes. Update `showAnalyzing()` to show stage-appropriate text: "Collecting text..." → "Analyzing with Claude..." → "Processing results..."
-**Files:** `background.js` (handleAnalyze), `sidepanel.js` (showAnalyzing, storage listener)
+- **2.1 Streaming API responses** — SSE with incremental JSON parsing, append-only DOM rendering, 150ms debounce, per-chunk timeout reset, fetchStreamWithRetry for 5xx/429
+- **2.2 Category-colored page highlights** — Blue (logical), orange (rhetorical), red (credibility) with hover/active states
+- **2.3 Extension icon badge** — Tactic count badge after analysis, clears on highlight removal
+- **2.4 Analysis progress stages** — "Collecting text..." → "Analyzing with Claude..." → "Processing results..."
 
 ---
 
-### Priority 3 — Polish & Completeness
+### Priority 3 — Polish & Completeness -- COMPLETE
 
-These make the product feel finished.
+All seven items shipped. See history.md Phase 9 for details.
 
-#### 3.1 Options page dark theme restyle
-**Why:** The options page is light-themed with Google Blue accents — completely disconnected from the dark side panel. It's the first thing new users see (setup flow sends them there).
-**What to do:**
-- Rewrite the inline `<style>` in `options.html` to use the same CSS custom properties and dark palette as `sidepanel.css`
-- Match typography (mono for labels, sans for content), surface colors, border styles, and button patterns
-- Keep the layout — just restyle the visual layer
-**Files:** `options.html`
-
-#### 3.2 First-run onboarding
-**Why:** First-time users see a cold "set up your API key" message. No explanation of value, no preview.
-**What to do:**
-- In `sidepanel.js` `showSetup()`, replace the current message with a brief one-screen description:
-  - What this does (1 sentence)
-  - Setup CTA ("Add your Anthropic API key to get started")
-- Keep it minimal — no multi-step wizard (see FB-0002)
-**Files:** `sidepanel.js` (showSetup), `sidepanel.css` (onboarding styles)
-
-#### 3.3 Humanize model selector
-**Why:** "Sonnet 4.6" vs "Haiku 4.5" means nothing to non-technical users.
-**What to do:**
-- Change option labels in `sidepanel.html`: "Thorough (Sonnet)" and "Quick (Haiku)"
-- Keep the `value` attributes as-is (model IDs)
-- Update `options.html` similarly
-**Files:** `sidepanel.html`, `options.html`
-
-#### 3.4 Instance quote click affordance
-**Why:** Quotes in the side panel are clickable (scroll to page highlight) but look like plain italic text. Zero visual affordance.
-**What to do:**
-- Add a small arrow or link icon before each quote, or underline on hover
-- In `sidepanel.css`, style `.instance-quote` with a subtle underline that appears on hover
-**Files:** `sidepanel.css`
-
-#### 3.5 Improved empty state
-**Why:** "No manipulation tactics detected" is a dead end with no positive framing or next action.
-**What to do:**
-- Rewrite `showEmpty()` with positive framing and helpful context
-- Suggest: "Try analyzing a different page, or a news article with strong opinions."
-**Files:** `sidepanel.js` (showEmpty)
-
-#### 3.6 Category legend
-**Why:** The three category colors (blue/orange/red) are used throughout the UI but never explained.
-**What to do:**
-- Add a small inline legend below the results summary: three colored dots with labels
-- Style as a subtle monospace row matching the summary aesthetic
-**Files:** `sidepanel.js` (showResults), `sidepanel.css`
-
-#### 3.7 Keyboard shortcut discoverability
-**Why:** Cmd+Shift+M opens the panel but is never shown in the UI.
-**What to do:**
-- Show the shortcut in the ready state message
-**Files:** `sidepanel.js` (showReady)
+- **3.1 Options page dark theme** — Dark palette matching sidepanel.css
+- **3.2 First-run onboarding** — One-line description + CTA (per FB-0002)
+- **3.3 Humanize model selector** — "Thorough (Sonnet)" / "Quick (Haiku)"
+- **3.4 Quote click affordance** — Subtle underline, accent color on hover
+- **3.5 Improved empty state** — Positive framing + suggestion
+- **3.6 Category legend** — Colored dots with labels below results summary
+- **3.7 Keyboard shortcut** — Platform-aware hint in ready state
 
 ---
 
