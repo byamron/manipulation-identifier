@@ -1,0 +1,15 @@
+{
+  "id": "scapegoating-02",
+  "text": "Small businesses in this country are dying, and we all know who is responsible. Big tech companies have rigged the entire economy in their favor. They pay no taxes, they crush competition, and they have bought off every politician in Washington. Every shuttered storefront on Main Street is a direct consequence of Silicon Valley's greed. Until we hold these companies accountable, ordinary Americans will continue to suffer.",
+  "annotations": [
+    {
+      "tactic": "Scapegoating",
+      "quote": "Big tech companies have rigged the entire economy in their favor. They pay no taxes, they crush competition, and they have bought off every politician in Washington. Every shuttered storefront on Main Street is a direct consequence of Silicon Valley's greed."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Scapegoating",
+    "variant": "variation"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "benchmark-21",
+  "text": "Comment on news article:\n\nWhy are we even talking about the mayor's transit plan when there are potholes on every street in the city? Fix the basics before you start dreaming about light rail. My cousin's car got totaled hitting a pothole last week and the city won't pay for it. That's how they treat taxpayers.",
+  "annotations": [
+    {
+      "tactic": "Red Herring",
+      "quote": "Why are we even talking about the mayor's transit plan when there are potholes on every street in the city?"
+    },
+    {
+      "tactic": "Hasty Generalization",
+      "quote": "My cousin's car got totaled hitting a pothole last week and the city won't pay for it. That's how they treat taxpayers."
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "format-content-variation",
+    "note": "Red Herring in news comment format with local politics content. Deflects from transit plan to potholes (classic appeal to worse problems), and one anecdote generalized to all taxpayer treatment."
+  }
+}

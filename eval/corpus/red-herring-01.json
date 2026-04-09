@@ -1,0 +1,15 @@
+{
+  "id": "red-herring-01",
+  "text": "When asked about the missing funds from the city's infrastructure budget, the mayor responded by highlighting the city's new youth sports program. \"What we should really be talking about is how we've invested in our young people,\" he said. \"We've built three new baseball diamonds and a soccer complex that families are loving. That's what leadership looks like.\" The original question about the $4.2 million budget discrepancy was never addressed.",
+  "annotations": [
+    {
+      "tactic": "Red Herring",
+      "quote": "What we should really be talking about is how we've invested in our young people,\" he said. \"We've built three new baseball diamonds and a soccer complex that families are loving. That's what leadership looks like."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Red Herring",
+    "variant": "textbook"
+  }
+}

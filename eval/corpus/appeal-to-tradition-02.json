@@ -1,0 +1,15 @@
+{
+  "id": "appeal-to-tradition-02",
+  "text": "Every generation of our family has attended Sunday services at St. Michael's, going back to my great-grandparents. It is part of who we are. The idea that our children might choose not to continue that practice is deeply troubling. Some things are bigger than personal preference. When a tradition has been honored by your family for over a hundred years, walking away from it is not just a lifestyle choice. It is a rejection of everything your ancestors built and valued.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Tradition",
+      "quote": "When a tradition has been honored by your family for over a hundred years, walking away from it is not just a lifestyle choice. It is a rejection of everything your ancestors built and valued."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Appeal to Tradition",
+    "variant": "variation"
+  }
+}

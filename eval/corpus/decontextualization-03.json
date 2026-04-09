@@ -1,0 +1,15 @@
+{
+  "id": "decontextualization-03",
+  "text": "A screenshot circulating on social media appears to show a nonprofit organization's internal memo stating that \"the data does not support continuing the literacy program.\" The image, shared without attribution, has been used by critics to argue the organization has abandoned its mission. A spokesperson for the nonprofit released the full memo on Friday, which reads in part: \"The data does not support continuing the literacy program in its current format. Based on participant feedback, we are restructuring the curriculum to include more one-on-one tutoring sessions and extending the program from 8 weeks to 14 weeks.\" The spokesperson added that the memo was a routine planning document and that enrollment in the revised program has actually increased by 25%.",
+  "annotations": [
+    {
+      "tactic": "Decontextualization",
+      "quote": "A screenshot circulating on social media appears to show a nonprofit organization's internal memo stating that \"the data does not support continuing the literacy program.\" The image, shared without attribution, has been used by critics to argue the organization has abandoned its mission."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Decontextualization",
+    "variant": "real-world-style"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "emotional-language-03",
+  "text": "A new report from the Urban Housing Coalition details the impact of rising rents in metropolitan areas. According to the data, median rents increased 14% year over year, outpacing wage growth by a factor of three. The report's authors describe the situation as a full-blown crisis that is ripping communities apart and condemning an entire generation to a future without hope or stability. Advocates say immediate legislative action is needed to prevent what they call a devastating collapse of the middle class that will scar our nation for decades to come.",
+  "annotations": [
+    {
+      "tactic": "Emotional Language",
+      "quote": "a full-blown crisis that is ripping communities apart and condemning an entire generation to a future without hope or stability"
+    },
+    {
+      "tactic": "Emotional Language",
+      "quote": "a devastating collapse of the middle class that will scar our nation for decades to come"
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Emotional Language",
+    "variant": "real-world-style"
+  }
+}

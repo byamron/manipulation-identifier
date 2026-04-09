@@ -1,0 +1,19 @@
+{
+  "id": "benchmark-06",
+  "text": "EXPOSED: The SHOCKING Truth About Processed Food!!!\n\nEveryone is eating this stuff. LITERALLY everyone. Your neighbors, your coworkers, your kids' teachers. If 300 million Americans are choosing processed food every day, it can't be that bad, right? RIGHT?\n\n#WakeUp #FoodTruth #TheyDontWantYouToKnow",
+  "annotations": [
+    {
+      "tactic": "Appeal to Majority",
+      "quote": "If 300 million Americans are choosing processed food every day, it can't be that bad, right?"
+    },
+    {
+      "tactic": "Emotional Language",
+      "quote": "EXPOSED: The SHOCKING Truth About Processed Food!!!"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "format-variation",
+    "note": "Social media post format with hashtags, clickbait headline, and caps-heavy style. Tests detection in viral content formatting."
+  }
+}

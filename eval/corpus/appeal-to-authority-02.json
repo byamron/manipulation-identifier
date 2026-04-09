@@ -1,0 +1,15 @@
+{
+  "id": "appeal-to-authority-02",
+  "text": "Look, I understand people have concerns about this new trade agreement, but Mark Rivera has publicly endorsed it. Rivera built one of the most successful tech companies in the world from scratch. He understands economics better than anyone in Washington. When someone who has generated that much wealth tells you a deal is good for the country, you would be foolish to second-guess him. His track record speaks for itself.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Authority",
+      "quote": "Rivera built one of the most successful tech companies in the world from scratch. He understands economics better than anyone in Washington. When someone who has generated that much wealth tells you a deal is good for the country, you would be foolish to second-guess him."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Appeal to Authority",
+    "variant": "variation"
+  }
+}

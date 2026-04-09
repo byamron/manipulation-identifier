@@ -1,0 +1,15 @@
+{
+  "id": "red-herring-02",
+  "text": "I hear your concerns about the lack of affordable housing in our district. But before we get into that, let me remind everyone that our district has the lowest crime rate in the entire metro area. Safety is the foundation of a thriving community, and we should be celebrating that achievement. When people feel safe walking the streets at night, everything else falls into place. That is the real measure of quality of life.",
+  "annotations": [
+    {
+      "tactic": "Red Herring",
+      "quote": "But before we get into that, let me remind everyone that our district has the lowest crime rate in the entire metro area. Safety is the foundation of a thriving community, and we should be celebrating that achievement."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Red Herring",
+    "variant": "variation"
+  }
+}

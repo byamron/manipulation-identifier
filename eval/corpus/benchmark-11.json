@@ -1,0 +1,19 @@
+{
+  "id": "benchmark-11",
+  "text": "The planet is choking on pollution, our oceans are dying, and entire species are vanishing before our eyes. We are standing on the edge of an irreversible ecological catastrophe, and if you're not consumed with rage about it, you're not paying attention. This is an emergency that demands action right now, not calm deliberation.",
+  "annotations": [
+    {
+      "tactic": "Emotional Language",
+      "quote": "The planet is choking on pollution, our oceans are dying, and entire species are vanishing before our eyes."
+    },
+    {
+      "tactic": "Emotional Language",
+      "quote": "if you're not consumed with rage about it, you're not paying attention"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "content-variation",
+    "note": "Emotional Language rephrased in environmental domain. Uses vivid catastrophic imagery and guilt-tripping to bypass rational evaluation. Different content from textbook fear-mongering but same tactic."
+  }
+}

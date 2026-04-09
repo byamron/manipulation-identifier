@@ -1,0 +1,14 @@
+{
+  "id": "ambiguous-01",
+  "text": "As a mother of three, I find it absolutely heartbreaking that our school board is cutting the arts program to save money. Music and painting taught my children empathy, discipline, and creativity — things no standardized test can measure. I understand budgets are tight, but we are making a devastating mistake that our children will pay for long after we're gone.",
+  "annotations": [
+    {
+      "tactic": "Emotional Language",
+      "quote": "I find it absolutely heartbreaking that our school board is cutting the arts program"
+    }
+  ],
+  "metadata": {
+    "type": "ambiguous",
+    "note": "The speaker is expressing genuine personal grief about a real loss. 'Heartbreaking' and 'devastating' are strong words, but they may reflect authentic emotion about a lived experience rather than a tactic to bypass reasoning. Borderline between legitimate emotional expression and Emotional Language as a manipulation tactic."
+  }
+}

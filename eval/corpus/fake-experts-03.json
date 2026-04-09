@@ -1,0 +1,15 @@
+{
+  "id": "fake-experts-03",
+  "text": "A viral video shared widely on social media this week features Dr. James Whitfield, introduced as a \"senior fellow at the American Institute for Climate Research,\" arguing that recent temperature records are the result of measurement errors rather than actual warming. The video has been viewed over four million times. However, a review of public records shows that the American Institute for Climate Research is not a recognized scientific body and appears to have been registered as a nonprofit only six months ago. Dr. Whitfield's doctorate is in mechanical engineering, and he has no published research in atmospheric science or climatology.",
+  "annotations": [
+    {
+      "tactic": "Fake Experts",
+      "quote": "Dr. James Whitfield, introduced as a \"senior fellow at the American Institute for Climate Research,\" arguing that recent temperature records are the result of measurement errors rather than actual warming."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Fake Experts",
+    "variant": "real-world-style"
+  }
+}

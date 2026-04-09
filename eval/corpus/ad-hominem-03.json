@@ -1,0 +1,15 @@
+{
+  "id": "ad-hominem-03",
+  "text": "The debate over the proposed downtown bike lane expansion heated up at Monday's city council meeting. Resident and cycling advocate Tom Chen presented data showing that protected bike lanes reduce traffic injuries by up to 40% in comparable cities. Council member Barbara Walsh dismissed the presentation. \"Mr. Chen rides his bicycle everywhere because he lost his driver's license after his second DUI,\" Walsh said. \"He does not care about traffic flow or parking for local businesses. He just wants the city to accommodate his lifestyle.\" The exchange drew sharp reactions from both sides of the audience, but the injury data Chen presented was not addressed by any council member for the remainder of the meeting.",
+  "annotations": [
+    {
+      "tactic": "Ad Hominem",
+      "quote": "Mr. Chen rides his bicycle everywhere because he lost his driver's license after his second DUI,\" Walsh said. \"He does not care about traffic flow or parking for local businesses. He just wants the city to accommodate his lifestyle."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Ad Hominem",
+    "variant": "real-world-style"
+  }
+}

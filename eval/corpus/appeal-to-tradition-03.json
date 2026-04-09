@@ -1,0 +1,15 @@
+{
+  "id": "appeal-to-tradition-03",
+  "text": "The debate over whether to replace the town's annual Columbus Day parade with an Indigenous Peoples' Day celebration drew a packed audience to Thursday's town hall meeting. Longtime resident Margaret Thornton argued against the change. \"This parade has been part of our town's identity for 73 years,\" Thornton told the crowd. \"My parents marched in it. I marched in it. My children marched in it. You cannot just erase decades of tradition because a vocal minority decided it is no longer fashionable. If this celebration has brought our community together for three generations, that tells you everything you need to know about its value.\" Supporters of the change responded that the longevity of a tradition does not determine its merit and that communities regularly update their public celebrations to reflect evolving values.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Tradition",
+      "quote": "You cannot just erase decades of tradition because a vocal minority decided it is no longer fashionable. If this celebration has brought our community together for three generations, that tells you everything you need to know about its value."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Appeal to Tradition",
+    "variant": "real-world-style"
+  }
+}

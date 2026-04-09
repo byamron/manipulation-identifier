@@ -1,0 +1,19 @@
+{
+  "id": "benchmark-18",
+  "text": "podcast transcript, minute 34:\n\nHost: So what do you say to people who think remote work is the future?\n\nGuest: Honestly? Those people are lazy. They just want to sit at home in their pajamas and pretend they're being productive. I built three companies from the ground up, and I can tell you — real work happens face to face. The remote work crowd are just entitled millennials who can't handle a real office environment.",
+  "annotations": [
+    {
+      "tactic": "Ad Hominem",
+      "quote": "Those people are lazy. They just want to sit at home in their pajamas and pretend they're being productive."
+    },
+    {
+      "tactic": "Hasty Generalization",
+      "quote": "The remote work crowd are just entitled millennials who can't handle a real office environment."
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "format-content-variation",
+    "note": "Ad Hominem in podcast transcript format with business/workplace content. Different format (dialogue transcript) and domain (remote work) from typical political examples."
+  }
+}

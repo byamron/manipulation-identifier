@@ -1,0 +1,29 @@
+{
+  "id": "multi-15",
+  "text": "Our nation's youth are being brainwashed by social media platforms that are rotting their brains and destroying the fabric of society. When I was growing up, kids played outside and learned respect for their elders — and we turned out just fine. But instead of addressing this crisis, politicians like Senator Davis — who can barely figure out how to unmute himself on a video call — are busy arguing about infrastructure spending. Nobody is talking about the fact that teen depression has skyrocketed 400% since smartphones became ubiquitous. If we don't ban social media for minors right now, we will lose an entire generation to digital addiction and despair.",
+  "annotations": [
+    {
+      "tactic": "Emotional Language",
+      "quote": "social media platforms that are rotting their brains and destroying the fabric of society"
+    },
+    {
+      "tactic": "Appeal to Tradition",
+      "quote": "When I was growing up, kids played outside and learned respect for their elders — and we turned out just fine."
+    },
+    {
+      "tactic": "Ad Hominem",
+      "quote": "politicians like Senator Davis — who can barely figure out how to unmute himself on a video call"
+    },
+    {
+      "tactic": "Cherry Picking",
+      "quote": "teen depression has skyrocketed 400% since smartphones became ubiquitous"
+    },
+    {
+      "tactic": "Slippery Slope",
+      "quote": "If we don't ban social media for minors right now, we will lose an entire generation to digital addiction and despair."
+    }
+  ],
+  "metadata": {
+    "type": "multi-tactic"
+  }
+}

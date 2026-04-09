@@ -1,0 +1,15 @@
+{
+  "id": "benchmark-14",
+  "text": "Studies show that 67% of participants in a randomized controlled trial preferred our cleaning product over the leading brand. What they don't mention is that the trial only tested stain removal on white cotton fabric, the sample size was 30 people, and the study was funded entirely by our parent company.",
+  "annotations": [
+    {
+      "tactic": "Cherry Picking",
+      "quote": "Studies show that 67% of participants in a randomized controlled trial preferred our cleaning product over the leading brand."
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "content-variation",
+    "note": "Cherry Picking in consumer product domain instead of politics. Selectively citing favorable statistics while the full context (provided in the passage for annotation purposes) reveals the limitations."
+  }
+}

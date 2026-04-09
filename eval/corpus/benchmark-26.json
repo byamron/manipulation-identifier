@@ -1,0 +1,22 @@
+{
+  "id": "benchmark-26",
+  "text": "For generations, our public schools taught reading, writing, arithmetic, and civics — and they produced the greatest nation the world has ever seen. Now the radical education reformers want to tear all of that apart. When I raise concerns about the new curriculum standards, they deflect by talking about school lunch funding, as if feeding children and teaching them properly are mutually exclusive. Let me be clear: in this fight over the future of education, you are either standing with parents and families, or you are standing with the bureaucrats and ideologues who think they know better than you how to raise your children. There is no neutral ground here.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Tradition",
+      "quote": "For generations, our public schools taught reading, writing, arithmetic, and civics — and they produced the greatest nation the world has ever seen"
+    },
+    {
+      "tactic": "Red Herring",
+      "quote": "they deflect by talking about school lunch funding, as if feeding children and teaching them properly are mutually exclusive"
+    },
+    {
+      "tactic": "Polarization",
+      "quote": "you are either standing with parents and families, or you are standing with the bureaucrats and ideologues who think they know better than you how to raise your children. There is no neutral ground here"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "variant": "real-world-political"
+  }
+}

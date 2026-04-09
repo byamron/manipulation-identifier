@@ -1,0 +1,15 @@
+{
+  "id": "scapegoating-03",
+  "text": "At a rally in Dayton on Saturday, the gubernatorial candidate blamed the state's teacher shortage squarely on the teachers' union. \"The union has made it impossible to hire good educators,\" she told the crowd of about 3,000 supporters. \"They protect bad teachers, block reforms, and drive talented people away from the profession. If we want our children to succeed, we need to break the stranglehold that union bosses have on our schools.\" Education policy researchers have pointed out that the shortage is driven by a combination of low pay, rising cost of living, and pandemic-era burnout, none of which are under union control.",
+  "annotations": [
+    {
+      "tactic": "Scapegoating",
+      "quote": "The union has made it impossible to hire good educators,\" she told the crowd of about 3,000 supporters. \"They protect bad teachers, block reforms, and drive talented people away from the profession."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Scapegoating",
+    "variant": "real-world-style"
+  }
+}

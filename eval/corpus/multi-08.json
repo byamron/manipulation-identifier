@@ -1,0 +1,25 @@
+{
+  "id": "multi-08",
+  "text": "The housing crisis is entirely the fault of greedy foreign investors who are buying up every property they can find and leaving hardworking families out in the cold. Professor David Chen from the Global Real Estate Advisory Board confirmed that foreign ownership has increased by 300% in the last decade. You can either support our proposed ban on foreign property ownership or accept that your children will never own a home. It's that simple. The American Dream of homeownership, which has been the foundation of middle-class prosperity since this nation was built, is being stolen from you.",
+  "annotations": [
+    {
+      "tactic": "Scapegoating",
+      "quote": "The housing crisis is entirely the fault of greedy foreign investors who are buying up every property they can find and leaving hardworking families out in the cold."
+    },
+    {
+      "tactic": "Fake Experts",
+      "quote": "Professor David Chen from the Global Real Estate Advisory Board confirmed that foreign ownership has increased by 300% in the last decade."
+    },
+    {
+      "tactic": "False Dichotomy",
+      "quote": "You can either support our proposed ban on foreign property ownership or accept that your children will never own a home. It's that simple."
+    },
+    {
+      "tactic": "Appeal to Tradition",
+      "quote": "The American Dream of homeownership, which has been the foundation of middle-class prosperity since this nation was built, is being stolen from you."
+    }
+  ],
+  "metadata": {
+    "type": "multi-tactic"
+  }
+}

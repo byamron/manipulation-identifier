@@ -1,0 +1,25 @@
+{
+  "id": "multi-07",
+  "text": "When Senator Williams said we need to rethink our approach to criminal justice, she conveniently forgot to mention that she received $200,000 in campaign donations from private prison lobbyists. Of course she wants reform — reform that keeps the cells full and the money flowing. And while we're focused on her rhetoric about rehabilitation, violent crime is surging in every major city across the country. A recent poll shows that 78% of Americans believe the justice system is broken, and they're right. The bleeding-heart liberals running our cities have blood on their hands.",
+  "annotations": [
+    {
+      "tactic": "Ad Hominem",
+      "quote": "she conveniently forgot to mention that she received $200,000 in campaign donations from private prison lobbyists"
+    },
+    {
+      "tactic": "Red Herring",
+      "quote": "And while we're focused on her rhetoric about rehabilitation, violent crime is surging in every major city across the country."
+    },
+    {
+      "tactic": "Appeal to Majority",
+      "quote": "A recent poll shows that 78% of Americans believe the justice system is broken, and they're right."
+    },
+    {
+      "tactic": "Scapegoating",
+      "quote": "The bleeding-heart liberals running our cities have blood on their hands."
+    }
+  ],
+  "metadata": {
+    "type": "multi-tactic"
+  }
+}

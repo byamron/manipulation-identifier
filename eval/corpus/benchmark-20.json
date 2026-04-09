@@ -1,0 +1,23 @@
+{
+  "id": "benchmark-20",
+  "text": "Newsletter — The Whole Earth Kitchen\n\nFriends, it breaks my heart to see so many families feeding their children processed cereal loaded with synthetic vitamins and artificial dyes. Our ancestors nourished their families with whole grains, raw honey, and fermented foods — and childhood obesity was virtually nonexistent. Nature already provides everything our bodies need. The food industry has convinced us we need their factory-made products, but the truth is simpler than they want you to believe.",
+  "annotations": [
+    {
+      "tactic": "Appeal to Nature",
+      "quote": "Nature already provides everything our bodies need."
+    },
+    {
+      "tactic": "Appeal to Tradition",
+      "quote": "Our ancestors nourished their families with whole grains, raw honey, and fermented foods — and childhood obesity was virtually nonexistent."
+    },
+    {
+      "tactic": "Emotional Language",
+      "quote": "it breaks my heart to see so many families feeding their children processed cereal loaded with synthetic vitamins and artificial dyes"
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "format-content-variation",
+    "note": "Appeal to Nature + Appeal to Tradition in email newsletter format with wellness content. Both format (newsletter) and content (food/nutrition) differ from textbook examples."
+  }
+}

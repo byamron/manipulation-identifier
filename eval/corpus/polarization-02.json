@@ -1,0 +1,19 @@
+{
+  "id": "polarization-02",
+  "text": "There are two kinds of people in this country: those who work hard, pay their taxes, and play by the rules, and those who game the system and expect handouts. The second group has been coddled for far too long by politicians who buy votes with taxpayer money. Real Americans are tired of carrying the weight for people who refuse to contribute. It is time we stopped rewarding laziness and started standing up for the people who actually keep this country running.",
+  "annotations": [
+    {
+      "tactic": "Polarization",
+      "quote": "There are two kinds of people in this country: those who work hard, pay their taxes, and play by the rules, and those who game the system and expect handouts."
+    },
+    {
+      "tactic": "Polarization",
+      "quote": "Real Americans are tired of carrying the weight for people who refuse to contribute."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Polarization",
+    "variant": "variation"
+  }
+}

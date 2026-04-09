@@ -1,0 +1,15 @@
+{
+  "id": "ad-hominem-01",
+  "text": "Senator Davis has proposed a new infrastructure bill, but why should we take her seriously? She barely graduated from college and her own marriage fell apart last year. Someone who cannot manage her personal life has no business managing billions in taxpayer dollars. Her supporters like to talk about the merits of the bill, but the real question is whether we can trust the person behind it.",
+  "annotations": [
+    {
+      "tactic": "Ad Hominem",
+      "quote": "She barely graduated from college and her own marriage fell apart last year. Someone who cannot manage her personal life has no business managing billions in taxpayer dollars."
+    }
+  ],
+  "metadata": {
+    "type": "tactic-specific",
+    "tactic_focus": "Ad Hominem",
+    "variant": "textbook"
+  }
+}

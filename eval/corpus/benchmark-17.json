@@ -1,0 +1,19 @@
+{
+  "id": "benchmark-17",
+  "text": "Review of 'Clean Living Essentials' Probiotic Blend (5 stars): I was skeptical at first, but after Dr. Sarah Jenkins — featured on Good Morning Wellness and author of 'Gut Reset Revolution' — personally recommended this product on her podcast, I knew it had to be legitimate. She says the clinical research behind these strains is overwhelming. If a doctor endorses it, that's good enough for me.",
+  "annotations": [
+    {
+      "tactic": "Fake Experts",
+      "quote": "Dr. Sarah Jenkins — featured on Good Morning Wellness and author of 'Gut Reset Revolution' — personally recommended this product on her podcast"
+    },
+    {
+      "tactic": "Appeal to Authority",
+      "quote": "If a doctor endorses it, that's good enough for me."
+    }
+  ],
+  "metadata": {
+    "type": "benchmark-port",
+    "category": "format-content-variation",
+    "note": "Fake Experts + Appeal to Authority in product review format. The 'doctor' is a media personality whose expertise is ambiguous, and the reviewer defers entirely to the authority figure."
+  }
+}
