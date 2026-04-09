@@ -201,6 +201,7 @@ All items completed (Apr 8, 2026). See `history.md` Phase 9 for details.
 
 ## Future Considerations (not planned yet)
 
+- **Reintroduce user feedback (privacy-compatible)**: The original feedback system was stripped in Priority 4 (see `history.md` Phase 11, "Feedback System Teardown" section for full context on what existed and why it was removed). Any reintroduction must work in BYOK mode (no server), respect privacy-by-default, and close the feedback loop (data must actually improve detection). See the teardown doc for specific design considerations.
 - **Extract shared `parseJsonResponse`**: Three copies exist (server.js, background.js, test). Extract to a standalone module that server.js can `import`, background.js can `importScripts`, and tests can import directly.
 - **BYOK regex fallback parity**: BYOK mode silently returns empty results on malformed JSON (`|| []`), while server-proxy mode falls back to the regex parser. Consider adding the regex fallback to BYOK or surfacing a user-visible error.
 - **Chunked analysis**: Split long pages into multiple API calls to analyze beyond 5000 chars
