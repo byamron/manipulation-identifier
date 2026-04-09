@@ -119,7 +119,7 @@ These items were the "feel finished" layer — the gap between "it works" and "t
 
 ### Apr 8, 2026 — Build evaluation harness and test corpus (item 1.0)
 
-**Branch:** eval-harness-corpus | **Commit:** pending (not yet committed)
+**Branch:** eval-harness-corpus | **Commit:** `148d253`
 
 **What was done:**
 Built the complete evaluation harness and 119-file test corpus for measuring manipulation detection accuracy. This is the measurement infrastructure that all prompt tuning (item 1.1) depends on.
