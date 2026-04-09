@@ -129,35 +129,195 @@ function parseJsonResponse(rawContent) {
   }
 }
 
-// Call Anthropic directly (BYOK mode)
-async function callAnthropicDirect(text, model, apiKey) {
+// Parse SSE stream from Anthropic API
+async function* parseSSEStream(reader) {
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop(); // Keep incomplete line in buffer
+
+    let eventType = null;
+    for (const line of lines) {
+      if (line.startsWith('event: ')) {
+        eventType = line.slice(7).trim();
+      } else if (line.startsWith('data: ') && eventType) {
+        try {
+          yield { event: eventType, data: JSON.parse(line.slice(6)) };
+        } catch { /* skip malformed JSON */ }
+        eventType = null;
+      } else if (line === '') {
+        eventType = null;
+      }
+    }
+  }
+}
+
+// Extract complete tactic objects from accumulated JSON text
+function extractCompleteTactics(accumulated) {
+  // Find the start of the tactics array
+  const arrayStart = accumulated.indexOf('[');
+  if (arrayStart === -1) return [];
+
+  const text = accumulated.slice(arrayStart + 1);
+  const tactics = [];
+  let depth = 0;
+  let objectStart = -1;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') {
+      // Skip string contents
+      i++;
+      while (i < text.length && text[i] !== '"') {
+        if (text[i] === '\\') i++; // Skip escaped char
+        i++;
+      }
+    } else if (ch === '{') {
+      if (depth === 0) objectStart = i;
+      depth++;
+    } else if (ch === '}') {
+      depth--;
+      if (depth === 0 && objectStart !== -1) {
+        const objectStr = text.slice(objectStart, i + 1);
+        try {
+          const obj = JSON.parse(objectStr);
+          if (obj.tactic_name && obj.definition && Array.isArray(obj.instances)) {
+            tactics.push(obj);
+          }
+        } catch { /* incomplete or malformed */ }
+        objectStart = -1;
+      }
+    }
+  }
+
+  return tactics;
+}
+
+// Fetch streaming response with retry on 5xx/429 (matches fetchWithRetry behavior)
+async function fetchStreamWithRetry(url, options, retries = CONFIG.MAX_RETRIES) {
+  const controller = new AbortController();
+  let timeoutId = setTimeout(() => controller.abort(), CONFIG.TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+
+    if (!response.ok) {
+      clearTimeout(timeoutId);
+      const status = response.status;
+      if ((status >= 500 || status === 429) && retries > 0) {
+        const backoff = CONFIG.RETRY_DELAY_MS * Math.pow(2, CONFIG.MAX_RETRIES - retries);
+        await delay(backoff);
+        return fetchStreamWithRetry(url, options, retries - 1);
+      }
+      let errorBody;
+      try { errorBody = await response.json(); } catch { errorBody = {}; }
+      const err = new Error(errorBody.error?.message || errorBody.error || `Server error: ${status}`);
+      err.status = status;
+      throw err;
+    }
+
+    return { response, controller, timeoutId };
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout — the server took too long to respond.');
+    }
+    if (retries > 0 && !error.status) {
+      const backoff = CONFIG.RETRY_DELAY_MS * Math.pow(2, CONFIG.MAX_RETRIES - retries);
+      await delay(backoff);
+      return fetchStreamWithRetry(url, options, retries - 1);
+    }
+    throw error;
+  }
+}
+
+// Call Anthropic directly (BYOK mode) with streaming
+async function callAnthropicDirect(text, model, apiKey, onPartialResults) {
   const tactics = await loadTactics();
 
-  const data = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({
-      model: model,
-      max_tokens: 4096,
-      system: buildSystemPrompt(tactics),
-      messages: [
-        { role: 'user', content: buildUserPrompt(text) }
-      ]
-    })
-  });
+  const { response, controller, timeoutId } = await fetchStreamWithRetry(
+    'https://api.anthropic.com/v1/messages',
+    {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: model,
+        max_tokens: 4096,
+        stream: true,
+        system: buildSystemPrompt(tactics),
+        messages: [
+          { role: 'user', content: buildUserPrompt(text) }
+        ]
+      })
+    }
+  );
 
-  const content = data.content?.[0]?.text;
-  if (!content) throw new Error('No response from Anthropic');
+  // Process stream — reset timeout on each chunk, cancel reader on error
+  const reader = response.body.getReader();
+  let accumulated = '';
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let lastEmittedCount = 0;
+  let activeTimeout = timeoutId;
+
+  const resetTimeout = () => {
+    clearTimeout(activeTimeout);
+    activeTimeout = setTimeout(() => controller.abort(), CONFIG.TIMEOUT_MS);
+  };
+
+  try {
+    for await (const { event, data } of parseSSEStream(reader)) {
+      resetTimeout();
+
+      if (event === 'content_block_delta' && data.delta?.type === 'text_delta') {
+        accumulated += data.delta.text;
+
+        // Try to extract complete tactics incrementally
+        if (onPartialResults) {
+          const completeTactics = extractCompleteTactics(accumulated);
+          if (completeTactics.length > lastEmittedCount) {
+            lastEmittedCount = completeTactics.length;
+            const parsed = completeTactics
+              .filter(t => t.instances.length > 0)
+              .map(t => ({
+                tactic: t.tactic_name,
+                definition: t.definition,
+                examples: t.instances.map(inst => ({
+                  text: inst.exact_quote,
+                  explanation: inst.explanation
+                }))
+              }));
+            onPartialResults(parsed);
+          }
+        }
+      } else if (event === 'message_start') {
+        inputTokens = data.message?.usage?.input_tokens || 0;
+      } else if (event === 'message_delta') {
+        outputTokens = data.usage?.output_tokens || 0;
+      }
+    }
+  } finally {
+    clearTimeout(activeTimeout);
+    reader.cancel().catch(() => {});
+  }
+
+  if (!accumulated) throw new Error('No response from Anthropic');
 
   return {
-    results: parseJsonResponse(content),
-    rawResponse: content,
-    tokensUsed: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
+    results: parseJsonResponse(accumulated),
+    rawResponse: accumulated,
+    tokensUsed: inputTokens + outputTokens,
     model: model
   };
 }
@@ -183,10 +343,13 @@ async function handleAnalyze(tabId, model) {
   const settings = await getSettings();
   const useModel = model || settings.model;
 
-  // Write "analyzing" status
-  await chrome.storage.session.set({
-    [`status_${tabId}`]: { status: 'analyzing', timestamp: Date.now() }
+  const statusKey = `status_${tabId}`;
+  const startedAt = Date.now();
+  const writeStage = (stage) => chrome.storage.session.set({
+    [statusKey]: { status: 'analyzing', stage, startedAt, timestamp: Date.now() }
   });
+
+  await writeStage('collecting');
 
   try {
     // Collect text from content script (inject if needed)
@@ -204,13 +367,28 @@ async function handleAnalyze(tabId, model) {
       throw new Error('Not enough text content on this page to analyze.');
     }
 
+    await writeStage('calling_api');
+
     // Call API — BYOK if key exists, otherwise server proxy
+    const resultsKey = `results_${tabId}`;
     let result;
     if (settings.apiKey) {
-      result = await callAnthropicDirect(text, useModel, settings.apiKey);
+      result = await callAnthropicDirect(text, useModel, settings.apiKey, (partialResults) => {
+        // Emit partial results to session storage for incremental rendering
+        chrome.storage.session.set({
+          [resultsKey]: {
+            results: partialResults,
+            model: useModel,
+            streaming: true,
+            timestamp: Date.now()
+          }
+        });
+      });
     } else {
       result = await callServerProxy(text, useModel, settings.serverUrl);
     }
+
+    await writeStage('processing');
 
     // Persist results
     await chrome.storage.session.set({
@@ -223,6 +401,13 @@ async function handleAnalyze(tabId, model) {
       },
       [`status_${tabId}`]: { status: 'complete', timestamp: Date.now() }
     });
+
+    // Update extension icon badge
+    const count = result.results.length;
+    chrome.action.setBadgeText({ tabId, text: count > 0 ? String(count) : '' });
+    if (count > 0) {
+      chrome.action.setBadgeBackgroundColor({ tabId, color: '#ef5350' });
+    }
 
     // Send highlights to content script
     if (result.results.length > 0) {
@@ -306,6 +491,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.tabs.sendMessage(tabId, { action: MSG.CLEAR_HIGHLIGHTS })
       .then(() => {
         chrome.storage.session.remove([`results_${tabId}`, `status_${tabId}`]);
+        chrome.action.setBadgeText({ tabId, text: '' });
         sendResponse({ success: true });
       })
       .catch(() => sendResponse({ success: false }));

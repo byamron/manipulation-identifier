@@ -4,6 +4,82 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 9: Core UX (April 2026)
+
+### Apr 8, 2026 — Review pass: fix streaming reliability, UX, and test coverage
+
+**Branch:** core-ux-improvements — `a542548`
+
+**What was done:**
+Staff-level review across engineering, design, and design engineering perspectives identified 13 issues. All were fixed:
+
+*Streaming reliability (SAFETY):*
+- **Timeout reset on each chunk:** The 30s AbortController timeout now resets on every received SSE event, preventing legitimate long streams from being killed.
+- **Reader cleanup:** `reader.cancel()` is called in a `finally` block to release the HTTP connection on error or completion.
+- **Retry for initial fetch errors:** New `fetchStreamWithRetry` function retries 5xx/429 errors with exponential backoff, matching the behavior of the non-streaming `fetchWithRetry`. Previously, streaming had zero retry — a silent reliability regression.
+
+*Stage timestamp fix (SAFETY):*
+- Analysis status now stores a stable `startedAt` timestamp alongside the per-stage `timestamp`. The side panel uses `startedAt` for elapsed time display and timeout checks, so tab re-entry shows correct elapsed time.
+
+*Streaming UX rebuild:*
+- **Append-only rendering:** New streaming cards are appended via `insertAdjacentHTML` instead of replacing all of `resultsArea.innerHTML`. Scroll position, text selection, and existing card animations are preserved.
+- **Skeleton collapse:** On first streaming result, the full skeleton is replaced with a compact timer-only status line.
+- **150ms debounce:** Rapid streaming updates are batched to prevent excessive DOM writes.
+- **Non-interactive affordance:** Streaming cards suppress the pointer cursor on quotes (via `.non-interactive` class) since click-to-scroll is only available after analysis completes.
+
+*Card HTML deduplication:*
+- Single `renderTacticCard(tactic, { interactive })` function used by both `showResults` and `applyStreamingResults`. Interactive flag controls click handlers, learn-more, and feedback sections.
+
+*Highlight CSS:*
+- Bumped highlight opacity from 0.18 to 0.25 (0.22 for red) for better visibility on light backgrounds.
+- Removed redundant base `.mi-highlight` color rules — the base class now only sets layout/transition, category classes provide all color.
+- Added cross-reference comment noting `sidepanel.css` as the source of truth for RGB values.
+
+*Test coverage:*
+- 15 new tests for `extractCompleteTactics` (escaped quotes, nested braces, partial streams, empty arrays, multi-instance, markdown fences) and SSE parsing (malformed JSON, orphan data lines, empty stream). Total: 72 tests, all pass.
+
+**Why:**
+The initial implementation had real bugs (timeout killing streams, no retry, wrong elapsed time on tab switch) and UX problems (full DOM replacement causing flicker and scroll loss during streaming, broken click affordance). A review pass before merge caught all of these.
+
+**Tradeoffs:**
+- `fetchStreamWithRetry` only retries the initial connection, not mid-stream failures. Reconnecting a partial stream would require tracking the last received position, which is not supported by the Anthropic API.
+- The 150ms debounce adds slight latency to streaming card appearance. This is preferable to jank from rapid DOM updates.
+
+---
+
+### Apr 7, 2026 — Streaming responses, category highlights, icon badge, progress stages
+
+**Branch:** core-ux-improvements — `a542548`
+
+**What was done:**
+Implemented all four Priority 2 (Core UX) items:
+1. **Streaming API responses (2.1):** BYOK mode now uses Anthropic's streaming API (`stream: true`). An SSE parser reads `content_block_delta` events, accumulates text, and extracts complete tactic objects incrementally using bracket-depth tracking. Partial results are stored to session storage, and the side panel renders tactic cards as they arrive — transforming a 5-30s dead wait into progressive reveal.
+2. **Category-colored page highlights (2.2):** Replaced uniform yellow highlights with category-specific colors: blue (`rgba(91, 156, 245, 0.18)`) for logical fallacies, orange (`rgba(232, 148, 58, 0.18)`) for rhetorical manipulation, red (`rgba(239, 83, 80, 0.18)`) for credibility attacks. Each has matching hover and active states.
+3. **Extension icon badge (2.3):** After analysis, the extension icon shows the number of detected tactics as a red badge. Badge clears when highlights are cleared.
+4. **Analysis progress stages (2.4):** The analyzing state now shows stage-specific text: "Collecting text..." → "Analyzing with Claude..." → "Processing results..." Stage transitions are stored in session storage and the side panel updates without resetting the elapsed timer.
+
+**Why:**
+These four items transform the UX from "it works" to "this is good." Streaming eliminates perceived latency, category colors let users scan the manipulation landscape at a glance, the badge provides ambient awareness, and progress stages reduce uncertainty during analysis.
+
+**Design decisions:**
+- Streaming uses raw `fetch` + `ReadableStream` instead of the Anthropic SDK because the background service worker can't load npm packages. The SSE parser is a simple async generator that handles chunked reads.
+- Incremental JSON parsing uses bracket-depth tracking to find complete `{"tactic_name": ...}` objects rather than attempting to parse the entire accumulated string. This avoids repeated parse failures on incomplete JSON.
+- Partial results are written to session storage with a `streaming: true` flag so the side panel can distinguish incremental updates from final results and render accordingly (simplified cards without click-to-scroll during streaming, full cards with actions after completion).
+- Category highlight colors use semi-transparent RGBA values that work on both light and dark page backgrounds, matching the plan spec exactly.
+
+**Technical decisions:**
+- `callAnthropicDirect` now accepts an `onPartialResults` callback, keeping the streaming logic decoupled from the storage/UI emission.
+- `TACTIC_CATEGORIES` is inlined in `content.js` (duplicated from `shared.js`) because content scripts can't use `importScripts`.
+- `parseSSEStream` is an async generator that yields parsed events, allowing `for await...of` consumption — clean separation between SSE framing and business logic.
+- Progress stages use `chrome.storage.session` rather than message passing so the side panel's existing `onChanged` listener handles them with zero new infrastructure.
+
+**Tradeoffs:**
+- Streaming only works in BYOK mode. Server proxy mode still uses the non-streaming `fetchWithRetry` path because the server's `/analyze-content-with-model` endpoint doesn't support streaming. This is acceptable since BYOK is the recommended mode.
+- The streaming error path does not retry (unlike `fetchWithRetry`). If the initial request fails with 5xx/429, it throws immediately. Retry with streaming would require re-establishing the stream, which adds complexity for a rare case.
+- `extractCompleteTactics` re-scans the full accumulated text on each delta. For typical responses (<10 tactics), this is negligible. A production optimization would track the last scan position.
+
+---
+
 ## Phase 8: Accuracy Measurement System (April 2026)
 
 ### Apr 7, 2026 — Plan accuracy measurement and prompt tuning system
