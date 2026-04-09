@@ -2,15 +2,17 @@
 
 ## Current Focus
 
-Item 1.0 (eval harness and test corpus) is complete on `eval-harness-corpus` branch. Next steps: merge to main, run baseline eval to establish current prompt performance, then begin item 1.1 (prompt tuning with few-shot examples and confidence scores).
+Item 1.0 (eval harness and test corpus) is complete. Next steps: run baseline eval to establish current prompt performance, then begin item 1.1 (prompt tuning with few-shot examples and confidence scores).
 
 ## Handoff Notes
 
-- Eval harness and 119-file test corpus shipped (item 1.0). Ready to merge.
+- Eval harness and 119-file test corpus shipped (item 1.0).
 - Run `npm run eval` to establish baseline metrics before starting 1.1.
 - Corpus uses `.cjs` extension throughout because package.json has `"type": "module"`.
 - Rate limited to 1 req/sec to avoid API cost spikes.
 - Results are gitignored (`eval/results/*.json`) -- only the harness and corpus are tracked.
+- All Priority 2 (Core UX) and Priority 3 (Polish) items shipped and review-polished.
+- 72 tests pass (15 new for streaming parsing).
 
 ---
 
@@ -259,6 +261,9 @@ Fix before scaling. Can be done in any order.
 ## Recently Completed
 
 - **Apr 8, 2026**: Build eval harness and 119-file test corpus (item 1.0) — measurement system for prompt tuning
+- **Apr 8, 2026**: Priority 2 review pass — streaming reliability, UX polish, test coverage (13 issues fixed, 15 new tests)
+- **Apr 7, 2026**: Priority 3 — Polish & Completeness (3.1–3.7): dark options page, minimal onboarding, human model labels, quote click affordance, improved empty state, category legend, keyboard shortcut hint
+- **Apr 7, 2026**: Priority 2 — Core UX: streaming API responses, category-colored highlights, icon badge, analysis progress stages
 - **Apr 7, 2026**: Fix controls layout for narrow panel, improve text contrast
 - **Apr 7, 2026**: Fix content script injection fallback, improve error messages
 - **Apr 7, 2026**: Remove duplicate title, move settings gear into controls bar

@@ -4,6 +4,117 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 10: Core UX (April 2026)
+
+### Apr 8, 2026 — Review pass: fix streaming reliability, UX, and test coverage
+
+**Branch:** core-ux-improvements — `a542548`
+
+**What was done:**
+Staff-level review across engineering, design, and design engineering perspectives identified 13 issues. All were fixed:
+
+*Streaming reliability (SAFETY):*
+- **Timeout reset on each chunk:** The 30s AbortController timeout now resets on every received SSE event, preventing legitimate long streams from being killed.
+- **Reader cleanup:** `reader.cancel()` is called in a `finally` block to release the HTTP connection on error or completion.
+- **Retry for initial fetch errors:** New `fetchStreamWithRetry` function retries 5xx/429 errors with exponential backoff, matching the behavior of the non-streaming `fetchWithRetry`. Previously, streaming had zero retry — a silent reliability regression.
+
+*Stage timestamp fix (SAFETY):*
+- Analysis status now stores a stable `startedAt` timestamp alongside the per-stage `timestamp`. The side panel uses `startedAt` for elapsed time display and timeout checks, so tab re-entry shows correct elapsed time.
+
+*Streaming UX rebuild:*
+- **Append-only rendering:** New streaming cards are appended via `insertAdjacentHTML` instead of replacing all of `resultsArea.innerHTML`. Scroll position, text selection, and existing card animations are preserved.
+- **Skeleton collapse:** On first streaming result, the full skeleton is replaced with a compact timer-only status line.
+- **150ms debounce:** Rapid streaming updates are batched to prevent excessive DOM writes.
+- **Non-interactive affordance:** Streaming cards suppress the pointer cursor on quotes (via `.non-interactive` class) since click-to-scroll is only available after analysis completes.
+
+*Card HTML deduplication:*
+- Single `renderTacticCard(tactic, { interactive })` function used by both `showResults` and `applyStreamingResults`. Interactive flag controls click handlers, learn-more, and feedback sections.
+
+*Highlight CSS:*
+- Bumped highlight opacity from 0.18 to 0.25 (0.22 for red) for better visibility on light backgrounds.
+- Removed redundant base `.mi-highlight` color rules — the base class now only sets layout/transition, category classes provide all color.
+- Added cross-reference comment noting `sidepanel.css` as the source of truth for RGB values.
+
+*Test coverage:*
+- 15 new tests for `extractCompleteTactics` (escaped quotes, nested braces, partial streams, empty arrays, multi-instance, markdown fences) and SSE parsing (malformed JSON, orphan data lines, empty stream). Total: 72 tests, all pass.
+
+**Why:**
+The initial implementation had real bugs (timeout killing streams, no retry, wrong elapsed time on tab switch) and UX problems (full DOM replacement causing flicker and scroll loss during streaming, broken click affordance). A review pass before merge caught all of these.
+
+**Tradeoffs:**
+- `fetchStreamWithRetry` only retries the initial connection, not mid-stream failures. Reconnecting a partial stream would require tracking the last received position, which is not supported by the Anthropic API.
+- The 150ms debounce adds slight latency to streaming card appearance. This is preferable to jank from rapid DOM updates.
+
+---
+
+### Apr 7, 2026 — Streaming responses, category highlights, icon badge, progress stages
+
+**Branch:** core-ux-improvements — `a542548`
+
+**What was done:**
+Implemented all four Priority 2 (Core UX) items:
+1. **Streaming API responses (2.1):** BYOK mode now uses Anthropic's streaming API (`stream: true`). An SSE parser reads `content_block_delta` events, accumulates text, and extracts complete tactic objects incrementally using bracket-depth tracking. Partial results are stored to session storage, and the side panel renders tactic cards as they arrive — transforming a 5-30s dead wait into progressive reveal.
+2. **Category-colored page highlights (2.2):** Replaced uniform yellow highlights with category-specific colors: blue (`rgba(91, 156, 245, 0.18)`) for logical fallacies, orange (`rgba(232, 148, 58, 0.18)`) for rhetorical manipulation, red (`rgba(239, 83, 80, 0.18)`) for credibility attacks. Each has matching hover and active states.
+3. **Extension icon badge (2.3):** After analysis, the extension icon shows the number of detected tactics as a red badge. Badge clears when highlights are cleared.
+4. **Analysis progress stages (2.4):** The analyzing state now shows stage-specific text: "Collecting text..." → "Analyzing with Claude..." → "Processing results..." Stage transitions are stored in session storage and the side panel updates without resetting the elapsed timer.
+
+**Why:**
+These four items transform the UX from "it works" to "this is good." Streaming eliminates perceived latency, category colors let users scan the manipulation landscape at a glance, the badge provides ambient awareness, and progress stages reduce uncertainty during analysis.
+
+**Design decisions:**
+- Streaming uses raw `fetch` + `ReadableStream` instead of the Anthropic SDK because the background service worker can't load npm packages. The SSE parser is a simple async generator that handles chunked reads.
+- Incremental JSON parsing uses bracket-depth tracking to find complete `{"tactic_name": ...}` objects rather than attempting to parse the entire accumulated string. This avoids repeated parse failures on incomplete JSON.
+- Partial results are written to session storage with a `streaming: true` flag so the side panel can distinguish incremental updates from final results and render accordingly (simplified cards without click-to-scroll during streaming, full cards with actions after completion).
+- Category highlight colors use semi-transparent RGBA values that work on both light and dark page backgrounds, matching the plan spec exactly.
+
+**Technical decisions:**
+- `callAnthropicDirect` now accepts an `onPartialResults` callback, keeping the streaming logic decoupled from the storage/UI emission.
+- `TACTIC_CATEGORIES` is inlined in `content.js` (duplicated from `shared.js`) because content scripts can't use `importScripts`.
+- `parseSSEStream` is an async generator that yields parsed events, allowing `for await...of` consumption — clean separation between SSE framing and business logic.
+- Progress stages use `chrome.storage.session` rather than message passing so the side panel's existing `onChanged` listener handles them with zero new infrastructure.
+
+**Tradeoffs:**
+- Streaming only works in BYOK mode. Server proxy mode still uses the non-streaming `fetchWithRetry` path because the server's `/analyze-content-with-model` endpoint doesn't support streaming. This is acceptable since BYOK is the recommended mode.
+- The streaming error path does not retry (unlike `fetchWithRetry`). If the initial request fails with 5xx/429, it throws immediately. Retry with streaming would require re-establishing the stream, which adds complexity for a rare case.
+- `extractCompleteTactics` re-scans the full accumulated text on each delta. For typical responses (<10 tactics), this is negligible. A production optimization would track the last scan position.
+
+---
+
+## Phase 9: Polish & Completeness (April 2026)
+
+### Apr 7, 2026 — Ship Priority 3: Polish & Completeness (3.1–3.7)
+
+**Branch:** polish-and-completeness
+
+**What was done:**
+Implemented all seven Priority 3 items to make the product feel finished:
+
+1. **3.1 Options page dark theme** — Rewrote inline `<style>` in `options.html` to use the same dark palette, monospace typography, surface colors, and border styles as `sidepanel.css`. Also corrected the server section hint (was "feedback and analytics", now "analysis requests are proxied").
+2. **3.2 First-run onboarding** — Replaced the three-paragraph setup message with a one-line description ("Detects manipulation tactics...") and a CTA link, per FB-0002.
+3. **3.3 Humanize model selector** — Changed labels from "Sonnet 4.6" / "Haiku 4.5" to "Thorough (Sonnet)" / "Quick (Haiku)" in both sidepanel.html and options.html.
+4. **3.4 Quote click affordance** — Added a subtle underline to `.instance-quote` that intensifies to accent color on hover, making quotes visually clickable.
+5. **3.5 Improved empty state** — Rewrote `showEmpty()` with positive framing ("looks clean") and a suggestion to try opinion pieces.
+6. **3.6 Category legend** — Added a row of three colored dots with labels (Logical, Rhetorical, Credibility) below the results summary.
+7. **3.7 Keyboard shortcut** — Added a platform-aware shortcut hint (`Cmd+Shift+M` on Mac, `Ctrl+Shift+M` elsewhere) to the ready state message with styled `<kbd>` element.
+
+**Why:**
+These items were the "feel finished" layer — the gap between "it works" and "this is a product." The options page dark theme was the most impactful since it's the first thing new users see during setup.
+
+**Design decisions:**
+- Options page reuses the exact color values from sidepanel.css (not CSS custom properties) because options.html uses inline styles and doesn't import sidepanel.css. This means the palette is duplicated, but the two pages are visually consistent.
+- Onboarding kept to two lines per FB-0002's "product should be self-explanatory" rule.
+- Model labels use "Thorough/Quick" as the primary descriptor with model name in parentheses, balancing accessibility for non-technical users with clarity for technical ones.
+- Quote affordance uses a permanent subtle underline (not hover-only) because hover-only affordance is invisible until interaction, defeating the purpose.
+- Empty state keeps it brief — positive framing without over-explaining what "no results" means.
+
+**Tradeoffs:**
+- Duplicating color values between options.html and sidepanel.css is tech debt. A shared CSS file or CSS custom properties in a shared sheet would be cleaner, but options.html's inline `<style>` makes that impractical without a build step.
+- The keyboard shortcut detects platform via `navigator.platform` to show `Cmd` (Mac) or `Ctrl` (Windows/Linux). `navigator.platform` is deprecated but still reliable in Chrome extension contexts; the modern async alternative isn't worth the complexity.
+
+**Files changed:** `options.html`, `sidepanel.html`, `sidepanel.js`, `sidepanel.css`
+
+---
+
 ## Phase 8: Accuracy Measurement System (April 2026)
 
 ### Apr 8, 2026 — Build evaluation harness and test corpus (item 1.0)
