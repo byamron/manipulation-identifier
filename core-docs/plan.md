@@ -6,6 +6,10 @@ Item 1.0 (eval harness and test corpus) is complete. Next steps: run baseline ev
 
 ## Handoff Notes
 
+- Priority 4 (Infrastructure & Debt) fully completed — all 6 items shipped.
+- `database.js` deleted, `better-sqlite3` removed. No more SQLite dependency.
+- All feedback/analytics endpoints and UI stripped. Server is analysis-only now.
+- `parseJsonResponse` returns `null` on failure in both background.js and server.js.
 - Eval harness and 119-file test corpus shipped (item 1.0).
 - Run `npm run eval` to establish baseline metrics before starting 1.1.
 - Corpus uses `.cjs` extension throughout because package.json has `"type": "module"`.
@@ -103,69 +107,24 @@ All seven items shipped. See history.md Phase 9 for details.
 
 ---
 
-### Priority 4 — Infrastructure & Debt
+### Priority 4 — Infrastructure & Debt ✓
 
-Fix before scaling. Can be done in any order.
+All items completed (Apr 8, 2026). See `history.md` Phase 9 for details.
 
-#### 4.1 Fix server.js error handler position
-**Why:** The error handling middleware is defined before routes — Express error handlers must come after.
-**What to do:**
-- Move the `app.use((err, req, res, next) => { ... })` block to after all route definitions
-**Files:** `server.js`
-
-#### 4.2 Hash cache keys
-**Why:** `server.js` uses 5KB+ string keys per cache entry.
-**What to do:**
-- Use `crypto.createHash('sha256').update(cacheKey).digest('hex')` instead
-**Files:** `server.js`
-
-#### 4.3 Clean up dead files
-**Why:** `prompts.js` and `tactics.js` are server-only. `highlight-matcher.js` is tested but never loaded at runtime.
-**What to do:**
-- Clarify ownership with comments or directory moves
-- Accept duplication between highlight-matcher.js and content.js, document canonical version
-**Files:** `manifest.json`, `highlight-matcher.js`, `content.js`
-
-#### 4.4 Update spec.md and benchmarks.md
-**Why:** `spec.md` references "GPT-5-nano", "floating widget" — none of which exist anymore. `benchmarks.md` compares GPT models.
-**What to do:**
-- `spec.md`: Already updated for current stack. Verify after prompt tuning.
-- `benchmarks.md`: Replace with eval harness results after 1.0 is complete.
-**Files:** `core-docs/spec.md`, `core-docs/benchmarks.md`
-
-#### 4.5 Strip dev-only feedback code
-**Why:** Feedback collection was built for development measurement. It does not ship. In BYOK mode (recommended), feedback silently fails. Aligns with "privacy by default" (see FB-0003).
-**What to do:**
-
-| Remove | Reason |
-|--------|--------|
-| `database.js` | Delete — SQLite feedback storage, dev-only |
-| `server.js` feedback endpoints | `/submit-instance-feedback`, `/report-missing-manipulation`, all `/analytics/*` |
-| `server.js` db dependencies | `dbOperations`, `recordPerformance`, `calculateComplexityScore`, `generateSessionId` |
-| `sidepanel.js` feedback UI | "Was this accurate?" button, rating buttons, submit handler, textarea |
-| `sidepanel.css` feedback styles | `.card-feedback`, `.feedback-*` blocks |
-| `better-sqlite3` dependency | Remove from package.json |
-| `options.html` server hint | Update — no longer mentions "feedback and analytics" |
-
-| Keep | Reason |
-|------|--------|
-| `server.js` `/analyze-content-with-model` | Server proxy mode |
-| `server.js` `/health` | Operational (strip db parts) |
-| `eval/` directory | Dev tool, not packaged |
-
-**Files:** `database.js` (delete), `server.js`, `sidepanel.js`, `sidepanel.css`, `options.html`, `package.json`
-**Depends on:** Complete 1.0 first (the harness replaces feedback as the measurement tool)
-
-#### 4.6 Normalize parseJsonResponse behavior
-**Why:** `background.js` returns `[]` on parse failure (silent "no results"). `server.js` returns `null` (triggers regex fallback). Inconsistent.
-**What to do:**
-- Both return `null` on failure; caller decides whether to fall back or show error
-**Files:** `background.js`, `server.js`
+- ~~4.1 Fix server.js error handler position~~ — moved after routes
+- ~~4.2 Hash cache keys~~ — SHA-256 hashed
+- ~~4.3 Clean up dead files~~ — ownership comments added
+- ~~4.4 Update spec.md and benchmarks.md~~ — GPT refs removed, current stack documented
+- ~~4.5 Strip dev-only feedback code~~ — database.js deleted, feedback UI/endpoints/CSS removed, better-sqlite3 removed
+- ~~4.6 Normalize parseJsonResponse~~ — both return null on failure
 
 ---
 
 ## Future Considerations (not planned yet)
 
+- **Reintroduce user feedback (privacy-compatible)**: The original feedback system was stripped in Priority 4 (see `history.md` Phase 11, "Feedback System Teardown" section for full context on what existed and why it was removed). Any reintroduction must work in BYOK mode (no server), respect privacy-by-default, and close the feedback loop (data must actually improve detection). See the teardown doc for specific design considerations.
+- **Extract shared `parseJsonResponse`**: Three copies exist (server.js, background.js, test). Extract to a standalone module that server.js can `import`, background.js can `importScripts`, and tests can import directly.
+- **BYOK regex fallback parity**: BYOK mode silently returns empty results on malformed JSON (`|| []`), while server-proxy mode falls back to the regex parser. Consider adding the regex fallback to BYOK or surfacing a user-visible error.
 - **Chunked analysis**: Split long pages into multiple API calls to analyze beyond 5000 chars
 - **SPA navigation detection**: MutationObserver or `chrome.webNavigation` listener to detect page changes and clear stale highlights
 - **Light/dark theme toggle**: The CSS custom properties are already set up for this
@@ -175,6 +134,7 @@ Fix before scaling. Can be done in any order.
 
 ## Recently Completed
 
+- **Apr 9, 2026**: Complete Priority 4 — Infrastructure & Debt (all 6 items)
 - **Apr 8, 2026**: Build eval harness and 119-file test corpus (item 1.0) — measurement system for prompt tuning
 - **Apr 8, 2026**: Priority 2 review pass — streaming reliability, UX polish, test coverage (13 issues fixed, 15 new tests)
 - **Apr 7, 2026**: Priority 3 — Polish & Completeness (3.1–3.7): dark options page, minimal onboarding, human model labels, quote click affordance, improved empty state, category legend, keyboard shortcut hint
@@ -183,8 +143,8 @@ Fix before scaling. Can be done in any order.
 - **Apr 7, 2026**: Fix content script injection fallback, improve error messages
 - **Apr 7, 2026**: Remove duplicate title, move settings gear into controls bar
 - **Apr 7, 2026**: Restyle sidebar UI with DevPanel-inspired dark glass aesthetic
-- **Apr 7, 2026**: Fix cross-node highlighting, fuzzy matching, side panel navigation
 - **Apr 8, 2026**: Switch LLM provider from Anthropic to Google Gemini (free tier)
+- **Apr 7, 2026**: Fix cross-node highlighting, fuzzy matching, side panel navigation
 - **Apr 1, 2026**: Complete Anthropic migration — server.js + BYOK on Claude API
 - **Apr 1, 2026**: Infrastructure migration — CLAUDE.md, agents, rules, core-docs
 

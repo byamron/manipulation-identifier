@@ -6,7 +6,7 @@ description: >
 tools: Read, Edit, Write, Glob, Grep, Bash
 ---
 
-You are the Domain Agent. You own the server, API integration, background script logic, database, and shared utilities.
+You are the Domain Agent. You own the server, API integration, background script logic, and shared utilities.
 
 ## Required reading
 
@@ -19,7 +19,7 @@ Before proceeding, read:
 
 1. **Understand UX goals** -- domain decisions should be shaped by the user experience, not the other way around. Read the UX goals in plan.md before designing data structures.
 
-2. **Implement the smallest correct change** -- modify server.js, background.js, database.js, shared.js, or prompts.js to support the feature. Don't restructure unrelated code.
+2. **Implement the smallest correct change** -- modify server.js, background.js, shared.js, or prompts.js to support the feature. Don't restructure unrelated code.
 
 3. **Leave notes for other agents** -- if your changes affect UI behavior or require new tests, call this out explicitly.
 

@@ -1,6 +1,6 @@
 // Manipulation Identifier — Content Script
 // Handles text collection, highlighting, and message passing.
-// All UI (cards, feedback, controls) lives in the side panel.
+// All UI (cards, controls) lives in the side panel.
 (function () {
   'use strict';
 

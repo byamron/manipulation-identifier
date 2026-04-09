@@ -40,11 +40,8 @@
 
   /* Accent */
   --accent: #5b9cf5;
-  --accent-hover: #4a8be8;
-  --accent-subtle: rgba(91, 156, 245, 0.12);
 
-  /* Feedback */
-  --success: #4caf7a;
+  /* Error */
   --error-bg: rgba(239, 83, 80, 0.10);
   --error-border: rgba(239, 83, 80, 0.25);
   --error-text: #ef9a9a;
@@ -491,7 +488,7 @@ body {
   line-height: 1.5;
 }
 
-/* Learn more / feedback expandable */
+/* Learn more expandable */
 .card-actions {
   padding: 0 var(--panel-pad) 10px 26px;
   display: flex;
@@ -555,17 +552,6 @@ body {
   margin-left: 14px;
 }
 
-/* Inline feedback */
-.card-feedback {
-  padding: 0 var(--panel-pad) 14px 26px;
-  display: none;
-}
-
-.card-feedback.expanded {
-  display: block;
-  animation: expandReveal 0.2s ease;
-}
-
 @keyframes expandReveal {
   from {
     opacity: 0;
@@ -575,89 +561,6 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.feedback-options {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-
-.feedback-btn {
-  padding: 4px 10px;
-  border: 1px solid var(--panel-border);
-  border-radius: 6px;
-  background: transparent;
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  cursor: pointer;
-  color: var(--text-tertiary);
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-}
-
-.feedback-btn:hover {
-  background: var(--surface-hover);
-  border-color: var(--panel-border-hover);
-  color: var(--text-secondary);
-}
-
-.feedback-btn:active {
-  background: var(--surface-active);
-  transform: scale(0.97);
-}
-
-.feedback-btn.selected {
-  border-color: rgba(91, 156, 245, 0.35);
-  background: var(--accent-subtle);
-  color: var(--accent);
-}
-
-.feedback-comment {
-  width: 100%;
-  padding: 6px 8px;
-  border: 1px solid var(--panel-border);
-  border-radius: 6px;
-  font-size: var(--font-size-sm);
-  font-family: var(--font-sans);
-  background: var(--surface-raised);
-  color: var(--text-secondary);
-  resize: vertical;
-  min-height: 40px;
-  outline: none;
-  transition: border-color 0.12s;
-}
-
-.feedback-comment:focus {
-  border-color: var(--panel-border-hover);
-}
-
-.feedback-comment::placeholder {
-  color: var(--text-muted);
-}
-
-.feedback-submit {
-  margin-top: 6px;
-  padding: 5px 14px;
-  background: var(--surface-active);
-  color: var(--text-primary);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 6px;
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
-}
-
-.feedback-submit:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.25);
-}
-
-.feedback-thanks {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-  color: var(--success);
-  padding: 4px 0;
 }
 
 /* ── Card animations ── */

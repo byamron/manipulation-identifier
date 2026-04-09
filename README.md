@@ -51,7 +51,7 @@ cp .env.example .env   # add your GEMINI_API_KEY
 npm start              # starts on http://localhost:3000
 ```
 
-Then enter `http://localhost:3000` as the Server URL in the extension's settings. The extension will use the server proxy instead of calling Gemini directly.
+Then enter `http://localhost:3000` as the Server URL in the extension's settings. The extension will use the server proxy instead of calling Gemini directly. When both an API key and server URL are set, BYOK (API key) takes priority.
 
 ## Running Tests
 
@@ -78,9 +78,8 @@ Runs 57 tests across 5 suites covering highlight matching, response parsing, pro
 ├── highlight-matcher.js   Fuzzy text matching for inline highlights
 ├── options.html/js        Settings page — API key, model, server URL
 ├── server.js              Optional Express backend proxy
-├── database.js            SQLite feedback storage (server mode)
 ├── tactics.json           15 tactic definitions with examples
-├── prompts.js             Prompt templates for LLM analysis
+├── prompts.js             Server-only prompt templates
 ├── test/                  Jest test suites
 └── core-docs/             Project documentation (history, plan, spec)
 ```

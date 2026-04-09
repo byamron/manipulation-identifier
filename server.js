@@ -3,7 +3,6 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import { promptRoleSystem, buildUserPrompt } from './prompts.js';
-import { dbOperations } from './database.js';
 import crypto from 'crypto';
 
 dotenv.config();
@@ -25,18 +24,6 @@ const CONFIG = {
 
 // Simple in-memory cache
 const cache = new Map();
-
-// Utility functions
-function generateSessionId() {
-  return crypto.randomBytes(16).toString('hex');
-}
-
-function calculateComplexityScore(text, tacticsCount) {
-  // Simple complexity score based on text length and tactics found
-  const textComplexity = Math.min(text.length / 1000, 5); // Max 5 points for text length
-  const tacticComplexity = tacticsCount * 2; // 2 points per tactic
-  return textComplexity + tacticComplexity;
-}
 
 function cleanCache() {
   const now = Date.now();
@@ -103,12 +90,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
 // Allow all origins for local development
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
@@ -154,7 +135,7 @@ function parseJsonResponse(rawContent) {
     const parsed = JSON.parse(cleaned);
     const detected = parsed.tactics_detected;
 
-    if (!Array.isArray(detected)) return [];
+    if (!Array.isArray(detected)) return null;
 
     return detected
       .filter(t => t.tactic_name && t.definition && Array.isArray(t.instances) && t.instances.length > 0)
@@ -210,9 +191,9 @@ function parseAnalysisResponse(manipulativeLanguage) {
 }
 
 // Core analysis logic shared by both endpoints
-async function analyzeContent(content, model, sessionId, pageUrl, res) {
+async function analyzeContent(content, model, res) {
   const modelConfig = CONFIG.MODELS[model];
-  const cacheKey = `${model}:${content.trim()}`;
+  const cacheKey = crypto.createHash('sha256').update(`${model}:${content.trim()}`).digest('hex');
   const startTime = Date.now();
 
   try {
@@ -220,23 +201,7 @@ async function analyzeContent(content, model, sessionId, pageUrl, res) {
     if (cache.has(cacheKey)) {
       const cached = cache.get(cacheKey);
       if (Date.now() - cached.timestamp < CONFIG.CACHE_DURATION) {
-        await dbOperations.recordPerformance({
-          model_name: model,
-          response_time_ms: Date.now() - startTime,
-          success: true,
-          error_message: null,
-          tokens_used: cached.data.tokensUsed || 0,
-          tactics_detected_count: cached.data.results.length,
-          analysis_complexity_score: calculateComplexityScore(content, cached.data.results.length),
-          session_id: sessionId,
-          page_url: pageUrl
-        });
-
-        return res.json({
-          ...cached.data,
-          model: model,
-          sessionId: sessionId
-        });
+        return res.json({ ...cached.data, model });
       }
       cache.delete(cacheKey);
     }
@@ -255,64 +220,37 @@ async function analyzeContent(content, model, sessionId, pageUrl, res) {
     }
 
     const responseTime = Date.now() - startTime;
-    const manipulativeLanguage = responseContent;
 
     // Try JSON structured output first, fall back to regex parser
-    let tactics = parseJsonResponse(manipulativeLanguage);
+    let tactics = parseJsonResponse(responseContent);
     if (tactics === null) {
-      tactics = parseAnalysisResponse(manipulativeLanguage);
+      tactics = parseAnalysisResponse(responseContent);
     }
     const usage = response.response?.usageMetadata;
     const tokensUsed = (usage?.promptTokenCount || 0) + (usage?.candidatesTokenCount || 0);
 
     const result = {
-      manipulativeLanguage,
+      manipulativeLanguage: responseContent,
       results: tactics,
-      model: model,
-      sessionId: sessionId,
-      tokensUsed: tokensUsed,
-      responseTime: responseTime
+      model,
+      tokensUsed,
+      responseTime
     };
 
     // Cache the result
     cache.set(cacheKey, {
       timestamp: Date.now(),
       data: {
-        manipulativeLanguage,
+        manipulativeLanguage: responseContent,
         results: tactics,
-        tokensUsed: tokensUsed
+        tokensUsed
       }
-    });
-
-    await dbOperations.recordPerformance({
-      model_name: model,
-      response_time_ms: responseTime,
-      success: true,
-      error_message: null,
-      tokens_used: tokensUsed,
-      tactics_detected_count: tactics.length,
-      analysis_complexity_score: calculateComplexityScore(content, tactics.length),
-      session_id: sessionId,
-      page_url: pageUrl
     });
 
     res.json(result);
 
   } catch (error) {
     console.error(`Error analyzing content with ${model}:`, error);
-    const responseTime = Date.now() - startTime;
-
-    await dbOperations.recordPerformance({
-      model_name: model,
-      response_time_ms: responseTime,
-      success: false,
-      error_message: error.message,
-      tokens_used: 0,
-      tactics_detected_count: 0,
-      analysis_complexity_score: 0,
-      session_id: sessionId,
-      page_url: pageUrl
-    });
 
     const errorResponse = {
       error: 'Failed to analyze content',
@@ -335,225 +273,32 @@ async function analyzeContent(content, model, sessionId, pageUrl, res) {
 
 // ENHANCED ANALYZE ENDPOINT WITH MODEL SELECTION
 app.post('/analyze-content-with-model', rateLimit, validateContent, validateModel, async (req, res) => {
-  const { content, model, sessionId = generateSessionId(), pageUrl = '' } = req.body;
-  await analyzeContent(content, model, sessionId, pageUrl, res);
-});
-
-// FEEDBACK SUBMISSION ENDPOINT
-app.post('/submit-instance-feedback', async (req, res) => {
-  try {
-    const {
-      originalFullText,
-      highlightedText,
-      detectedTactic,
-      modelUsed,
-      userRating,
-      userComments,
-      pageUrl,
-      responseTime,
-      sessionId
-    } = req.body;
-
-    // Validate required fields
-    if (!originalFullText || !highlightedText || !detectedTactic || !modelUsed || !userRating) {
-      return res.status(400).json({ 
-        error: 'Missing required fields: originalFullText, highlightedText, detectedTactic, modelUsed, userRating' 
-      });
-    }
-
-    // Validate rating
-    if (!['accurate', 'inaccurate', 'uncertain'].includes(userRating)) {
-      return res.status(400).json({ 
-        error: 'userRating must be one of: accurate, inaccurate, uncertain' 
-      });
-    }
-
-    const feedbackId = await dbOperations.recordFeedback({
-      page_url: pageUrl,
-      original_full_text: originalFullText,
-      highlighted_text: highlightedText,
-      model_used: modelUsed,
-      detected_tactic: detectedTactic,
-      user_rating: userRating,
-      user_comments: userComments,
-      response_time_ms: responseTime,
-      session_id: sessionId,
-      feedback_type: 'detection_feedback'
-    });
-
-    res.json({ 
-      success: true, 
-      feedbackId: feedbackId,
-      message: 'Feedback recorded successfully' 
-    });
-
-  } catch (error) {
-    console.error('Error recording feedback:', error);
-    res.status(500).json({ 
-      error: 'Failed to record feedback',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined 
-    });
-  }
-});
-
-// MISSING MANIPULATION REPORT ENDPOINT
-app.post('/report-missing-manipulation', async (req, res) => {
-  try {
-    const {
-      originalFullText,
-      missedText,
-      suggestedTactic,
-      userComments,
-      modelUsed,
-      pageUrl,
-      sessionId,
-      reportedFromFeedbackId
-    } = req.body;
-
-    // Validate required fields
-    if (!originalFullText || !missedText || !suggestedTactic || !modelUsed) {
-      return res.status(400).json({ 
-        error: 'Missing required fields: originalFullText, missedText, suggestedTactic, modelUsed' 
-      });
-    }
-
-    const reportId = await dbOperations.recordMissingManipulation({
-      page_url: pageUrl,
-      original_full_text: originalFullText,
-      missed_text: missedText,
-      suggested_tactic: suggestedTactic,
-      user_comments: userComments,
-      model_used: modelUsed,
-      session_id: sessionId,
-      reported_from_feedback_id: reportedFromFeedbackId
-    });
-
-    res.json({
-      success: true,
-      reportId: reportId,
-      message: 'Missing manipulation report recorded successfully' 
-    });
-
-  } catch (error) {
-    console.error('Error recording missing manipulation report:', error);
-    res.status(500).json({ 
-      error: 'Failed to record missing manipulation report',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined 
-    });
-  }
-});
-
-// ANALYTICS ENDPOINTS
-
-// Get model performance analytics
-app.get('/analytics/model-performance', async (req, res) => {
-  try {
-    const analytics = await dbOperations.getModelAnalytics();
-    res.json(analytics);
-  } catch (error) {
-    console.error('Error fetching model analytics:', error);
-    res.status(500).json({ error: 'Failed to fetch model analytics' });
-  }
-});
-
-// Get user satisfaction by model
-app.get('/analytics/satisfaction', async (req, res) => {
-  try {
-    const satisfaction = await dbOperations.getSatisfactionByModel();
-    res.json(satisfaction);
-  } catch (error) {
-    console.error('Error fetching satisfaction data:', error);
-    res.status(500).json({ error: 'Failed to fetch satisfaction data' });
-  }
-});
-
-// Get tactic performance
-app.get('/analytics/tactic-performance/:model', async (req, res) => {
-  try {
-    const { model } = req.params;
-    const performance = await dbOperations.getTacticPerformance(model);
-    res.json(performance);
-  } catch (error) {
-    console.error('Error fetching tactic performance:', error);
-    res.status(500).json({ error: 'Failed to fetch tactic performance' });
-  }
-});
-
-// Get tactic performance for all models
-app.get('/analytics/tactic-performance', async (req, res) => {
-  try {
-    const performance = await dbOperations.getTacticPerformance();
-    res.json(performance);
-  } catch (error) {
-    console.error('Error fetching tactic performance:', error);
-    res.status(500).json({ error: 'Failed to fetch tactic performance' });
-  }
-});
-
-// Get missing manipulation patterns
-app.get('/analytics/missing-patterns', async (req, res) => {
-  try {
-    const patterns = await dbOperations.getMissingPatterns();
-    res.json(patterns);
-  } catch (error) {
-    console.error('Error fetching missing patterns:', error);
-    res.status(500).json({ error: 'Failed to fetch missing patterns' });
-  }
-});
-
-// Get recent performance data
-app.get('/analytics/recent-performance/:hours', async (req, res) => {
-  try {
-    const hours = parseInt(req.params.hours) || 24;
-    const performance = await dbOperations.getRecentPerformance(hours);
-    res.json(performance);
-  } catch (error) {
-    console.error('Error fetching recent performance:', error);
-    res.status(500).json({ error: 'Failed to fetch recent performance' });
-  }
-});
-
-// Get recent performance data (default 24 hours)
-app.get('/analytics/recent-performance', async (req, res) => {
-  try {
-    const performance = await dbOperations.getRecentPerformance(24);
-    res.json(performance);
-  } catch (error) {
-    console.error('Error fetching recent performance:', error);
-    res.status(500).json({ error: 'Failed to fetch recent performance' });
-  }
+  const { content, model } = req.body;
+  await analyzeContent(content, model, res);
 });
 
 // BACKWARD COMPATIBILITY - Keep original endpoint (defaults to gemini-2.5-flash)
 app.post('/analyze-content', rateLimit, validateContent, async (req, res) => {
-  const { content, sessionId = generateSessionId(), pageUrl = '' } = req.body;
-  await analyzeContent(content, 'gemini-2.5-flash', sessionId, pageUrl, res);
+  const { content } = req.body;
+  await analyzeContent(content, 'gemini-2.5-flash', res);
 });
 
-// Health check endpoint with enhanced metrics
-app.get('/health', async (req, res) => {
-  try {
-    const recentPerformance = await dbOperations.getRecentPerformance(1); // Last hour
-    res.json({
-      status: 'healthy',
-      uptime: process.uptime(),
-      timestamp: Date.now(),
-      cacheSize: cache.size,
-      port: CONFIG.PORT,
-      availableModels: Object.keys(CONFIG.MODELS),
-      recentAnalyses: recentPerformance.length
-    });
-  } catch (error) {
-    res.json({
-      status: 'healthy',
-      uptime: process.uptime(),
-      timestamp: Date.now(),
-      cacheSize: cache.size,
-      port: CONFIG.PORT,
-      availableModels: Object.keys(CONFIG.MODELS),
-      recentAnalyses: 'unknown'
-    });
-  }
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    uptime: process.uptime(),
+    timestamp: Date.now(),
+    cacheSize: cache.size,
+    port: CONFIG.PORT,
+    availableModels: Object.keys(CONFIG.MODELS)
+  });
+});
+
+// Error handling middleware (must be after all routes)
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 // Graceful shutdown

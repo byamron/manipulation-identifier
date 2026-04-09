@@ -28,7 +28,7 @@ Before proceeding, read:
 
 - Tests run via `npm test` (Jest with `--experimental-vm-modules`)
 - Test files live in `test/` directory
-- Existing suites: highlighting, parseAnalysis, parseJsonResponse, promptBuilder, tactics (56 tests total)
+- Existing suites: highlighting, parseAnalysis, parseJsonResponse, promptBuilder, tactics (57 tests total)
 
 ## Constraints
 
