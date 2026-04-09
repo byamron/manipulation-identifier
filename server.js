@@ -1,5 +1,5 @@
 import express from 'express';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import { promptRoleSystem, buildUserPrompt } from './prompts.js';
@@ -18,8 +18,8 @@ const CONFIG = {
   },
   MAX_CONTENT_LENGTH: 5000, // characters
   MODELS: {
-    'claude-sonnet-4-6': { tokens: 4096, name: 'claude-sonnet-4-6' },
-    'claude-haiku-4-5-20251001': { tokens: 4096, name: 'claude-haiku-4-5-20251001' }
+    'gemini-2.5-flash': { tokens: 4096, name: 'gemini-2.5-flash' },
+    'gemini-2.5-flash-lite': { tokens: 4096, name: 'gemini-2.5-flash-lite' }
   }
 };
 
@@ -50,11 +50,8 @@ function cleanCache() {
 // Clean cache periodically
 setInterval(cleanCache, CONFIG.CACHE_DURATION);
 
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-  timeout: 30000,
-});
+// Initialize Google Generative AI client
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // In-memory rate limiter
 const rateLimitStore = new Map();
@@ -150,7 +147,7 @@ function validateModel(req, res, next) {
   next();
 }
 
-// Parse JSON response (handles markdown fences from Anthropic)
+// Parse JSON response (handles markdown fences from LLM)
 function parseJsonResponse(rawContent) {
   try {
     const cleaned = rawContent.replace(/^```json\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
@@ -244,18 +241,17 @@ async function analyzeContent(content, model, sessionId, pageUrl, res) {
       cache.delete(cacheKey);
     }
 
-    const response = await anthropic.messages.create({
+    const geminiModel = genAI.getGenerativeModel({
       model: modelConfig.name,
-      max_tokens: modelConfig.tokens,
-      system: promptRoleSystem,
-      messages: [
-        { role: 'user', content: buildUserPrompt(content) }
-      ]
+      systemInstruction: promptRoleSystem,
+      generationConfig: { maxOutputTokens: modelConfig.tokens }
     });
 
-    const responseContent = response?.content?.[0]?.text;
+    const response = await geminiModel.generateContent(buildUserPrompt(content));
+
+    const responseContent = response.response?.text();
     if (!responseContent) {
-      throw new Error('No response from Anthropic');
+      throw new Error('No response from Gemini');
     }
 
     const responseTime = Date.now() - startTime;
@@ -266,7 +262,8 @@ async function analyzeContent(content, model, sessionId, pageUrl, res) {
     if (tactics === null) {
       tactics = parseAnalysisResponse(manipulativeLanguage);
     }
-    const tokensUsed = (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0);
+    const usage = response.response?.usageMetadata;
+    const tokensUsed = (usage?.promptTokenCount || 0) + (usage?.candidatesTokenCount || 0);
 
     const result = {
       manipulativeLanguage,
@@ -324,10 +321,10 @@ async function analyzeContent(content, model, sessionId, pageUrl, res) {
     };
 
     const status = error.status || error.statusCode;
-    if (status === 401) {
-      res.status(401).json({ ...errorResponse, error: 'Invalid Anthropic API key' });
-    } else if (status === 402 || status === 429) {
-      res.status(status).json({ ...errorResponse, error: 'Anthropic API quota exceeded or rate limited' });
+    if (status === 401 || status === 403) {
+      res.status(401).json({ ...errorResponse, error: 'Invalid API key.' });
+    } else if (status === 429) {
+      res.status(429).json({ ...errorResponse, error: 'Rate limited. Try again in a minute.' });
     } else if (status === 400) {
       res.status(400).json({ ...errorResponse, error: 'Content too long for analysis' });
     } else {
@@ -527,10 +524,10 @@ app.get('/analytics/recent-performance', async (req, res) => {
   }
 });
 
-// BACKWARD COMPATIBILITY - Keep original endpoint (defaults to claude-sonnet-4-6)
+// BACKWARD COMPATIBILITY - Keep original endpoint (defaults to gemini-2.5-flash)
 app.post('/analyze-content', rateLimit, validateContent, async (req, res) => {
   const { content, sessionId = generateSessionId(), pageUrl = '' } = req.body;
-  await analyzeContent(content, 'claude-sonnet-4-6', sessionId, pageUrl, res);
+  await analyzeContent(content, 'gemini-2.5-flash', sessionId, pageUrl, res);
 });
 
 // Health check endpoint with enhanced metrics

@@ -20,12 +20,12 @@
   // ── Init ──
   async function init() {
     // Load saved model preference
-    chrome.storage.local.get(['selectedModel', 'anthropicApiKey', 'serverUrl'], (result) => {
+    chrome.storage.local.get(['selectedModel', 'geminiApiKey', 'serverUrl'], (result) => {
       if (result.selectedModel && modelSelect.querySelector(`option[value="${result.selectedModel}"]`)) {
         modelSelect.value = result.selectedModel;
       }
       // Check if setup is needed (no API key and no server URL)
-      const hasKey = !!result.anthropicApiKey;
+      const hasKey = !!result.geminiApiKey;
       const hasServer = !!result.serverUrl;
       if (!hasKey && !hasServer) {
         showSetup();
@@ -213,8 +213,7 @@
       <div class="status-message">
         <strong>Welcome to Manipulation Identifier</strong><br><br>
         This tool detects manipulation tactics in web page text using AI analysis.<br><br>
-        To get started, <a href="#" id="setupLink">set up your Anthropic API key</a> in Settings,
-        or configure a server URL.
+        To get started, <a href="#" id="setupLink">add your Gemini API key</a> in Settings.
       </div>
     `;
     resultsArea.innerHTML = '';
@@ -291,8 +290,13 @@
     statusArea.innerHTML = '';
 
     // Summary
+    const MODEL_LABELS = {
+      'gemini-2.5-flash': 'Flash 2.5',
+      'gemini-2.5-flash-lite': 'Flash Lite 2.5'
+    };
     const totalInstances = results.reduce((sum, t) => sum + t.examples.length, 0);
-    let html = `<div class="results-summary">${results.length} tactic${results.length !== 1 ? 's' : ''} detected &middot; ${totalInstances} instance${totalInstances !== 1 ? 's' : ''}${model ? ` &middot; ${escapeHtml(model)}` : ''}</div>`;
+    const modelLabel = MODEL_LABELS[model] || model;
+    let html = `<div class="results-summary">${results.length} tactic${results.length !== 1 ? 's' : ''} detected &middot; ${totalInstances} instance${totalInstances !== 1 ? 's' : ''}${model ? ` &middot; ${escapeHtml(modelLabel)}` : ''}</div>`;
 
     // Cards
     results.forEach((tactic, idx) => {

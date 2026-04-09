@@ -5,8 +5,9 @@ const CONFIG = {
   TIMEOUT_MS: 30000,
   MAX_RETRIES: 2,
   RETRY_DELAY_MS: 1000,
-  DEFAULT_MODEL: 'claude-sonnet-4-6',
-  DEFAULT_SERVER_URL: 'http://localhost:3000'
+  DEFAULT_MODEL: 'gemini-2.5-flash',
+  DEFAULT_SERVER_URL: 'http://localhost:3000',
+  GEMINI_API_BASE: 'https://generativelanguage.googleapis.com/v1beta/models'
 };
 
 // Open side panel on extension icon click
@@ -62,10 +63,10 @@ async function fetchWithRetry(url, options, retries = CONFIG.MAX_RETRIES) {
 // Get settings from storage
 async function getSettings() {
   return new Promise(resolve => {
-    chrome.storage.local.get(['serverUrl', 'anthropicApiKey', 'selectedModel'], result => {
+    chrome.storage.local.get(['serverUrl', 'geminiApiKey', 'selectedModel'], result => {
       resolve({
         serverUrl: result.serverUrl || CONFIG.DEFAULT_SERVER_URL,
-        apiKey: result.anthropicApiKey || null,
+        apiKey: result.geminiApiKey || null,
         model: result.selectedModel || CONFIG.DEFAULT_MODEL
       });
     });
@@ -129,35 +130,32 @@ function parseJsonResponse(rawContent) {
   }
 }
 
-// Call Anthropic directly (BYOK mode)
-async function callAnthropicDirect(text, model, apiKey) {
+// Call Gemini directly (BYOK mode)
+async function callGeminiDirect(text, model, apiKey) {
   const tactics = await loadTactics();
+  const url = `${CONFIG.GEMINI_API_BASE}/${model}:generateContent`;
 
-  const data = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
+  const data = await fetchWithRetry(url, {
     method: 'POST',
     headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey
     },
     body: JSON.stringify({
-      model: model,
-      max_tokens: 4096,
-      system: buildSystemPrompt(tactics),
-      messages: [
-        { role: 'user', content: buildUserPrompt(text) }
-      ]
+      systemInstruction: { parts: [{ text: buildSystemPrompt(tactics) }] },
+      contents: [{ role: 'user', parts: [{ text: buildUserPrompt(text) }] }],
+      generationConfig: { maxOutputTokens: 4096 }
     })
   });
 
-  const content = data.content?.[0]?.text;
-  if (!content) throw new Error('No response from Anthropic');
+  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!content) throw new Error('No response from Gemini');
 
+  const usage = data.usageMetadata;
   return {
     results: parseJsonResponse(content),
     rawResponse: content,
-    tokensUsed: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
+    tokensUsed: (usage?.promptTokenCount || 0) + (usage?.candidatesTokenCount || 0),
     model: model
   };
 }
@@ -207,7 +205,7 @@ async function handleAnalyze(tabId, model) {
     // Call API — BYOK if key exists, otherwise server proxy
     let result;
     if (settings.apiKey) {
-      result = await callAnthropicDirect(text, useModel, settings.apiKey);
+      result = await callGeminiDirect(text, useModel, settings.apiKey);
     } else {
       result = await callServerProxy(text, useModel, settings.serverUrl);
     }
@@ -256,9 +254,8 @@ function mapErrorMessage(error) {
   const msg = error.message || '';
   const status = error.status;
 
-  if (status === 401) return 'Invalid API key. Update in Settings.';
-  if (status === 402) return 'API quota exceeded. Check your Anthropic billing.';
-  if (status === 429) return 'Too many requests. Try again in a minute.';
+  if (status === 401 || status === 403) return 'Invalid API key. Check Settings.';
+  if (status === 429) return 'Rate limited. Wait a minute and try again.';
   if (status >= 500) return 'API server error. Try again later.';
   if (msg.includes('timeout') || msg.includes('AbortError')) return 'Request timed out. Try again.';
   if (msg.includes('NetworkError') || msg.includes('Failed to fetch')) {

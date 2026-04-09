@@ -10,20 +10,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveServerBtn = document.getElementById('saveServerBtn');
   const serverStatus = document.getElementById('serverStatus');
 
-  // Load saved settings
-  chrome.storage.local.get(['anthropicApiKey', 'selectedModel', 'serverUrl'], (result) => {
-    if (result.anthropicApiKey) apiKeyInput.value = result.anthropicApiKey;
+  // Load saved settings (and detect upgrade from old Anthropic version)
+  chrome.storage.local.get(['geminiApiKey', 'anthropicApiKey', 'selectedModel', 'serverUrl'], (result) => {
+    if (result.geminiApiKey) apiKeyInput.value = result.geminiApiKey;
     if (result.selectedModel) modelSelect.value = result.selectedModel;
     if (result.serverUrl) serverUrlInput.value = result.serverUrl;
-    updateModeIndicator(result.anthropicApiKey);
+    updateModeIndicator(result.geminiApiKey);
+
+    // Show migration notice for users upgrading from the Anthropic version
+    if (result.anthropicApiKey && !result.geminiApiKey) {
+      showStatus(apiStatus, 'This extension now uses Google Gemini. Please add a Gemini API key below.', 'error');
+      chrome.storage.local.remove('anthropicApiKey');
+    }
   });
 
   function updateModeIndicator(apiKey) {
     if (apiKey) {
-      modeIndicator.textContent = 'BYOK Active';
+      modeIndicator.textContent = 'Using Your Key';
       modeIndicator.className = 'mode-indicator byok';
     } else {
-      modeIndicator.textContent = 'Server Proxy';
+      modeIndicator.textContent = 'No Key Set';
       modeIndicator.className = 'mode-indicator server';
     }
   }
@@ -53,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const model = modelSelect.value;
 
     chrome.storage.local.set({
-      anthropicApiKey: apiKey,
+      geminiApiKey: apiKey,
       selectedModel: model
     }, () => {
       updateModeIndicator(apiKey);
@@ -73,24 +79,23 @@ document.addEventListener('DOMContentLoaded', () => {
     testBtn.disabled = true;
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const testModel = modelSelect.value || 'gemini-2.5-flash-lite';
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${testModel}:generateContent`, {
         method: 'POST',
         headers: {
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-          'content-type': 'application/json'
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey
         },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1,
-          messages: [{ role: 'user', content: 'hi' }]
+          contents: [{ parts: [{ text: 'hi' }] }],
+          generationConfig: { maxOutputTokens: 1 }
         })
       });
 
       if (response.ok) {
         showStatus(apiStatus, 'API key is valid.', 'success');
-      } else if (response.status === 401) {
+      } else if (response.status === 400 || response.status === 403) {
         showStatus(apiStatus, 'Invalid API key.', 'error');
       } else {
         showStatus(apiStatus, `Unexpected response: ${response.status}`, 'error');

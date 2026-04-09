@@ -4,6 +4,42 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 9: Gemini Migration (April 2026)
+
+### Apr 8, 2026 — Switch LLM provider from Anthropic to Google Gemini
+
+**Branch:** gemini-llm-provider
+
+**What was done:**
+Replaced the entire Anthropic/Claude integration with Google Gemini across all extension and server files. Default models changed from Claude Sonnet 4.6 / Haiku 4.5 to Gemini 2.5 Flash / Flash Lite 2.5. BYOK mode now calls the Gemini REST API directly from the browser. Server proxy mode uses the `@google/generative-ai` SDK.
+
+**Why:**
+Gemini's free tier is substantially better than Anthropic's paid-only API. Flash 2.5 offers 10 RPM / 250 requests per day free, and Flash Lite gives 15 RPM / 1,000 requests per day. This removes the cost barrier for users and aligns with FB-0001 (be cost-conscious — users pay with their own keys).
+
+**Design decisions:**
+- Chose Flash 2.5 as default (not Pro) because Pro's free tier is very limited (5 RPM, 100 req/day) and may have been removed from free tier entirely as of April 2026. Flash 2.5 is the sweet spot for quality vs. rate limits.
+- Flash Lite 2.5 replaces Haiku as the "faster" option — higher free RPM (15 vs 10) at the cost of some quality.
+- Storage key renamed from `anthropicApiKey` to `geminiApiKey`. Existing users will need to re-enter their key.
+- Gemini API key validation tests against Flash Lite (cheapest) with `maxOutputTokens: 1`, matching the pattern established for Anthropic.
+
+**Technical decisions:**
+- Server uses `@google/generative-ai` SDK (`GoogleGenerativeAI` class) with `getGenerativeModel()` and `generateContent()`. System instructions passed via `systemInstruction` parameter.
+- BYOK browser calls use the REST API directly (`generativelanguage.googleapis.com/v1beta/models/{model}:generateContent`) with `x-goog-api-key` header. No SDK needed in the browser — avoids bundling complexity.
+- Token counting changed from `input_tokens + output_tokens` (Anthropic) to `promptTokenCount + candidatesTokenCount` (Gemini).
+- Response extraction changed from `content[0].text` to `candidates[0].content.parts[0].text`.
+- Gemini uses 403 (not 401) for invalid API keys, so error handling checks both 401 and 403.
+
+**Tradeoffs:**
+- Gemini's free tier data may be used to improve Google's products — noted in privacy context. BYOK users should be aware.
+- Prompt format unchanged (same system prompt + JSON output schema). Gemini handles the same structured JSON output instructions well. If quality differs, will need prompt tuning via the eval harness (1.0).
+- No `anthropic-dangerous-direct-browser-access` equivalent needed — Gemini REST API allows browser calls natively.
+
+**SAFETY:** API key storage key renamed. Error handling preserved for all HTTP status codes. Rate limiting and caching unchanged.
+
+**Files changed:** `server.js`, `background.js`, `options.js`, `options.html`, `sidepanel.html`, `sidepanel.js`, `manifest.json`, `package.json`, `.env.example`, `CLAUDE.md`, `core-docs/spec.md`, `core-docs/plan.md`, `test/parseJsonResponse.test.js`
+
+---
+
 ## Phase 8: Accuracy Measurement System (April 2026)
 
 ### Apr 7, 2026 — Plan accuracy measurement and prompt tuning system

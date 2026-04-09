@@ -35,7 +35,7 @@ These directly affect whether the product delivers on its promise. Ship these fi
 - ~10 ambiguous edge cases (excluded from headline metrics, reported separately)
 
 *Evaluation harness (`npm run eval`):*
-- Reads corpus, calls Anthropic API with same prompt functions as the extension
+- Reads corpus, calls Gemini API with same prompt functions as the extension
 - Scores: precision/recall/F1 per tactic + overall, quote fidelity (is exact_quote a substring?)
 - Matching: tactic name match AND >= 50% character overlap with annotation
 - Outputs console table + `eval/results/<timestamp>.json`
@@ -104,13 +104,13 @@ These transform the experience from "it works" to "this is good."
 #### 2.1 Streaming API responses
 **Why:** Analysis takes 5-30 seconds. Users stare at a skeleton loader. With streaming, the first tactic card can appear in 2-3s — transforming dead wait into progressive reveal.
 **What to do:**
-- In `background.js`, switch `callAnthropicDirect()` to use Anthropic's streaming API (`stream: true` in the request, or use the SDK's `messages.stream()`)
-- Parse partial JSON as content chunks arrive. Strategy: accumulate text, attempt JSON parse after each `content_block_delta`, emit partial results when a complete tactic object is detected
+- In `background.js`, switch `callGeminiDirect()` to use Gemini's streaming API (`streamGenerateContent` endpoint)
+- Parse partial JSON as content chunks arrive. Strategy: accumulate text, attempt JSON parse after each chunk, emit partial results when a complete tactic object is detected
 - Store partial results to session storage as they arrive so the side panel can render incrementally
 - In `sidepanel.js`, update the storage listener to handle incremental result updates — append new tactic cards as they arrive rather than replacing all at once
 - Send highlights to content script incrementally too (or batch at the end)
 - Fallback: if streaming parsing fails, fall back to waiting for the complete response
-**Files:** `background.js` (callAnthropicDirect, handleAnalyze), `sidepanel.js` (storage listener, showResults)
+**Files:** `background.js` (callGeminiDirect, handleAnalyze), `sidepanel.js` (storage listener, showResults)
 **Complexity:** High. This touches the core data flow. Test thoroughly with both short (no tactics) and long (5+ tactics) responses.
 
 #### 2.2 Category-colored page highlights
@@ -139,7 +139,7 @@ These transform the experience from "it works" to "this is good."
   - After text collection: `{ status: 'analyzing', stage: 'collected', timestamp }`
   - Before API call: `{ status: 'analyzing', stage: 'calling_api', timestamp }`
   - After API response: `{ status: 'analyzing', stage: 'processing', timestamp }`
-- In `sidepanel.js`, the storage listener already watches status changes. Update `showAnalyzing()` to show stage-appropriate text: "Collecting text..." → "Analyzing with Claude..." → "Processing results..."
+- In `sidepanel.js`, the storage listener already watches status changes. Update `showAnalyzing()` to show stage-appropriate text: "Collecting text..." → "Analyzing with Gemini..." → "Processing results..."
 **Files:** `background.js` (handleAnalyze), `sidepanel.js` (showAnalyzing, storage listener)
 
 ---
@@ -161,14 +161,14 @@ These make the product feel finished.
 **What to do:**
 - In `sidepanel.js` `showSetup()`, replace the current message with a brief one-screen description:
   - What this does (1 sentence)
-  - Setup CTA ("Add your Anthropic API key to get started")
+  - Setup CTA ("Add your Gemini API key to get started")
 - Keep it minimal — no multi-step wizard (see FB-0002)
 **Files:** `sidepanel.js` (showSetup), `sidepanel.css` (onboarding styles)
 
 #### 3.3 Humanize model selector
-**Why:** "Sonnet 4.6" vs "Haiku 4.5" means nothing to non-technical users.
+**Why:** "Flash 2.5" vs "Flash Lite 2.5" means nothing to non-technical users.
 **What to do:**
-- Change option labels in `sidepanel.html`: "Thorough (Sonnet)" and "Quick (Haiku)"
+- Change option labels in `sidepanel.html`: "Thorough (Flash)" and "Quick (Flash Lite)"
 - Keep the `value` attributes as-is (model IDs)
 - Update `options.html` similarly
 **Files:** `sidepanel.html`, `options.html`
@@ -279,6 +279,7 @@ Fix before scaling. Can be done in any order.
 - **Apr 7, 2026**: Remove duplicate title, move settings gear into controls bar
 - **Apr 7, 2026**: Restyle sidebar UI with DevPanel-inspired dark glass aesthetic
 - **Apr 7, 2026**: Fix cross-node highlighting, fuzzy matching, side panel navigation
+- **Apr 8, 2026**: Switch LLM provider from Anthropic to Google Gemini (free tier)
 - **Apr 1, 2026**: Complete Anthropic migration — server.js + BYOK on Claude API
 - **Apr 1, 2026**: Infrastructure migration — CLAUDE.md, agents, rules, core-docs
 
