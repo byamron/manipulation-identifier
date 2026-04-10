@@ -144,7 +144,9 @@ function parseJsonResponse(rawContent) {
         definition: t.definition,
         examples: t.instances.map(inst => ({
           text: inst.exact_quote,
-          explanation: inst.explanation
+          explanation: inst.explanation,
+          attribution: inst.attribution === 'source' ? 'source' : 'author',
+          attributedTo: inst.attributed_to || null
         }))
       }));
   } catch {
