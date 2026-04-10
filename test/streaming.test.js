@@ -141,6 +141,16 @@ describe('extractCompleteTactics', () => {
     expect(result).toHaveLength(1);
     expect(result[0].instances).toHaveLength(3);
   });
+
+  test('preserves attribution fields through extraction', () => {
+    const json = '{"tactics_detected": [{"tactic_name": "Emotional Language", "definition": "d", "instances": [{"exact_quote": "q1", "explanation": "e1", "attribution": "author", "attributed_to": null}, {"exact_quote": "q2", "explanation": "e2", "attribution": "source", "attributed_to": "Senator X"}]}]}';
+    const result = extractCompleteTactics(json);
+    expect(result).toHaveLength(1);
+    expect(result[0].instances[0].attribution).toBe('author');
+    expect(result[0].instances[0].attributed_to).toBeNull();
+    expect(result[0].instances[1].attribution).toBe('source');
+    expect(result[0].instances[1].attributed_to).toBe('Senator X');
+  });
 });
 
 describe('SSE parsing (sync simulation)', () => {

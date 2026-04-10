@@ -119,6 +119,16 @@
       .mi-highlight.mi-pulse {
         animation: mi-pulse 0.6s ease-in-out;
       }
+      .mi-highlight.mi-source {
+        opacity: 0.5 !important;
+        border-style: dashed !important;
+      }
+      .mi-highlight.mi-source:hover {
+        opacity: 0.75 !important;
+      }
+      .mi-highlight.mi-source.mi-active {
+        opacity: 0.85 !important;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -368,6 +378,7 @@
               tactic: tactic.tactic,
               definition: tactic.definition,
               explanation: example.explanation,
+              attribution: example.attribution || 'author',
               quoteText
             });
           }
@@ -403,6 +414,7 @@
               tactic: m.tactic,
               definition: m.definition,
               explanation: m.explanation,
+              attribution: m.attribution,
               quoteText: m.quoteText
             });
           }
@@ -424,7 +436,7 @@
 
           const span = document.createElement('span');
           const category = TACTIC_CATEGORIES[nm.tactic] || 'logical';
-          span.className = `mi-highlight mi-${category}`;
+          span.className = `mi-highlight mi-${category}${nm.attribution === 'source' ? ' mi-source' : ''}`;
           span.textContent = nodeText.slice(nm.start, nm.end);
           span.tabIndex = 0;
           span.setAttribute('role', 'button');

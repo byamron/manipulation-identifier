@@ -491,6 +491,21 @@ body {
   line-height: 1.5;
 }
 
+/* Source-attributed instances (quoted speech reported by article) */
+.instance-source {
+  opacity: 0.7;
+  border-left-style: dashed;
+}
+
+.instance-attribution {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 3px;
+}
+
 /* Learn more / feedback expandable */
 .card-actions {
   padding: 0 var(--panel-pad) 10px 26px;

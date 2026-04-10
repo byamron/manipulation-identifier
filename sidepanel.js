@@ -330,7 +330,9 @@
         </div>
         <div class="card-instances">
           ${tactic.examples.map((ex, i) => `
-            <div class="instance">
+            <div class="instance${ex.attribution === 'source' ? ' instance-source' : ''}">
+              ${ex.attribution === 'source' && ex.attributedTo ? `<div class="instance-attribution">In a quote by ${escapeHtml(ex.attributedTo)}</div>` : ''}
+              ${ex.attribution === 'source' && !ex.attributedTo ? `<div class="instance-attribution">In quoted speech</div>` : ''}
               <div class="instance-quote${interactive ? '' : ' non-interactive'}"
                    ${interactive ? `data-highlight-tactic="${escapeHtml(tactic.tactic)}" data-instance-index="${i}" title="Click to scroll to this text on the page"` : ''}>
                 "${escapeHtml(ex.text)}"

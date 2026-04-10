@@ -15,7 +15,9 @@ function parseJsonResponse(rawContent) {
         definition: t.definition,
         examples: t.instances.map(inst => ({
           text: inst.exact_quote,
-          explanation: inst.explanation
+          explanation: inst.explanation,
+          attribution: inst.attribution === 'source' ? 'source' : 'author',
+          attributedTo: inst.attributed_to || null
         }))
       }));
   } catch {
@@ -154,5 +156,80 @@ describe('parseJsonResponse', () => {
     // Should NOT have the JSON-schema field names
     expect(result[0]).not.toHaveProperty('tactic_name');
     expect(result[0].examples[0]).not.toHaveProperty('exact_quote');
+    // Should have attribution fields
+    expect(result[0].examples[0]).toHaveProperty('attribution');
+    expect(result[0].examples[0]).toHaveProperty('attributedTo');
+  });
+
+  test('should parse attribution=author (default)', () => {
+    const input = JSON.stringify({
+      tactics_detected: [{
+        tactic_name: 'Emotional Language',
+        definition: 'Language using strong emotional terms.',
+        instances: [{
+          exact_quote: 'This radical agenda will destroy us',
+          explanation: 'Uses fear-inducing language',
+          attribution: 'author',
+          attributed_to: null
+        }]
+      }]
+    });
+
+    const result = parseJsonResponse(input);
+    expect(result[0].examples[0].attribution).toBe('author');
+    expect(result[0].examples[0].attributedTo).toBeNull();
+  });
+
+  test('should parse attribution=source with attributed_to', () => {
+    const input = JSON.stringify({
+      tactics_detected: [{
+        tactic_name: 'Emotional Language',
+        definition: 'Language using strong emotional terms.',
+        instances: [{
+          exact_quote: 'the radical left is destroying our country',
+          explanation: 'Uses fear-inducing language in quoted speech',
+          attribution: 'source',
+          attributed_to: 'Senator X'
+        }]
+      }]
+    });
+
+    const result = parseJsonResponse(input);
+    expect(result[0].examples[0].attribution).toBe('source');
+    expect(result[0].examples[0].attributedTo).toBe('Senator X');
+  });
+
+  test('should default to author when attribution is missing', () => {
+    const input = JSON.stringify({
+      tactics_detected: [{
+        tactic_name: 'False Dichotomy',
+        definition: 'Presenting only two options.',
+        instances: [{
+          exact_quote: "You're either with us or against us",
+          explanation: 'Reduces to binary choice'
+        }]
+      }]
+    });
+
+    const result = parseJsonResponse(input);
+    expect(result[0].examples[0].attribution).toBe('author');
+    expect(result[0].examples[0].attributedTo).toBeNull();
+  });
+
+  test('should default unknown attribution values to author', () => {
+    const input = JSON.stringify({
+      tactics_detected: [{
+        tactic_name: 'Emotional Language',
+        definition: 'Language using strong emotional terms.',
+        instances: [{
+          exact_quote: 'test',
+          explanation: 'test',
+          attribution: 'unknown_value'
+        }]
+      }]
+    });
+
+    const result = parseJsonResponse(input);
+    expect(result[0].examples[0].attribution).toBe('author');
   });
 });

@@ -4,6 +4,39 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 11: Attribution Framework (April 2026)
+
+### Apr 9, 2026 — Quoted speech attribution: distinguish author rhetoric from reported speech
+
+**Branch:** `ux-feedback-round`
+
+**What was done:**
+Added an attribution system that distinguishes between manipulation tactics used by the article/author ("author") and tactics present in quoted/reported speech ("source"). The model now classifies each detected instance and identifies who is being quoted when applicable. The UI and page highlights differentiate these visually.
+
+**Why:**
+User testing revealed a major class of false positives: the model was flagging quoted speech (e.g., a politician's statement reported by a news article) as manipulation by the article itself. A quote from a politician using emotional language is not the same as the article using emotional language. The user is still exposed to the tactic, so it should be shown — but with different framing and weight.
+
+**Design decisions:**
+- **Binary attribution (author/source) rather than a 4-level taxonomy.** Considered breaking out "amplified quote" and "critically examined quote" as separate categories. Decided that amplified = author (the article adopted the rhetoric) and critically examined = don't flag at all (the article is analyzing, not employing). This keeps the schema simple and the model's task clear.
+- **Show source-attributed instances, don't suppress them.** The psychological effect of reading manipulative language exists whether it's a direct claim or a quote. But the user needs to know the article isn't the one making that claim.
+- **Dimmed visual weight for source-attributed instances.** Dashed border + 50% opacity on page highlights, 70% opacity + dashed left border + attribution label in side panel. Visible but clearly secondary.
+- **Default to "author" when attribution is missing.** Backwards-compatible with responses from the old prompt that don't include attribution fields.
+
+**Technical decisions:**
+- New prompt instructions (~150 tokens) teach the model the attribution rules with explicit guidance on edge cases (endorsement = author, critical examination = don't flag, uncertain = source).
+- New JSON schema fields: `attribution` ("author"|"source") and `attributed_to` (string|null) on each instance.
+- Both `parseJsonResponse` (background.js and server.js) and the streaming `extractCompleteTactics` mapper normalize the new fields, defaulting to "author" for any unrecognized value.
+- 5 new tests covering attribution parsing, default behavior, and streaming preservation.
+
+**Tradeoffs:**
+- ~150 extra tokens in the system prompt per request. Acceptable per FB-0001 (cost-conscious) given the significant accuracy improvement.
+- The model may not always correctly identify attribution, especially in opinion pieces where editorial voice and quotation blend together. This is a prompt quality issue that will be measured and tuned via the eval harness (item 1.1).
+- Selective curation (case 4 — manipulation through the *selection and arrangement* of quotes) is not addressed. The model would need to see full article structure and compare quote selection against available sources, which is beyond the current 5000-char window.
+
+**Files changed:** `background.js`, `server.js`, `content.js`, `sidepanel.js`, `sidepanel.css`, `test/parseJsonResponse.test.js`, `test/streaming.test.js`
+
+---
+
 ## Phase 10: Core UX (April 2026)
 
 ### Apr 8, 2026 — Review pass: fix streaming reliability, UX, and test coverage
