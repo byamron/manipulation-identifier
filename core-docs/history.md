@@ -4,6 +4,33 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 16: Academic Sources & Attribution (April 2026)
+
+### Apr 9, 2026 — Expand SOURCES.md with theoretical grounding and design references
+
+**Branch:** paper-framing-analysis
+
+**What was done:**
+1. Added citation for Starbird et al. 2025 ("What is going on? An evidence-frame framework") — theoretical grounding for how framing-based manipulation operates.
+2. Added citation for Prochaska et al. 2025 ("Deep Storytelling: Collective Sensemaking and Layers of Meaning in U.S. Elections") — context for why manipulation tactics work via persistent meta-narratives.
+3. Added Jigsaw Prebunking Initiative (prebunking.withgoogle.com) as a design reference — inoculation theory influenced the extension's "educate, don't censor" philosophy.
+4. Standardized formatting across all SOURCES.md entries (consistent License labels, citation structure, relevance sections).
+
+**Why:**
+The extension's academic grounding was incomplete. CoCoLoFa and MAFALDA covered the taxonomy expansion (11 to 15 tactics) but the original tactic selection and the project's educational design philosophy had no documented sources. The two CSCW papers provide theoretical context for existing tactics (especially Decontextualization, Cherry Picking, Emotional Language), and Jigsaw documents the design lineage.
+
+**Design decisions:**
+- Organized SOURCES.md into four sections: Taxonomy References, Design References, Theoretical References, Original Content. Each serves a distinct role (what we built from, what inspired the approach, what validates the framework, what's ours).
+- Each theoretical paper includes a "Relevance to this project" section that explicitly scopes what's applicable and what's not (e.g., social-dynamic findings are not implementable in a single-page extension).
+- Assessed both papers for implementable findings. Concluded that they enrich existing tactic definitions (especially Decontextualization) but do not warrant new tactics — the distinctive findings operate at social/multi-text scales beyond the extension's single-page architecture.
+
+**Tradeoffs:**
+- Could have added "Frame Escalation" or "Implicit Framing" as new tactics based on the papers. Decided against it: frame escalation is a social process across multiple posts (not visible on one page), and the papers' own coders had low inter-rater reliability on implicit frames. Adding either would violate the "accuracy over coverage" principle.
+
+**Files changed:** `core-docs/SOURCES.md`
+
+---
+
 ## Phase 15: Priority 5 — UX Feedback Round (April 2026)
 
 ### Apr 9, 2026 — Ship 6 of 8 UX feedback items
