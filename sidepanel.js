@@ -68,7 +68,7 @@
         if (Date.now() - analysisStart > 45000) {
           showError('Analysis may have timed out. Try again.');
         } else {
-          showAnalyzing(analysisStart, status.stage);
+          showAnalyzing(analysisStart);
         }
       } else if (results?.results?.length > 0) {
         showResults(results.results, results.model);
@@ -115,13 +115,7 @@
 
         if (newStatus.status === 'analyzing') {
           if (currentState !== 'analyzing') {
-            showAnalyzing(newStatus.startedAt || newStatus.timestamp, newStatus.stage);
-          } else {
-            // Update stage label without resetting the timer
-            const timerEl = document.getElementById('analyzeTimerDisplay');
-            if (timerEl && newStatus.stage) {
-              timerEl.dataset.stage = newStatus.stage;
-            }
+            showAnalyzing(newStatus.startedAt || newStatus.timestamp);
           }
         } else if (newStatus.status === 'error') {
           showError(newStatus.error);
@@ -265,44 +259,23 @@
     resultsArea.innerHTML = '';
   }
 
-  const STAGE_LABELS = {
-    collecting: 'Collecting text...',
-    calling_api: 'Analyzing with Gemini...',
-    processing: 'Processing results...'
-  };
-
-  function showAnalyzing(startTimestamp, stage) {
+  function showAnalyzing(startTimestamp) {
     currentState = 'analyzing';
-    updateButton('Analyzing...', false);
-    const start = startTimestamp || Date.now();
-    const stageText = STAGE_LABELS[stage] || 'Analyzing...';
 
-    statusArea.innerHTML = `
-      <div class="skeleton">
-        <div class="skeleton-card">
-          <div class="skeleton-line short"></div>
-          <div class="skeleton-line medium"></div>
-          <div class="skeleton-line"></div>
-        </div>
-        <div class="skeleton-card">
-          <div class="skeleton-line short"></div>
-          <div class="skeleton-line"></div>
-        </div>
-        <div class="skeleton-timer" id="analyzeTimerDisplay">${stageText}</div>
-      </div>
-    `;
+    // Animated button — single indicator for analyzing state
+    analyzeBtn.innerHTML = 'Analyzing<span class="analyzing-dots"><span>.</span><span>.</span><span>.</span></span>';
+    analyzeBtn.disabled = true;
+    analyzeBtn.classList.remove('btn-clear');
+    analyzeBtn.classList.add('btn-analyzing');
+
+    statusArea.innerHTML = '';
     resultsArea.innerHTML = '';
 
-    // Elapsed time counter
+    // Timeout check (no visible timer — button animation communicates progress)
+    const start = startTimestamp || Date.now();
     clearInterval(analyzeTimer);
     analyzeTimer = setInterval(() => {
       const elapsed = Math.floor((Date.now() - start) / 1000);
-      const timerEl = document.getElementById('analyzeTimerDisplay');
-      if (timerEl) {
-        const currentLabel = timerEl.dataset.stage ? (STAGE_LABELS[timerEl.dataset.stage] || 'Analyzing...') : stageText;
-        timerEl.textContent = `${currentLabel} ${elapsed}s`;
-      }
-      // Timeout check
       if (elapsed > 45) {
         clearInterval(analyzeTimer);
         showError('Analysis may have timed out. Try again.');
@@ -403,18 +376,6 @@
     // Guard: only apply if still analyzing (debounced call may fire after completion)
     if (currentState !== 'analyzing') return;
 
-    // Collapse skeleton on first streaming result
-    if (streamingRenderedCount === 0 && results.length > 0) {
-      statusArea.innerHTML = `
-        <div class="skeleton-timer standalone" id="analyzeTimerDisplay">
-          Analyzing with Gemini...
-        </div>
-      `;
-      // Transfer stage data to new timer element
-      const timerEl = document.getElementById('analyzeTimerDisplay');
-      if (timerEl) timerEl.dataset.stage = 'calling_api';
-    }
-
     // Ensure summary row exists
     let summary = resultsArea.querySelector('.results-summary');
     if (!summary) {
@@ -470,6 +431,7 @@
     analyzeBtn.textContent = text;
     analyzeBtn.disabled = !enabled;
     analyzeBtn.classList.toggle('btn-clear', isClear);
+    analyzeBtn.classList.remove('btn-analyzing');
   }
 
   // ── Card interactions ──
