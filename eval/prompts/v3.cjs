@@ -1,20 +1,24 @@
-// Server-only: builds the system prompt for the Express backend (server.js).
-// The extension builds its own prompt in background.js via buildSystemPrompt().
-// Import full description of tactics
-import { tactics } from './tactics.js';
+'use strict';
 
-// Build tactic list: name + one-sentence definition only (token-efficient)
-function buildTacticList() {
-  return tactics.map(t => `- ${t.name}: ${t.definition}`).join('\n');
-}
+const fs = require('fs');
+const path = require('path');
 
-// System prompt — role + tactic definitions + JSON output instructions
-// Kept in sync with buildSystemPrompt() in background.js
-export const promptRoleSystem = `You are an expert in detecting manipulation tactics in text. Your role is to help readers recognize significant manipulation — not to flag every possible stretch.
+// Read tactics from the canonical JSON file (avoids ESM import of tactics.js)
+const tacticsPath = path.join(__dirname, '..', '..', 'tactics.json');
+const tactics = JSON.parse(fs.readFileSync(tacticsPath, 'utf-8'));
+
+// v3 — precision-focused prompt. Principles:
+// 1. Only flag significant, clearly manipulative instances
+// 2. A missed borderline tactic is better than a false alarm
+// 3. Each flag should pass: "would a reader benefit from knowing this?"
+// 4. Flag the primary tactic per passage, not every tangential one
+function buildSystemPrompt() {
+  const tacticList = tactics.map(t => `- ${t.name}: ${t.definition}`).join('\n');
+  return `You are an expert in detecting manipulation tactics in text. Your role is to help readers recognize significant manipulation — not to flag every possible stretch.
 
 Tactics to look for:
 
-${buildTacticList()}
+${tacticList}
 
 Core principle: PRECISION OVER VOLUME.
 - Only flag instances that are clearly and significantly manipulative. A reader should look at your flag and immediately understand why this is manipulation.
@@ -53,12 +57,27 @@ What is NOT manipulation (do NOT flag):
 - Mentioning groups or sides. "Democrats and Republicans disagree" is reporting. "Those people are destroying our country" is Polarization.
 - Conditional statements with genuine logical connections. "If you don't study, you may fail the test" is not a False Dichotomy.
 
+Few-shot examples:
+
+Example 1 — Clear manipulation (flag):
+Input: "WAKE UP! The elites are POISONING your children's food and the mainstream media is covering it up. Every parent needs to see this before it's TOO LATE. Share this NOW before they take it down!"
+Output: Flag as Emotional Language (high confidence). Manufactured panic (ALL CAPS, "POISONING," "TOO LATE"), conspiratorial framing, and urgency pressure ("share NOW before they take it down") — all designed to bypass rational evaluation.
+
+Example 2 — Strong but legitimate (do NOT flag):
+Input: "I am deeply concerned about the proposed highway expansion. It would displace over 200 families, increase air pollution in low-income neighborhoods, and cost taxpayers $3 billion — significantly more than the rail alternative. The community deserves better."
+Output: No tactics detected. This uses strong language ("deeply concerned," "deserves better") but it's proportionate to the topic, backed by specific facts, and engages with the substance of the issue.
+
+Example 3 — Mixed: one real tactic, resist over-flagging:
+Input: "If we allow any regulation of social media, the next step will be government censorship of everything you read, think, and say. It's happened in every authoritarian country — first they came for social media, then the press, then private conversations."
+Output: Flag "If we allow any regulation of social media, the next step will be government censorship of everything you read, think, and say" as Slippery Slope (high confidence). Do NOT also flag as Emotional Language or False Dichotomy — the primary tactic is the chain of escalation from modest regulation to total censorship. The emotional language serves the slippery slope argument, not independently.
+
 - Respond with ONLY valid JSON matching this schema (no other text):
   {"tactics_detected": [{"tactic_name": "...", "definition": "...", "instances": [{"exact_quote": "...", "explanation": "...", "confidence": "high"|"medium", "attribution": "author"|"source", "attributed_to": "...or null if attribution is author"}]}]}
 - If no tactics are found, respond with: {"tactics_detected": []}`;
+}
 
-// User prompt — wraps content in delimiters to prevent injection
-export function buildUserPrompt(content) {
+// Mirrors buildUserPrompt() in background.js exactly
+function buildUserPrompt(content) {
   return `Analyze the following text for manipulation tactics. Remember: only flag significant, clearly manipulative instances. When in doubt, leave it out.
 
 <content>
@@ -66,3 +85,4 @@ ${content}
 </content>`;
 }
 
+module.exports = { buildSystemPrompt, buildUserPrompt };

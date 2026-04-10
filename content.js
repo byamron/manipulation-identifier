@@ -129,6 +129,16 @@
       .mi-highlight.mi-source.mi-active {
         opacity: 0.85 !important;
       }
+      .mi-highlight.mi-medium {
+        opacity: 0.4 !important;
+        border-style: dotted !important;
+      }
+      .mi-highlight.mi-medium:hover {
+        opacity: 0.6 !important;
+      }
+      .mi-highlight.mi-medium.mi-active {
+        opacity: 0.75 !important;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -136,7 +146,7 @@
   // ── Text collection ──
 
   function collectText() {
-    const collected = new Set();
+    const entries = []; // {text, block} — preserves order, no deduplication
     const walker = document.createTreeWalker(
       document.body,
       NodeFilter.SHOW_TEXT,
@@ -169,12 +179,31 @@
     );
 
     while (walker.nextNode()) {
-      collected.add(walker.currentNode.textContent.trim());
+      const node = walker.currentNode;
+      entries.push({
+        text: node.textContent.trim(),
+        block: nearestBlockAncestor(node)
+      });
     }
 
-    // Collapse whitespace, join, truncate
-    const combined = Array.from(collected).join(' ').replace(/\s+/g, ' ').slice(0, 5000);
-    return combined;
+    // Join: single space within the same block ancestor,
+    // double newline between different block ancestors (preserves paragraph structure)
+    let combined = '';
+    for (let i = 0; i < entries.length; i++) {
+      if (i > 0) {
+        combined += entries[i].block === entries[i - 1].block ? ' ' : '\n\n';
+      }
+      combined += entries[i].text;
+    }
+
+    // Normalize: collapse 3+ newlines to \n\n, collapse spaces/tabs (not newlines) to single space
+    combined = combined
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/[^\S\n]+/g, ' ');
+
+    const totalChars = combined.length;
+    const text = combined.slice(0, 5000);
+    return { text, totalChars, analyzedChars: text.length };
   }
 
   // ── Fuzzy text matching (3-tier: exact, normalized, trigram) ──
@@ -379,6 +408,7 @@
               definition: tactic.definition,
               explanation: example.explanation,
               attribution: example.attribution || 'author',
+              confidence: example.confidence || 'high',
               quoteText
             });
           }
@@ -415,6 +445,7 @@
               definition: m.definition,
               explanation: m.explanation,
               attribution: m.attribution,
+              confidence: m.confidence,
               quoteText: m.quoteText
             });
           }
@@ -436,7 +467,7 @@
 
           const span = document.createElement('span');
           const category = TACTIC_CATEGORIES[nm.tactic] || 'logical';
-          span.className = `mi-highlight mi-${category}${nm.attribution === 'source' ? ' mi-source' : ''}`;
+          span.className = `mi-highlight mi-${category}${nm.attribution === 'source' ? ' mi-source' : ''}${nm.confidence === 'medium' ? ' mi-medium' : ''}`;
           span.textContent = nodeText.slice(nm.start, nm.end);
           span.tabIndex = 0;
           span.setAttribute('role', 'button');
@@ -534,8 +565,8 @@
   chrome.runtime.onMessage?.addListener((message, sender, sendResponse) => {
     switch (message.action) {
       case MSG.COLLECT_TEXT: {
-        const text = collectText();
-        sendResponse({ text });
+        const result = collectText();
+        sendResponse({ text: result.text, totalChars: result.totalChars, analyzedChars: result.analyzedChars });
         return false;
       }
 

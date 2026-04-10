@@ -35,6 +35,16 @@ Increment from the last entry. Use `FB-0001`, `FB-0002`, etc.
 
 <!-- Add new entries below this line, newest first. -->
 
+### FB-0013: Only flag significant, high-confidence manipulation
+**Date:** 2026-04-09
+**Source:** user direction
+
+**What was said:** The goal isn't to flag a lot of tactics for the sake of it — they need to be significant and high confidence. Weak examples decrease the system's usefulness because: (1) they feel like a stretch and erode trust, (2) they can be misinterpreted (like quoted speech being attributed to the author), (3) slightly strong but common language flagged as Emotional Language isn't useful. The system should rather miss a borderline tactic than report a weak one.
+
+**Synthesized rule:** Optimize for precision and usefulness over recall and volume. Every flagged instance should pass the test: "would a reader benefit from knowing this is manipulation?" If the answer is "maybe" or "it's a stretch," don't flag it. This applies to prompt tuning, corpus annotations, and the confidence threshold. Medium-confidence flags should be rare exceptions, not a common category.
+
+**Applies to:** prompt tuning, eval corpus, detection philosophy, UX
+
 ### FB-0012: Feedback form should capture useful dev data
 **Date:** 2026-04-09
 **Source:** user direction

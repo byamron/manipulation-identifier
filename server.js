@@ -146,7 +146,8 @@ function parseJsonResponse(rawContent) {
           text: inst.exact_quote,
           explanation: inst.explanation,
           attribution: inst.attribution === 'source' ? 'source' : 'author',
-          attributedTo: inst.attributed_to || null
+          attributedTo: inst.attributed_to || null,
+          confidence: inst.confidence === 'medium' ? 'medium' : 'high'
         }))
       }));
   } catch {

@@ -71,7 +71,7 @@
           showAnalyzing(analysisStart);
         }
       } else if (results?.results?.length > 0) {
-        showResults(results.results, results.model);
+        showResults(results.results, results.model, results.totalChars, results.analyzedChars);
       } else if (status?.status === 'complete') {
         showEmpty();
       } else if (status?.status === 'error') {
@@ -122,7 +122,7 @@
         } else if (newStatus.status === 'complete' && changes[resultsKey]) {
           const results = changes[resultsKey].newValue;
           if (results?.results?.length > 0) {
-            showResults(results.results, results.model);
+            showResults(results.results, results.model, results.totalChars, results.analyzedChars);
           } else {
             showEmpty();
           }
@@ -303,9 +303,10 @@
         </div>
         <div class="card-instances">
           ${tactic.examples.map((ex, i) => `
-            <div class="instance${ex.attribution === 'source' ? ' instance-source' : ''}">
+            <div class="instance${ex.attribution === 'source' ? ' instance-source' : ''}${ex.confidence === 'medium' ? ' instance-medium' : ''}">
               ${ex.attribution === 'source' && ex.attributedTo ? `<div class="instance-attribution">In a quote by ${escapeHtml(ex.attributedTo)}</div>` : ''}
               ${ex.attribution === 'source' && !ex.attributedTo ? `<div class="instance-attribution">In quoted speech</div>` : ''}
+              ${ex.confidence === 'medium' ? '<div class="instance-confidence">Medium confidence</div>' : ''}
               <div class="instance-quote${interactive ? '' : ' non-interactive'}"
                    ${interactive ? `data-highlight-tactic="${escapeHtml(tactic.tactic)}" data-instance-index="${i}" title="Click to scroll to this text on the page"` : ''}>
                 "${escapeHtml(ex.text)}"
@@ -341,7 +342,7 @@
     `;
   }
 
-  function showResults(results, model) {
+  function showResults(results, model, totalChars, analyzedChars) {
     currentState = 'results';
     clearInterval(analyzeTimer);
     clearTimeout(streamingDebounceTimer);
@@ -357,6 +358,9 @@
     const totalInstances = results.reduce((sum, t) => sum + t.examples.length, 0);
     const modelLabel = MODEL_LABELS[model] || model;
     let html = `<div class="results-summary">${results.length} tactic${results.length !== 1 ? 's' : ''} detected &middot; ${totalInstances} instance${totalInstances !== 1 ? 's' : ''}${model ? ` &middot; ${escapeHtml(modelLabel)}` : ''}</div>`;
+    if (totalChars && analyzedChars && totalChars > analyzedChars) {
+      html += `<div class="analysis-coverage">Analyzed first ${analyzedChars.toLocaleString()} of ${totalChars.toLocaleString()} characters</div>`;
+    }
     html += `<div class="category-legend"><span class="legend-item"><span class="legend-dot logical"></span>Logical</span><span class="legend-item"><span class="legend-dot rhetorical"></span>Rhetorical</span><span class="legend-item"><span class="legend-dot credibility"></span>Credibility</span></div>`;
     html += results.map(t => renderTacticCard(t, { interactive: true })).join('');
 

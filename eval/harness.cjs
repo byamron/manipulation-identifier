@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const fs = require('fs');
 const path = require('path');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { matchPredictions, quoteFidelity, calculateMetrics } = require('./scorer.cjs');
 const { consoleReport, saveResults } = require('./reporter.cjs');
 
@@ -18,22 +19,25 @@ function parseArgs(argv) {
 
 Options:
   --prompt <path>   Prompt module to use (default: eval/prompts/v1.cjs)
-  --model <name>    Anthropic model ID (default: claude-sonnet-4-6-20250514)
+  --model <name>    Gemini model ID (default: gemini-2.5-flash)
   --filter <term>   Filter corpus files by filename or text content
+  --subset <files>  Comma-separated list of corpus filenames to run
 
 Examples:
   npm run eval
   npm run eval -- --filter emotional
   npm run eval -- --prompt eval/prompts/v2.cjs
-  npm run eval -- --model claude-haiku-4-5-20251001
+  npm run eval -- --model gemini-2.5-flash-lite
+  npm run eval -- --subset clean-01.json,emotional-language-01.json
   npm run eval:compare results/a.json results/b.json`);
     process.exit(0);
   }
 
   const opts = {
     prompt: path.join(__dirname, 'prompts', 'v1.cjs'),
-    model: 'claude-sonnet-4-6-20250514',
-    filter: null
+    model: 'gemini-2.5-flash',
+    filter: null,
+    subset: null
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -45,6 +49,9 @@ Examples:
       i++;
     } else if (args[i] === '--filter' && args[i + 1]) {
       opts.filter = args[i + 1];
+      i++;
+    } else if (args[i] === '--subset' && args[i + 1]) {
+      opts.subset = args[i + 1].split(',').map(f => f.trim());
       i++;
     }
   }
@@ -68,7 +75,10 @@ function parseJsonResponse(rawContent) {
         definition: t.definition,
         examples: t.instances.map(inst => ({
           text: inst.exact_quote,
-          explanation: inst.explanation
+          explanation: inst.explanation,
+          attribution: inst.attribution === 'source' ? 'source' : 'author',
+          attributedTo: inst.attributed_to || null,
+          confidence: inst.confidence === 'medium' ? 'medium' : 'high'
         }))
       }));
   } catch {
@@ -76,22 +86,24 @@ function parseJsonResponse(rawContent) {
   }
 }
 
-// ---- Rate limiter: 1 request per second ----
+// ---- Rate limiter: respects Gemini free tier (5 req/min for Flash, 30 req/min for Lite) ----
 
 let lastRequestTime = 0;
 
-async function rateLimit() {
+async function rateLimit(model) {
   const now = Date.now();
+  // Flash 2.5 free tier: 5 req/min = 13s gap. Lite: 30 req/min = 2.5s gap.
+  const minGap = model === 'gemini-2.5-flash-lite' ? 2500 : 13000;
   const elapsed = now - lastRequestTime;
-  if (elapsed < 1000) {
-    await new Promise(resolve => setTimeout(resolve, 1000 - elapsed));
+  if (elapsed < minGap) {
+    await new Promise(resolve => setTimeout(resolve, minGap - elapsed));
   }
   lastRequestTime = Date.now();
 }
 
 // ---- Corpus loading ----
 
-function loadCorpus(corpusDir, filter) {
+function loadCorpus(corpusDir, filter, subset) {
   if (!fs.existsSync(corpusDir)) {
     console.error(`Corpus directory not found: ${corpusDir}`);
     console.error('Create corpus examples in eval/corpus/ as JSON files.');
@@ -124,7 +136,11 @@ function loadCorpus(corpusDir, filter) {
     examples.push({ file: f, ...data });
   }
 
-  if (filter) {
+  if (subset) {
+    const subsetSet = new Set(subset);
+    examples = examples.filter(ex => subsetSet.has(ex.file));
+    console.log(`Subset: ${examples.length} of ${subset.length} requested files found.`);
+  } else if (filter) {
     examples = examples.filter(ex =>
       ex.file.toLowerCase().includes(filter.toLowerCase()) ||
       (ex.text && ex.text.toLowerCase().includes(filter.toLowerCase()))
@@ -141,10 +157,10 @@ async function run() {
   const opts = parseArgs(process.argv);
 
   // Validate API key
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.error('Error: ANTHROPIC_API_KEY environment variable is not set.');
+  if (!process.env.GEMINI_API_KEY) {
+    console.error('Error: GEMINI_API_KEY environment variable is not set.');
     console.error('Set it in your .env file or export it in your shell:');
-    console.error('  export ANTHROPIC_API_KEY=sk-ant-...');
+    console.error('  export GEMINI_API_KEY=AIza...');
     process.exit(1);
   }
 
@@ -164,17 +180,15 @@ async function run() {
     process.exit(1);
   }
 
-  // Initialize Anthropic client
-  // Use dynamic import for the ESM-compatible SDK
-  const Anthropic = (await import('@anthropic-ai/sdk')).default;
-  const client = new Anthropic();
+  // Initialize Gemini client
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
   // Load corpus and identify ambiguous examples.
   // Both sets run through the same API + scoring loop, but metrics are
   // computed and reported separately so ambiguous edge cases don't pollute
   // headline precision/recall numbers.
   const corpusDir = path.join(__dirname, 'corpus');
-  const examples = loadCorpus(corpusDir, opts.filter);
+  const examples = loadCorpus(corpusDir, opts.filter, opts.subset);
 
   const ambiguousFiles = new Set();
   for (const ex of examples) {
@@ -210,20 +224,40 @@ async function run() {
     const label = `[${i + 1}/${examples.length}] ${example.file}`;
 
     try {
-      await rateLimit();
+      await rateLimit(opts.model);
 
       process.stdout.write(`${label} ... `);
 
       const userPrompt = buildUserPrompt(example.text);
 
-      const response = await client.messages.create({
+      // Flash 2.5 is a thinking model — needs higher output budget
+      const maxOutputTokens = opts.model === 'gemini-2.5-flash' ? 8192 : 4096;
+      const geminiModel = genAI.getGenerativeModel({
         model: opts.model,
-        max_tokens: 4000,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }]
+        systemInstruction: systemPrompt,
+        generationConfig: { maxOutputTokens }
       });
 
-      const rawContent = response.content?.[0]?.text || '';
+      // Retry on 429/5xx with exponential backoff
+      let response;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          response = await geminiModel.generateContent(userPrompt);
+          break;
+        } catch (retryErr) {
+          const is429 = retryErr.message?.includes('429');
+          const is5xx = retryErr.message?.includes('503') || retryErr.message?.includes('500');
+          if ((is429 || is5xx) && attempt < 2) {
+            const wait = is429 ? 25000 : 5000 * (attempt + 1);
+            process.stdout.write(`RETRY(${attempt + 1}) `);
+            await new Promise(r => setTimeout(r, wait));
+            continue;
+          }
+          throw retryErr;
+        }
+      }
+
+      const rawContent = response.response?.text() || '';
       if (!rawContent) {
         console.log('SKIP (empty API response)');
         details.push({
@@ -251,6 +285,7 @@ async function run() {
       const matching = matchPredictions(safePredictions, annotations, example.text);
       const qf = quoteFidelity(safePredictions, example.text);
 
+      const usage = response.response?.usageMetadata;
       const result = {
         file: example.file,
         predictions: safePredictions,
@@ -259,7 +294,7 @@ async function run() {
         falsePositives: matching.falsePositives,
         falseNegatives: matching.falseNegatives,
         quoteFidelity: qf,
-        tokensUsed: (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0)
+        tokensUsed: (usage?.promptTokenCount || 0) + (usage?.candidatesTokenCount || 0)
       };
       // Store raw response for debugging when parsing failed
       if (predictions === null) {

@@ -4,6 +4,147 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 15: Priority 1 — Accuracy & Trust (April 2026)
+
+### Apr 9, 2026 — Prompt tuning v1→v2→v3, confidence scoring, eval infrastructure, corpus audit
+
+**Branch:** `roadmap-review` (from `9c8642b`)
+
+**Summary:** Three prompt iterations drove precision from 30% → 55% across full 119-file eval. Core principle established: "precision over volume — only flag significant, clearly manipulative instances." False positives cut from 347 → 121 while losing only 2 true positives. Eval harness migrated to Gemini. Corpus audited and corrected. Progressive eval skill (`/eval-quick`) created. Accuracy plan written for path to 85% target.
+
+**What was done:**
+
+1. **V3 prompt — precision-focused rewrite:**
+   - New core principle: "PRECISION OVER VOLUME" — if you have to argue why something qualifies, it probably doesn't
+   - Primary tactic rule: flag the main tactic per passage, don't stack multiples on the same text
+   - "What IS manipulation" vs "What is NOT manipulation" — concrete positive/negative guidance replacing abstract disambiguation
+   - Stronger few-shot examples: clear manipulation, strong-but-legitimate (no flags), and mixed (one tactic, resist over-flagging)
+   - User prompt reinforcement: "When in doubt, leave it out"
+
+2. **Full eval comparison (119 files × 3 prompts on Flash Lite):**
+   - v1 → v2: precision 30% → 35% (+5%), FPs 347 → 278 (-69)
+   - v2 → v3: precision 35% → 52% (+17%), FPs 278 → 136 (-142)
+   - v3 + corpus fixes: precision 52% → 55%, FPs 136 → 121 (-15)
+   - Recall held steady: 76% → 73.5% (lost only 2 TPs across all iterations)
+
+3. **Corpus audit (7 benchmark files corrected):**
+   - benchmark-01: replaced borderline Emotional Language with Polarization
+   - benchmark-03: added Emotional Language for ALL CAPS fear-mongering
+   - benchmark-05: added second Ad Hominem ("ivory towers")
+   - benchmark-07/08: fixed Fake Experts quotes to point at the manipulative claim, not setup text
+   - benchmark-11: added False Dichotomy ("action right now, not calm deliberation")
+   - benchmark-13: added second Ad Hominem ("silver spoon")
+   - Clean and tactic-specific files confirmed correct
+
+4. **Eval infrastructure:**
+   - `--subset` flag for targeted eval runs
+   - `eval/compare-quick.sh` — progressive eval script (10 files/day, accumulates results)
+   - `npm run eval:quick` convenience script
+   - `/eval-quick` skill for repeatable testing across sessions
+   - `core-docs/accuracy-plan.md` — roadmap for reaching 85% precision target
+
+5. **FB-0013 captured:** "Only flag significant, high-confidence manipulation" — core product principle
+
+**Why:**
+
+User testing revealed that over-flagging undermines the product. Weak flags (common strong language, borderline cases, quoted speech misattributed to the author) make the system feel unreliable and reduce its usefulness. The v3 prompt embodies the principle that a missed borderline tactic is better than a false alarm. This aligns with the product thesis: "make manipulation visible" means making REAL manipulation visible, not stretching to find it everywhere.
+
+**Design decisions:**
+
+- **"Precision over volume" as a prompt-level principle, not just a scoring goal.** The v2 prompt tried to constrain the model with negative examples and disambiguation rules. V3 goes further — it tells the model its *role* is to surface significant manipulation, and explicitly says false alarms erode credibility. This framing shift produced a bigger precision jump (+17%) than v2's specific rules (+5%).
+- **Primary tactic rule.** The model was stacking 3-4 tactics on the same passage (e.g., Slippery Slope + Emotional Language + False Dichotomy). V3 instructs: flag the primary tactic, don't also flag the emotional language that serves it. This directly addresses the 73 cross-tactic FPs found on single-tactic files.
+- **"What IS / What is NOT" structure.** V2 had abstract disambiguation rules ("Emotional Language vs. genuine strong opinion"). V3 replaces these with concrete side-by-side contrasts: "I am heartbroken about the factory closure" = NOT manipulation vs "This HORRIFYING crisis will DESTROY your family" = IS manipulation. Concrete beats abstract.
+- **Corpus audit used a high bar.** Only added annotations for instances that clearly pass the test: "would a reader benefit from knowing this is manipulation?" Removed one borderline annotation. Net +4 annotations across 119 files, confirming the corpus was already well-calibrated.
+
+**Tradeoffs:**
+
+- **V3 prompt adds ~200 tokens over v2.** The "What IS / What is NOT" section and third few-shot example add length, but the precision-over-volume framing actually produces shorter model responses (fewer detections = fewer output tokens), making total cost roughly neutral.
+- **Appeal to Authority recall dropped from 88% → 63%.** The "What is NOT manipulation" section says citing relevant experts isn't Appeal to Authority. The model may be applying this too broadly, missing cases where authority IS being invoked to shut down debate. Worth monitoring.
+- **Corpus changes are modest (net +4 annotations).** The accuracy plan estimated 80-120 FPs were actually correct detections the corpus missed. The audit found only ~5. This means the remaining 121 FPs are mostly genuine model over-flagging, and further improvements need to come from prompt/scoring changes, not corpus fixes.
+
+**SAFETY:** All `parseJsonResponse` changes are backwards-compatible (confidence defaults to "high" when absent). Production prompt change is a prompt-content-only update — no code paths or error handling modified.
+
+**Test results:** 77 tests pass across 6 suites. No regressions.
+
+**Files changed:** `background.js`, `prompts.js`, `eval/prompts/v3.cjs` (NEW), `eval/harness.cjs`, `eval/compare-quick.sh` (NEW), `.claude/skills/eval-quick/SKILL.md` (NEW), `core-docs/accuracy-plan.md` (NEW), `core-docs/feedback.md` (FB-0013), `package.json`, `.gitignore`, 7 corpus files
+
+---
+
+### Earlier in session — Prompt tuning (v2), confidence scoring, coverage indicator, text structure preservation
+
+**Branch:** `roadmap-review` (from `9c8642b`)
+
+**What was done:**
+
+Completed the three active Priority 1 items (1.1 partial, 1.2, 1.3):
+
+1. **1.1 — Prompt tuning with few-shot examples and confidence scores (partial):**
+   - Migrated eval harness from Anthropic SDK to Google Gemini (`@google/generative-ai`)
+   - Synced eval/prompts/v1.cjs with production prompt (had been missing attribution rules since Phase 13)
+   - Wrote v2 prompt (eval/prompts/v2.cjs) with all four tuning strategies: confidence scoring ("high"|"medium"), tactic disambiguation (6 commonly confused pairs), negative examples (what NOT to flag), and few-shot examples (3 examples covering emotional language, clean text, and quoted speech)
+   - Shipped v2 prompt to production: background.js `buildSystemPrompt()` and prompts.js both updated
+   - Added confidence field to `parseJsonResponse` in background.js, server.js, and eval harness
+   - Built confidence UI: sidepanel shows "Medium confidence" label and dims medium instances (0.6 opacity); content script shows dotted border and 0.4 opacity for medium-confidence highlights
+   - Ran partial baseline eval (12/109 files before hitting free tier limit): 31% precision, 78% recall, 100% quote fidelity
+   - **Blocked:** Full eval comparison requires more quota (free tier: 20 req/day per model)
+
+2. **1.2 — "Analyzed X of Y" indicator:**
+   - `collectText()` now returns `{ text, totalChars, analyzedChars }` instead of a plain string
+   - background.js passes both values through to session storage
+   - sidepanel.js shows "Analyzed first X of Y characters" below the summary when truncation occurred
+   - Styled with mono font, muted color, centered layout
+
+3. **1.3 — Preserve text structure in collection:**
+   - `collectText()` switched from Set (which loses order and deduplicates) to Array with block-ancestor tracking
+   - Uses existing `nearestBlockAncestor()` and `BLOCK_TAGS` to determine paragraph boundaries
+   - Same block ancestor: join with single space. Different block: join with `\n\n`
+   - Normalizes output: collapses 3+ newlines to `\n\n`, collapses spaces/tabs (not newlines) to single space
+   - Safe for fuzzy matcher: `normalizeText()` collapses all whitespace during comparison, so newlines don't break matching
+
+**Why:**
+
+Priority 1 is about accuracy and trust — the foundation of the product's value proposition. The v1 prompt was a tactic list with no examples, no disambiguation guidance, and no confidence calibration. The text collection was a flat string with no structure (losing paragraph boundaries) and no transparency about truncation. These three items address the main accuracy and trust gaps:
+- **1.1** reduces false positives through better prompt design and gives users confidence calibration
+- **1.2** makes truncation visible so users don't assume the full page was analyzed
+- **1.3** gives the AI paragraph structure to make better contextual judgments
+
+**Design decisions:**
+
+- **Confidence as "high"|"medium" rather than a numeric score.** The model isn't calibrated for precise probabilities. A binary high/medium distinction is honest about what the model can reliably distinguish — "I'm quite sure" vs. "this could go either way." Considered adding "low" but decided those should just not be flagged at all (the prompt instructs this).
+- **Tactic disambiguation as explicit pairs, not general guidance.** Rather than telling the model to "be careful about similar tactics," the v2 prompt lists 6 specific confusion pairs with concrete rules: Scapegoating vs Ad Hominem (blame shifting vs character attack), Emotional Language vs strong opinion, Cherry Picking vs normal argumentation, False Dichotomy vs real binaries, Appeal to Authority vs legitimate citation, Polarization vs legitimate criticism. Specific disambiguation outperforms vague caution.
+- **Negative examples in the prompt.** Telling the model what NOT to flag is as important as telling it what to flag. V2 includes explicit "do not flag" instructions for: statistics and data points, direct quotes being reported, domain expert citations, and critical analysis/debunking.
+- **Few-shot examples chosen for common failure modes.** Three examples: (1) emotional language with high confidence (shows what a correct detection looks like), (2) clean text with no flags (shows restraint), (3) quoted speech with source attribution (shows the attribution framework in action).
+- **Coverage indicator uses mono font.** The "Analyzed first X of Y characters" text uses monospace to visually separate it as a metadata/diagnostic element, not a finding.
+- **Block-ancestor tracking reuses existing infrastructure.** `nearestBlockAncestor()` and `BLOCK_TAGS` were already defined in content.js for highlighting. No new DOM constants needed.
+
+**Technical decisions:**
+
+- **Eval harness Gemini migration:** API key check changed from `ANTHROPIC_API_KEY` to `GEMINI_API_KEY`. Client switched from Anthropic `messages.create` to Gemini `generateContent`. Rate limiter updated to be model-aware: 13s delay for Flash 2.5 (5 req/min), 2.5s for Flash Lite (30 req/min). Added retry logic for 429 and 5xx errors with 25s backoff.
+- **collectText() return type change:** Changed from returning a plain string to `{ text, totalChars, analyzedChars }`. The `totalChars` represents all collected text before truncation; `analyzedChars` is what was actually sent to the API. This required updating all callers in content.js message handlers and background.js.
+- **Set to Array in collectText():** The previous implementation used a Set to deduplicate text nodes, but this lost insertion order (in practice, V8 Sets preserve insertion order, but the semantic intent was wrong) and collapsed text from different elements that happened to have identical content. The Array approach preserves order and tracks which block ancestor each node belongs to, enabling paragraph boundary detection.
+- **Newline normalization strategy:** Collapsing 3+ newlines to `\n\n` prevents excessive whitespace from deeply nested DOM structures while preserving intentional paragraph breaks. Spaces and tabs are collapsed to single space but newlines are preserved — this is the key difference from `normalizeText()` which collapses everything.
+
+**Tradeoffs:**
+
+- **V2 prompt adds ~800 tokens to every request.** Few-shot examples, disambiguation notes, and negative examples increase the system prompt significantly. Per FB-0001 (cost-conscious), this is justified: the tokens target the biggest accuracy problems (false positives from over-flagging), and the user's API cost increase is marginal (input tokens are cheaper than output tokens, and the prompt is cached by the API on repeated requests within a session).
+- **Partial eval results (12/109 files) are not statistically reliable.** The 31% precision is concerning but expected — v1 was known to over-flag. The comparison that matters (v1 vs v2 on the same corpus) hasn't been run yet. The partial results confirm the tooling works but shouldn't drive prompt changes.
+- **collectText() API change could break callers.** Changed from returning a string to an object. All callers within the codebase were updated, but any external code (there is none) would break. The change is safe because `collectText()` is only called via Chrome message passing within the extension.
+- **Block-ancestor tracking adds a DOM lookup per text node.** `nearestBlockAncestor()` walks up the DOM tree for each node to find its block-level ancestor. On large pages this could be measurable, but the existing `collectText()` already does similar DOM traversal, and text collection is not the performance bottleneck (API latency dominates by orders of magnitude).
+
+**Discovery — Gemini free tier rate limits:**
+- Free tier allows only 20 requests per day per model (both Flash 2.5 and Flash Lite)
+- Per-minute limits: 5/min for Flash 2.5, 30/min for Flash Lite
+- A full 119-file eval run is impossible on free tier in a single session
+- The eval harness handles this gracefully (rate limiting + retry), but a paid API key is needed for efficient eval iterations
+
+**SAFETY:** `parseJsonResponse` in background.js and server.js updated to extract the new `confidence` field, defaulting to `"high"` when absent. This is backwards-compatible — responses from the v1 prompt (without confidence) will render identically to before. The `collectText()` return type change required updating all message handlers, but the old string-only callers would fail obviously (not silently), so there's no hidden degradation path.
+
+**Test results:** 77 tests pass across 6 suites. No regressions. Test count unchanged from Phase 13 (no new tests added in this phase — the changes are to production code and prompt content, not to testable behavior boundaries).
+
+**Files changed:** `background.js`, `server.js`, `prompts.js`, `content.js`, `sidepanel.js`, `sidepanel.css`, `eval/harness.cjs`, `eval/prompts/v1.cjs`, `eval/prompts/v2.cjs` (NEW)
+
+---
+
 ## Phase 14: Analyzing UI & Gemini API Fixes (April 2026)
 
 ### Apr 9, 2026 — Consolidate analyzing indicator into animated button & fix Flash 2.5 errors

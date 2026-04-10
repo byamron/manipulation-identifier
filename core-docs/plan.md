@@ -2,19 +2,21 @@
 
 ## Current Focus
 
-UX feedback round (Apr 9, 2026) surfaced 8 issues across accuracy, UX, and reliability. These are now tracked as Priority 5 items. Key themes: reduce false positives via better context, improve text collection to focus on main content, add re-run button, fix highlighting reliability, improve results presentation with progressive disclosure, and accessibility pass on text sizes.
+Priority 1 (Accuracy & Trust) complete. V3 prompt shipped to production with precision-focused philosophy: "only flag significant, clearly manipulative instances — when in doubt, leave it out." Full 119-file eval shows precision nearly doubled from 30% → 55%, with recall holding at 73.5%. See `core-docs/accuracy-plan.md` for the roadmap to reach the 85% precision target.
 
-Accuracy items (5.5 main content filtering, 5.6 false positive reduction) feed directly into item 1.1 (prompt tuning). UX items (5.1–5.4, 5.7–5.8) can proceed independently.
+Next priorities: Priority 5 UX feedback items (5.1–5.8), and continued accuracy improvements per `accuracy-plan.md`.
 
 ## Handoff Notes
 
-- Analyzing UI consolidated: single animated button replaces skeleton cards + timer text.
-- Flash 2.5 API fix: 429 errors no longer retried (prevents rate-limit cascade), maxOutputTokens raised to 8192 for thinking model.
-- If Flash 2.5 still 500s after this fix, investigate whether the free tier has access to the model or if `thinkingConfig` needs explicit configuration.
-- 8 new feedback entries added (FB-0005 through FB-0012) from user testing session.
-- Attribution framework shipped (Phase 13) — quoted speech vs author rhetoric.
-- Priority 5 items tracked below from UX feedback round.
-- 72 tests pass.
+- V3 prompt is live in production (background.js + prompts.js + eval/prompts/v3.cjs). Key principle: precision over volume.
+- Full eval results (119 files, Flash Lite): v1 baseline 30% precision → v3 55% precision. False positives cut from 347 → 121.
+- Eval harness migrated to Gemini SDK. `/eval-quick` skill runs progressive 10-file batches. Paid API key is active.
+- Corpus audited: 7 benchmark files corrected (5 annotations added, 1 removed, 2 quotes fixed).
+- Accuracy plan in `core-docs/accuracy-plan.md` — next levers: scorer improvements (tactic-family matching, dedup), Flash 2.5 comparison.
+- Confidence field ("high"|"medium") flows through the full pipeline: parsing, sidepanel UI, page highlights.
+- FB-0013: "Only flag significant, high-confidence manipulation" — core product principle.
+- 77 tests pass across 6 suites.
+- Priority 5 UX feedback items (5.1–5.8) remain open.
 
 ---
 
@@ -39,45 +41,54 @@ These directly affect whether the product delivers on its promise. Ship these fi
 
 **Targets:** Overall precision >= 85%, recall >= 65%, no tactic < 70% precision, quote fidelity >= 95%
 
-#### 1.1 Tune prompt with few-shot examples and confidence scores
+#### 1.1 Tune prompt with few-shot examples and confidence scores -- COMPLETE
 
-**Why:** The prompt is a tactic list + "be confident." No examples of what good detection looks like vs. a stretch.
-**What to do:**
-- Run baseline eval with current prompt (using 1.0 harness)
-- Try tuning strategies in order, measuring each:
-  1. Few-shot examples (1-2 per tactic in system prompt)
-  2. Confidence threshold instruction ("only flag when > 80% confident")
-  3. Tactic disambiguation notes (commonly confused pairs like Scapegoating vs. Ad Hominem)
-  4. Negative examples ("strong language is not automatically Emotional Language")
-- Add `"confidence": "high" | "medium"` field to JSON output schema
-- Update `parseJsonResponse` in both `background.js` and `server.js` to pass confidence through
-- In `sidepanel.js`, show high-confidence results by default; add visual dimming for medium
-- Keep `buildSystemPrompt()` in `background.js` and `promptRoleSystem` in `prompts.js` in sync
-- **New from feedback (FB-0010):** Add instructions to distinguish quoted speech from article rhetoric, and contextualize findings within the full article rather than flagging in isolation. See item 5.6.
-**Files:** `background.js`, `server.js`, `prompts.js`, `sidepanel.js`, `eval/prompts/`
-**Risk:** More prompt tokens = slightly higher cost and latency. Few-shot examples add ~500-800 tokens. Worth it for accuracy.
+**Status:** V3 prompt shipped to production (Apr 9, 2026). Three prompt iterations (v1→v2→v3) measured against full 119-file corpus. Corpus audited and corrected.
+
+**Results (119 files, Flash Lite):**
+- v1 baseline: 30.0% precision, 76.0% recall, 347 FP
+- v2 (disambiguation + negatives): 35.0% precision, 76.5% recall, 278 FP
+- v3 (precision-focused + corpus fixes): 54.9% precision, 73.5% recall, 121 FP
+- Gap to target: precision needs +30% to reach 85%. See `core-docs/accuracy-plan.md`.
+
+**What was done:**
+- Three prompt versions: v1 (baseline), v2 (disambiguation/negatives/few-shot), v3 (precision-over-volume philosophy)
+- Confidence field ("high"|"medium") end-to-end: parsing, sidepanel UI, page highlights
+- Eval harness migrated from Anthropic to Gemini SDK with model-aware rate limiting and retry logic
+- Corpus audit: 7 benchmark files corrected (5 annotations added, 1 removed, 2 quote fixes)
+- Progressive eval skill (`/eval-quick`) for incremental testing
+- `--subset` flag added to harness for targeted eval runs
+- FB-0013 captured: "only flag significant, high-confidence manipulation"
+
+**Files:** `background.js`, `server.js`, `prompts.js`, `sidepanel.js`, `sidepanel.css`, `content.js`, `eval/harness.cjs`, `eval/prompts/v1.cjs`, `eval/prompts/v2.cjs`, `eval/prompts/v3.cjs`, `eval/compare-quick.sh`, 7 corpus files
 **Depends on:** 1.0
 
-#### 1.2 Show "analyzed X of Y" indicator
-**Why:** The 5000-char text limit means only ~800 words are analyzed. On long articles, users see results for the top of the page and assume the rest is clean. This silently destroys trust.
-**What to do:**
-- In `content.js` `collectText()`, track total chars collected before truncation. Return both `text` and `totalChars` in the response
-- In `background.js` `handleAnalyze()`, pass `totalChars` and `analyzedChars` through to results storage
-- In `sidepanel.js`, show a subtle indicator below the summary: "Analyzed first 5,000 of 12,400 characters" when truncated
-- Future: consider chunked analysis (multiple API calls) but that's a separate work item
-**Files:** `content.js` (collectText), `background.js` (handleAnalyze), `sidepanel.js` (showResults)
+#### 1.2 Show "analyzed X of Y" indicator -- COMPLETE
 
-#### 1.3 Preserve text structure in collection
-**Why:** `collectText()` joins all text nodes with single spaces into a flat string. The AI loses paragraph boundaries, headings, and structure — making it harder to identify context and return exact quotes.
-**What to do:**
-- Modify `collectText()` to insert double-newlines between text nodes from different block-level ancestors (use the `BLOCK_TAGS` set already in content.js)
-- This preserves paragraph structure without adding markup
-- Test that the fuzzy matcher still works with newlines in the concatenated text (it should — `normalizeText` collapses whitespace)
-**Files:** `content.js` (collectText)
+**Status:** Shipped on `roadmap-review` branch, Apr 9, 2026.
+
+**What was built:**
+- `collectText()` returns `{ text, totalChars, analyzedChars }` instead of a plain string
+- `background.js` passes totalChars/analyzedChars through to session storage results
+- `sidepanel.js` shows "Analyzed first X of Y characters" below the summary when truncation occurred
+- Styled with mono font, muted color, centered layout
+**Files:** `content.js`, `background.js`, `sidepanel.js`, `sidepanel.css`
+
+#### 1.3 Preserve text structure in collection -- COMPLETE
+
+**Status:** Shipped on `roadmap-review` branch, Apr 9, 2026.
+
+**What was built:**
+- `collectText()` switched from Set (loses order, deduplicates) to Array with block-ancestor tracking
+- Uses existing `nearestBlockAncestor()` and `BLOCK_TAGS` to determine paragraph boundaries
+- Same block ancestor: join with single space. Different block: join with `\n\n`
+- Normalizes: collapses 3+ newlines to `\n\n`, collapses spaces/tabs (not newlines) to single space
+- Safe for fuzzy matcher: `normalizeText()` collapses all whitespace during comparison
+**Files:** `content.js`
 
 #### 1.4 Fix test suite -- COMPLETE
 
-**Status:** Fixed on main. 72 tests pass across 6 suites (resolved ESM import errors, added streaming tests).
+**Status:** Fixed on main. 77 tests pass across 6 suites (resolved ESM import errors, added streaming tests, attribution tests).
 
 ---
 
@@ -218,11 +229,11 @@ Issues surfaced during user testing. Ordered by impact.
 
 ## Recently Completed
 
+- **Apr 9, 2026**: Priority 1 prompt tuning complete (item 1.1) — three iterations (v1→v2→v3), precision 30% → 55%, FPs cut from 347 → 121. Corpus audited. `/eval-quick` skill for ongoing testing. Accuracy plan for path to 85%.
+- **Apr 9, 2026**: "Analyzed X of Y" indicator (item 1.2) — coverage transparency when text is truncated.
+- **Apr 9, 2026**: Preserve text structure in collection (item 1.3) — paragraph boundaries preserved for better AI context.
 - **Apr 9, 2026**: Quoted speech attribution framework (item 5.6 partial) — author/source distinction in prompt, parsing, side panel, and page highlights. 5 new tests (77 total).
-- **Apr 9, 2026**: Switch LLM provider from Anthropic to Google Gemini (Phase 12)
-- **Apr 9, 2026**: Complete Priority 4 — Infrastructure & Debt (all 6 items)
-- **Apr 8, 2026**: Build eval harness and 119-file test corpus (item 1.0) — measurement system for prompt tuning
-- **Apr 8, 2026**: Priority 2 review pass — streaming reliability, UX polish, test coverage (13 issues fixed, 15 new tests)
+- **Apr 9, 2026**: Analyzing UI consolidation & Gemini API fixes (Phase 14)
 - **Apr 7, 2026**: Priority 3 — Polish & Completeness (3.1–3.7): dark options page, minimal onboarding, human model labels, quote click affordance, improved empty state, category legend, keyboard shortcut hint
 - **Apr 7, 2026**: Priority 2 — Core UX: streaming API responses, category-colored highlights, icon badge, analysis progress stages
 - **Apr 7, 2026**: Fix controls layout for narrow panel, improve text contrast
