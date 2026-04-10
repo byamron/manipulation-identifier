@@ -22,12 +22,12 @@
   // ── Init ──
   async function init() {
     // Load saved model preference
-    chrome.storage.local.get(['selectedModel', 'anthropicApiKey', 'serverUrl'], (result) => {
+    chrome.storage.local.get(['selectedModel', 'geminiApiKey', 'serverUrl'], (result) => {
       if (result.selectedModel && modelSelect.querySelector(`option[value="${result.selectedModel}"]`)) {
         modelSelect.value = result.selectedModel;
       }
       // Check if setup is needed (no API key and no server URL)
-      const hasKey = !!result.anthropicApiKey;
+      const hasKey = !!result.geminiApiKey;
       const hasServer = !!result.serverUrl;
       if (!hasKey && !hasServer) {
         showSetup();
@@ -183,7 +183,7 @@
         }
       } else if (e.key === 'Escape') {
         // Collapse any expanded sections
-        resultsArea.querySelectorAll('.card-learn-more.expanded, .card-feedback.expanded')
+        resultsArea.querySelectorAll('.card-learn-more.expanded')
           .forEach(el => el.classList.remove('expanded'));
       }
     });
@@ -228,7 +228,7 @@
     statusArea.innerHTML = `
       <div class="status-message">
         Detects manipulation tactics in web page text using AI.<br>
-        <a href="#" id="setupLink">Add your Anthropic API key</a> to get started.
+        <a href="#" id="setupLink">Add your Gemini API key</a> to get started.
       </div>
     `;
     resultsArea.innerHTML = '';
@@ -267,7 +267,7 @@
 
   const STAGE_LABELS = {
     collecting: 'Collecting text...',
-    calling_api: 'Analyzing with Claude...',
+    calling_api: 'Analyzing with Gemini...',
     processing: 'Processing results...'
   };
 
@@ -341,12 +341,10 @@
             </div>
           `).join('')}
         </div>
-        ${interactive ? `
+        ${interactive && tacticInfo ? `
         <div class="card-actions">
-          ${tacticInfo ? `<button class="card-action-link learn-more-toggle">Learn more</button>` : ''}
-          <button class="card-action-link feedback-toggle">Was this accurate?</button>
+          <button class="card-action-link learn-more-toggle">Learn more</button>
         </div>
-        ${tacticInfo ? `
         <div class="card-learn-more">
           ${tacticInfo.why?.length ? `
             <div class="learn-more-section">
@@ -366,16 +364,6 @@
           ` : ''}
         </div>
         ` : ''}
-        <div class="card-feedback">
-          <div class="feedback-options">
-            <button class="feedback-btn" data-value="accurate">Accurate</button>
-            <button class="feedback-btn" data-value="inaccurate">Inaccurate</button>
-            <button class="feedback-btn" data-value="uncertain">Uncertain</button>
-          </div>
-          <textarea class="feedback-comment" placeholder="Optional comment..." rows="2"></textarea>
-          <button class="feedback-submit">Submit</button>
-        </div>
-        ` : ''}
       </div>
     `;
   }
@@ -388,8 +376,14 @@
     statusArea.innerHTML = '';
     streamingRenderedCount = 0;
 
+    // Summary
+    const MODEL_LABELS = {
+      'gemini-2.5-flash': 'Flash 2.5',
+      'gemini-2.5-flash-lite': 'Flash Lite 2.5'
+    };
     const totalInstances = results.reduce((sum, t) => sum + t.examples.length, 0);
-    let html = `<div class="results-summary">${results.length} tactic${results.length !== 1 ? 's' : ''} detected &middot; ${totalInstances} instance${totalInstances !== 1 ? 's' : ''}${model ? ` &middot; ${escapeHtml(model)}` : ''}</div>`;
+    const modelLabel = MODEL_LABELS[model] || model;
+    let html = `<div class="results-summary">${results.length} tactic${results.length !== 1 ? 's' : ''} detected &middot; ${totalInstances} instance${totalInstances !== 1 ? 's' : ''}${model ? ` &middot; ${escapeHtml(modelLabel)}` : ''}</div>`;
     html += `<div class="category-legend"><span class="legend-item"><span class="legend-dot logical"></span>Logical</span><span class="legend-item"><span class="legend-dot rhetorical"></span>Rhetorical</span><span class="legend-item"><span class="legend-dot credibility"></span>Credibility</span></div>`;
     html += results.map(t => renderTacticCard(t, { interactive: true })).join('');
 
@@ -413,7 +407,7 @@
     if (streamingRenderedCount === 0 && results.length > 0) {
       statusArea.innerHTML = `
         <div class="skeleton-timer standalone" id="analyzeTimerDisplay">
-          Analyzing with Claude...
+          Analyzing with Gemini...
         </div>
       `;
       // Transfer stage data to new timer element
@@ -507,69 +501,6 @@
       });
     });
 
-    // Feedback toggle
-    resultsArea.querySelectorAll('.feedback-toggle').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const card = btn.closest('.tactic-card');
-        const feedback = card.querySelector('.card-feedback');
-        if (feedback) {
-          feedback.classList.toggle('expanded');
-        }
-      });
-    });
-
-    // Feedback buttons
-    resultsArea.querySelectorAll('.feedback-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const group = btn.closest('.feedback-options');
-        group.querySelectorAll('.feedback-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-      });
-    });
-
-    // Feedback submit
-    resultsArea.querySelectorAll('.feedback-submit').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const card = btn.closest('.tactic-card');
-        const feedback = card.querySelector('.card-feedback');
-        const selected = feedback.querySelector('.feedback-btn.selected');
-        if (!selected) return;
-
-        const rating = selected.dataset.value;
-        const comment = feedback.querySelector('.feedback-comment').value.trim();
-        const tactic = card.dataset.tactic;
-
-        // Submit feedback to server (if configured)
-        try {
-          const settings = await new Promise(resolve => {
-            chrome.storage.local.get(['serverUrl'], r => resolve(r));
-          });
-          const serverUrl = settings.serverUrl;
-          if (serverUrl) {
-            await fetch(`${serverUrl.replace(/\/$/, '')}/submit-instance-feedback`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                detectedTactic: tactic,
-                modelUsed: modelSelect.value,
-                userRating: rating,
-                userComments: comment,
-                pageUrl: (await chrome.tabs.get(activeTabId)).url,
-                highlightedText: '',
-                originalFullText: ''
-              })
-            });
-          }
-        } catch { /* non-critical */ }
-
-        // Show thanks
-        feedback.innerHTML = '<div class="feedback-thanks">Thank you for your feedback!</div>';
-        setTimeout(() => {
-          feedback.classList.remove('expanded');
-          feedback.innerHTML = '';
-        }, 2000);
-      });
-    });
   }
 
   // ── Scroll to card when highlight clicked on page ──

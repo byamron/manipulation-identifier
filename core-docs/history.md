@@ -4,7 +4,7 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
-## Phase 11: Attribution Framework (April 2026)
+## Phase 13: Attribution Framework (April 2026)
 
 ### Apr 9, 2026 — Quoted speech attribution: distinguish author rhetoric from reported speech
 
@@ -25,7 +25,7 @@ User testing revealed a major class of false positives: the model was flagging q
 **Technical decisions:**
 - New prompt instructions (~150 tokens) teach the model the attribution rules with explicit guidance on edge cases (endorsement = author, critical examination = don't flag, uncertain = source).
 - New JSON schema fields: `attribution` ("author"|"source") and `attributed_to` (string|null) on each instance.
-- Both `parseJsonResponse` (background.js and server.js) and the streaming `extractCompleteTactics` mapper normalize the new fields, defaulting to "author" for any unrecognized value.
+- Both `parseJsonResponse` (background.js and server.js) normalize the new fields, defaulting to "author" for any unrecognized value.
 - 5 new tests covering attribution parsing, default behavior, and streaming preservation.
 
 **Tradeoffs:**
@@ -34,6 +34,155 @@ User testing revealed a major class of false positives: the model was flagging q
 - Selective curation (case 4 — manipulation through the *selection and arrangement* of quotes) is not addressed. The model would need to see full article structure and compare quote selection against available sources, which is beyond the current 5000-char window.
 
 **Files changed:** `background.js`, `server.js`, `content.js`, `sidepanel.js`, `sidepanel.css`, `test/parseJsonResponse.test.js`, `test/streaming.test.js`
+
+---
+
+## Phase 12: Gemini Migration (April 2026)
+
+### Apr 8, 2026 — Switch LLM provider from Anthropic to Google Gemini
+
+**Branch:** gemini-llm-provider
+
+**What was done:**
+Replaced the entire Anthropic/Claude integration with Google Gemini across all extension and server files. Default models changed from Claude Sonnet 4.6 / Haiku 4.5 to Gemini 2.5 Flash / Flash Lite 2.5. BYOK mode now calls the Gemini REST API directly from the browser. Server proxy mode uses the `@google/generative-ai` SDK.
+
+**Why:**
+Gemini's free tier is substantially better than Anthropic's paid-only API. Flash 2.5 offers 10 RPM / 250 requests per day free, and Flash Lite gives 15 RPM / 1,000 requests per day. This removes the cost barrier for users and aligns with FB-0001 (be cost-conscious — users pay with their own keys).
+
+**Design decisions:**
+- Chose Flash 2.5 as default (not Pro) because Pro's free tier is very limited (5 RPM, 100 req/day) and may have been removed from free tier entirely as of April 2026. Flash 2.5 is the sweet spot for quality vs. rate limits.
+- Flash Lite 2.5 replaces Haiku as the "faster" option — higher free RPM (15 vs 10) at the cost of some quality.
+- Storage key renamed from `anthropicApiKey` to `geminiApiKey`. Existing users will need to re-enter their key.
+- Gemini API key validation tests against Flash Lite (cheapest) with `maxOutputTokens: 1`, matching the pattern established for Anthropic.
+
+**Technical decisions:**
+- Server uses `@google/generative-ai` SDK (`GoogleGenerativeAI` class) with `getGenerativeModel()` and `generateContent()`. System instructions passed via `systemInstruction` parameter.
+- BYOK browser calls use the REST API directly (`generativelanguage.googleapis.com/v1beta/models/{model}:generateContent`) with `x-goog-api-key` header. No SDK needed in the browser — avoids bundling complexity.
+- Token counting changed from `input_tokens + output_tokens` (Anthropic) to `promptTokenCount + candidatesTokenCount` (Gemini).
+- Response extraction changed from `content[0].text` to `candidates[0].content.parts[0].text`.
+- Gemini uses 403 (not 401) for invalid API keys, so error handling checks both 401 and 403.
+- Streaming (implemented on main for Anthropic SSE) is removed in this branch — Gemini uses a different streaming format. Non-streaming `fetchWithRetry` is used for BYOK. Gemini streaming can be added as a future enhancement.
+
+**Tradeoffs:**
+- Gemini's free tier data may be used to improve Google's products — noted in privacy context. BYOK users should be aware.
+- Prompt format unchanged (same system prompt + JSON output schema). Gemini handles the same structured JSON output instructions well. If quality differs, will need prompt tuning via the eval harness (1.0).
+- No `anthropic-dangerous-direct-browser-access` equivalent needed — Gemini REST API allows browser calls natively.
+
+**SAFETY:** API key storage key renamed. Error handling preserved for all HTTP status codes. Rate limiting and caching unchanged.
+
+**Files changed:** `server.js`, `background.js`, `options.js`, `options.html`, `sidepanel.html`, `sidepanel.js`, `manifest.json`, `package.json`, `.env.example`, `CLAUDE.md`, `core-docs/spec.md`, `core-docs/plan.md`, `test/parseJsonResponse.test.js`
+
+---
+
+## Phase 11: Infrastructure & Debt Cleanup (April 2026)
+
+### Apr 8, 2026 — Complete Priority 4: Infrastructure & Debt
+
+**Branch:** strip-infra-debt (from 6ab7c26)
+
+**What was done:**
+Completed all 6 items in Priority 4 (Infrastructure & Debt):
+
+1. **4.1 — Fix server.js error handler position:** Moved Express error handling middleware from before routes to after all route definitions, where Express requires it to function.
+2. **4.2 — Hash cache keys:** Replaced raw 5KB+ string cache keys with SHA-256 hashes using `crypto.createHash()`.
+3. **4.3 — Clean up dead files:** Added ownership comments to `prompts.js` (server-only), `tactics.js` (server-only), and `highlight-matcher.js` (test-only; canonical version is in content.js).
+4. **4.4 — Update spec.md and benchmarks.md:** Removed GPT model references from benchmarks.md, replaced with current Claude stack and placeholder for eval harness results. Updated spec.md to remove feedback/analytics/SQLite references.
+5. **4.5 — Strip dev-only feedback code:** SAFETY — See "Feedback System Teardown" section below for full details.
+6. **4.6 — Normalize parseJsonResponse:** Both `background.js` and `server.js` now return `null` on parse failure (previously background.js returned `[]`). Callers handle the null — server.js falls back to regex parser, background.js falls back to empty array.
+
+**Why:**
+Priority 4 items are infrastructure debt that should be fixed before scaling. The feedback system in particular was dev-only code that violated "privacy by default" (FB-0003) and had no path to improving detection.
+
+**Design decisions:**
+- Kept backward-compat `/analyze-content` endpoint — it's a real analysis route, not feedback.
+- `parseJsonResponse` returns `null` uniformly on failure; callers decide the fallback. This separates "parse failed" from "no tactics found" (which returns `[]`).
+- `highlight-matcher.js` kept as a separate file (not merged into content.js) because content scripts can't use ES module imports, and the test suite needs the module version.
+- Health endpoint simplified to sync (no db queries) — just returns cache size and uptime.
+
+**Tradeoffs:**
+- Stripping feedback means no post-release user signal. Accepted because the eval harness (item 1.0) replaces feedback as the measurement tool, and BYOK mode made the feedback endpoints unreachable anyway.
+- Duplication between highlight-matcher.js and content.js is accepted and documented rather than eliminated, because content scripts fundamentally can't import ES modules.
+
+#### Feedback System Teardown — Full Context
+
+This section documents the complete feedback system that was removed in 4.5, so future work to reintroduce user feedback has full context on what existed, why it was removed, and what to consider.
+
+**What the feedback system was:**
+
+The system had three layers:
+
+1. **Side panel UI (sidepanel.js + sidepanel.css):**
+   - Every tactic card had a "Was this accurate?" button in the `.card-actions` row
+   - Clicking it expanded a `.card-feedback` section with:
+     - Three rating buttons: Accurate / Inaccurate / Uncertain (`.feedback-btn`)
+     - A comment textarea (`.feedback-comment`, placeholder: "Optional comment...")
+     - A Submit button (`.feedback-submit`)
+   - On submit, a POST was sent to the server's `/submit-instance-feedback` endpoint
+   - After submission, the feedback section showed "Thank you for your feedback!" and auto-collapsed after 2 seconds
+   - The Escape key could collapse expanded feedback sections
+
+2. **Server endpoints (server.js):**
+   - `POST /submit-instance-feedback` — accepted: originalFullText, highlightedText, detectedTactic, modelUsed, userRating (accurate/inaccurate/uncertain), userComments, pageUrl, responseTime, sessionId. Validated required fields and rating values, stored via `dbOperations.recordFeedback()`.
+   - `POST /report-missing-manipulation` — accepted: originalFullText, missedText, suggestedTactic, userComments, modelUsed, pageUrl, sessionId, reportedFromFeedbackId. For reporting tactics the model missed.
+   - `GET /analytics/model-performance` — aggregated performance stats per model (total requests, success/fail counts, avg response time, avg tokens, avg tactics detected)
+   - `GET /analytics/satisfaction` — feedback ratings grouped by model
+   - `GET /analytics/tactic-performance[/:model]` — feedback ratings grouped by tactic (optionally filtered by model)
+   - `GET /analytics/missing-patterns` — most-reported missed tactics
+   - `GET /analytics/recent-performance[/:hours]` — raw performance records for last N hours
+   - The `/health` endpoint also queried recent performance from the DB
+
+3. **Database layer (database.js):**
+   - Used `better-sqlite3` (SQLite) with WAL mode
+   - Three tables:
+     - `performance` — model_name, response_time_ms, success, error_message, tokens_used, tactics_detected_count, analysis_complexity_score, session_id, page_url, created_at
+     - `feedback` — page_url, original_full_text, highlighted_text, model_used, detected_tactic, user_rating, user_comments, response_time_ms, session_id, feedback_type, created_at
+     - `missing_manipulations` — page_url, original_full_text, missed_text, suggested_tactic, user_comments, model_used, session_id, reported_from_feedback_id, created_at
+   - Indexes on model_name, created_at, detected_tactic, model_used, suggested_tactic
+   - Prepared statements for inserts and parameterized queries for analytics
+   - `analyzeContent()` called `dbOperations.recordPerformance()` on every analysis (success and failure), including cached responses
+
+   Helper functions removed from server.js:
+   - `generateSessionId()` — `crypto.randomBytes(16).toString('hex')`
+   - `calculateComplexityScore(text, tacticsCount)` — weighted score based on text length and tactic count
+
+**Why it was removed (four reasons):**
+
+1. **Broken in the recommended mode.** BYOK mode (users provide their own API key) talks directly to Anthropic — no server involved. The feedback UI submitted to the server, so in BYOK mode, feedback submissions silently failed. Since BYOK is the recommended and primary mode, the feature was effectively dead for most users.
+
+2. **No feedback loop.** Data went into SQLite but nothing read it back to improve detection. The analytics endpoints existed but had no consumer. There was no process for reviewing feedback, no way to incorporate it into prompt tuning, and no pipeline from user ratings to model improvement.
+
+3. **Privacy violation.** The project's core principle is "privacy by default — text stays between the user and the API; no telemetry, no data collection." Storing analyzed page text and user feedback in a SQLite database contradicts this. User direction (FB-0003) explicitly required removal before release.
+
+4. **Replaced by a better measurement tool.** The eval harness (`npm run eval`, item 1.0) provides systematic measurement: 119 labeled test cases with precision/recall/F1 scoring, versioned prompts, and side-by-side comparison. This is more rigorous than user feedback for prompt tuning, and it runs at development time with no user data involved.
+
+**What was removed (complete inventory):**
+
+| Component | What | Lines removed |
+|-----------|------|--------------|
+| `database.js` | Entire file deleted — SQLite setup, 3 tables, prepared statements, 7 query functions | ~200 |
+| `package.json` | `better-sqlite3` dependency | 1 |
+| `server.js` endpoints | `/submit-instance-feedback`, `/report-missing-manipulation`, 7 `/analytics/*` routes | ~180 |
+| `server.js` helpers | `generateSessionId()`, `calculateComplexityScore()`, all `dbOperations.*` calls in `analyzeContent()` | ~40 |
+| `server.js` health | DB query in `/health` endpoint replaced with simple sync response | ~15 |
+| `sidepanel.js` HTML | "Was this accurate?" button, `.card-feedback` div with rating buttons, textarea, submit | ~15 |
+| `sidepanel.js` handlers | Feedback toggle, button selection, submit (with server POST), thank-you message | ~50 |
+| `sidepanel.js` keyboard | Escape key handler for `.card-feedback.expanded` | 1 |
+| `sidepanel.css` | `.card-feedback`, `.feedback-options`, `.feedback-btn`, `.feedback-comment`, `.feedback-submit`, `.feedback-thanks` styles, `--success` CSS variable | ~100 |
+| `options.html` | "Analytics Server" section retitled to "Server Proxy", hint text updated | 2 |
+
+**Git reference:** The last version with the complete feedback system is commit `6ab7c26` on the `strip-infra-debt` branch (the parent of this work). The full `database.js` file, all endpoints, and all UI code can be recovered from that commit.
+
+**If reintroducing feedback in the future, consider:**
+
+1. **BYOK compatibility.** Any feedback mechanism must work without a server. Options: (a) store feedback locally in Chrome storage and expose a "export feedback" action, (b) use a lightweight cloud endpoint (not the Express server), (c) make feedback opt-in with a clear privacy disclosure.
+
+2. **Privacy-first design.** Don't store the full analyzed text. Store only: tactic name, rating, optional comment, timestamp. If the full text is needed for ground-truth corpus building, make it an explicit opt-in with clear language about what's stored and where.
+
+3. **Close the feedback loop.** The previous system stored data with no consumer. Any reintroduction should have a concrete plan for how feedback improves detection — e.g., flagged inaccurate detections feed into the eval corpus, or aggregated tactic accuracy rates surface in the eval dashboard.
+
+4. **UI weight.** The previous "Was this accurate?" button appeared on every card, adding visual noise. Consider: (a) a single "Report a problem" action per analysis session instead of per-card, (b) a thumbs-up/down that's less intrusive than three buttons + textarea, (c) feedback only on first use or periodically, not every time.
+
+5. **Separation of concerns.** Keep feedback storage separate from the analysis server. The Express backend should remain a pure analysis proxy. Feedback could use a separate service, local storage, or a simple cloud function.
 
 ---
 
@@ -152,7 +301,7 @@ These items were the "feel finished" layer — the gap between "it works" and "t
 
 ### Apr 8, 2026 — Build evaluation harness and test corpus (item 1.0)
 
-**Branch:** eval-harness-corpus | **Commit:** pending (not yet committed)
+**Branch:** eval-harness-corpus | **Commit:** `148d253`
 
 **What was done:**
 Built the complete evaluation harness and 119-file test corpus for measuring manipulation detection accuracy. This is the measurement infrastructure that all prompt tuning (item 1.1) depends on.

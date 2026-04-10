@@ -4,14 +4,11 @@
 
 const MSG = {
   ANALYZE: 'analyze',
-  RESULTS: 'results',
-  ERROR: 'error',
   COLLECT_TEXT: 'collectText',
   HIGHLIGHT_RESULTS: 'highlightResults',
   SCROLL_TO: 'scrollToHighlight',
   CLEAR_HIGHLIGHTS: 'clearHighlights',
-  HIGHLIGHT_CLICKED: 'highlightClicked',
-  STATUS: 'status'
+  HIGHLIGHT_CLICKED: 'highlightClicked'
 };
 
 const TACTIC_CATEGORIES = {
@@ -30,12 +27,6 @@ const TACTIC_CATEGORIES = {
   'Fake Experts': 'credibility',
   'Appeal to Authority': 'credibility',
   'Decontextualization': 'credibility'
-};
-
-const CATEGORY_COLORS = {
-  logical: '#1a73e8',
-  rhetorical: '#e8710a',
-  credibility: '#d93025'
 };
 
 const CATEGORY_LABELS = {
