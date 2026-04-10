@@ -4,6 +4,39 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 17: Dev Snapshot Capture — Item 5.8 (April 2026)
+
+### Apr 9, 2026 — Ship dev snapshot feature for analysis review
+
+**Branch:** `finish-priority-5`
+
+**What was done:**
+1. Added "Save Snapshot" button (floppy disk icon) to the side panel results header, next to the re-run button.
+2. Clicking the button reveals an inline comment input with Save button. Enter to save, Escape to dismiss.
+3. Each snapshot captures the full analysis context: page URL, page title, analyzed text, all tactic results, raw model response, model name, token count, analysis timestamp, save timestamp, and optional user comment.
+4. Snapshots stored in `chrome.storage.local` under `devSnapshots` key as an accumulating array. Each snapshot gets a `crypto.randomUUID()` id.
+5. Added Dev Tools section to the options page showing snapshot count, Export as JSON button (downloads dated file), and Clear All button (with confirmation).
+6. Modified `background.js` to persist the analyzed text (`analyzedText`) in session storage alongside results, so it's available for snapshot capture without re-collecting.
+7. Added 17 tests covering snapshot structure, accumulation, and export round-trip.
+
+**Why:**
+Item 5.8 (FB-0012) identified that during development there's no way to capture rich analysis context for review. The eval harness tests prompts against controlled corpus, but dev snapshots capture real-world observations — "this page had a false positive" or "this headline was missed" — which feed into corpus building and prompt tuning.
+
+**Design decisions:**
+- **chrome.storage.local over IndexedDB**: Simpler API, no schema management, and the data volume is small (each snapshot is ~10KB with full text). IndexedDB would only be needed at hundreds of snapshots, which is unlikely during dev.
+- **Inline comment input (not modal)**: Keeps the flow lightweight — click, type optional note, save. No context switch.
+- **Accumulate array, not keyed by URL**: Multiple snapshots of the same page are valuable (before/after prompt changes, different models). Deduplication would lose this signal.
+- **Export as JSON file, not clipboard**: Clipboard is limited by size; JSON file integrates naturally with the eval corpus workflow (`eval/corpus/`).
+- **No storage quota management**: `chrome.storage.local` has a 10MB quota. At ~10KB per snapshot, that's ~1000 snapshots before concern. Not worth adding eviction logic for dev-only infrastructure.
+
+**Tradeoffs:**
+- Could have built a snapshot viewer/browser in the options page. Decided against it — the JSON export is sufficient for dev review, and building a viewer would be scope creep for dev-only tooling. If the export proves insufficient, a viewer can be added later.
+- Considered re-collecting text on snapshot save instead of storing it in session. Storing it adds ~5KB to session storage per tab but avoids a round-trip to the content script and the possibility that the page has changed since analysis.
+
+**Files changed:** `background.js`, `sidepanel.js`, `sidepanel.css`, `options.html`, `options.js`, `test/devSnapshot.test.js`
+
+---
+
 ## Phase 16: Academic Sources & Attribution (April 2026)
 
 ### Apr 9, 2026 — Expand SOURCES.md with theoretical grounding and design references

@@ -236,13 +236,14 @@ async function handleAnalyze(tabId, model) {
 
     await writeStage('processing');
 
-    // Persist results
+    // Persist results (include analyzed text for dev snapshots — item 5.8)
     await chrome.storage.session.set({
       [`results_${tabId}`]: {
         results: result.results,
         rawResponse: result.rawResponse,
         model: result.model,
         tokensUsed: result.tokensUsed,
+        analyzedText: text,
         timestamp: Date.now()
       },
       [`status_${tabId}`]: { status: 'complete', timestamp: Date.now() }

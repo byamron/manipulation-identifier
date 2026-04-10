@@ -210,6 +210,77 @@
     });
   }
 
+  async function handleSnapshot() {
+    const snapshotBtn = resultsArea.querySelector('.btn-snapshot');
+    if (!snapshotBtn || snapshotBtn.disabled) return;
+
+    // Check if comment input already showing
+    const existing = resultsArea.querySelector('.snapshot-comment-row');
+    if (existing) {
+      existing.remove();
+      return;
+    }
+
+    // Insert comment input below header
+    const header = resultsArea.querySelector('.results-header');
+    const commentRow = document.createElement('div');
+    commentRow.className = 'snapshot-comment-row';
+    commentRow.innerHTML = `
+      <input type="text" class="snapshot-comment-input" placeholder="Optional note (e.g. false positive on paragraph 2)">
+      <button class="snapshot-save-btn">Save</button>
+    `;
+    header.insertAdjacentElement('afterend', commentRow);
+
+    const input = commentRow.querySelector('.snapshot-comment-input');
+    const saveBtn = commentRow.querySelector('.snapshot-save-btn');
+    input.focus();
+
+    const doSave = async () => {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const data = await chrome.storage.session.get(`results_${activeTabId}`);
+        const stored = data[`results_${activeTabId}`];
+        if (!stored) {
+          commentRow.innerHTML = '<span class="snapshot-error">No results to save.</span>';
+          return;
+        }
+
+        const snapshot = {
+          id: crypto.randomUUID(),
+          url: tab?.url || '',
+          title: tab?.title || '',
+          analyzedText: stored.analyzedText || null,
+          results: stored.results,
+          rawResponse: stored.rawResponse,
+          model: stored.model,
+          tokensUsed: stored.tokensUsed,
+          analysisTimestamp: stored.timestamp,
+          savedAt: Date.now(),
+          comment: input.value.trim() || null
+        };
+
+        const localData = await chrome.storage.local.get('devSnapshots');
+        const snapshots = localData.devSnapshots || [];
+        snapshots.push(snapshot);
+        await chrome.storage.local.set({ devSnapshots: snapshots });
+
+        commentRow.innerHTML = `<span class="snapshot-success">Snapshot saved (${snapshots.length} total)</span>`;
+        setTimeout(() => commentRow.remove(), 2000);
+      } catch (err) {
+        commentRow.innerHTML = `<span class="snapshot-error">Save failed: ${escapeHtml(err.message)}</span>`;
+      }
+    };
+
+    saveBtn.addEventListener('click', doSave);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doSave();
+      if (e.key === 'Escape') commentRow.remove();
+    });
+  }
+
   function startAnalysis() {
     const model = modelSelect.value;
     showAnalyzing();
@@ -377,13 +448,14 @@
     };
     const totalInstances = results.reduce((sum, t) => sum + t.examples.length, 0);
     const modelLabel = MODEL_LABELS[model] || model;
-    let html = `<div class="results-header"><div class="results-summary">${results.length} tactic${results.length !== 1 ? 's' : ''} detected &middot; ${totalInstances} instance${totalInstances !== 1 ? 's' : ''}${model ? ` &middot; ${escapeHtml(modelLabel)}` : ''}</div><button class="btn-rerun" title="Re-run analysis" aria-label="Re-run analysis"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button></div>`;
+    let html = `<div class="results-header"><div class="results-summary">${results.length} tactic${results.length !== 1 ? 's' : ''} detected &middot; ${totalInstances} instance${totalInstances !== 1 ? 's' : ''}${model ? ` &middot; ${escapeHtml(modelLabel)}` : ''}</div><div class="results-header-actions"><button class="btn-snapshot" title="Save snapshot for dev review" aria-label="Save snapshot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button><button class="btn-rerun" title="Re-run analysis" aria-label="Re-run analysis"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button></div></div>`;
     html += `<div class="category-legend"><span class="legend-item"><span class="legend-dot logical"></span>Logical</span><span class="legend-item"><span class="legend-dot rhetorical"></span>Rhetorical</span><span class="legend-item"><span class="legend-dot credibility"></span>Credibility</span></div>`;
     html += results.map(t => renderTacticCard(t, { interactive: true })).join('');
 
     resultsArea.innerHTML = html;
     attachCardListeners();
     resultsArea.querySelector('.btn-rerun')?.addEventListener('click', handleRerun);
+    resultsArea.querySelector('.btn-snapshot')?.addEventListener('click', handleSnapshot);
   }
 
   function showStreamingResults(results, model) {

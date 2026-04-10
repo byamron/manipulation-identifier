@@ -126,4 +126,53 @@ document.addEventListener('DOMContentLoaded', () => {
       showStatus(displayStatus, 'Display settings saved.', 'success');
     });
   });
+
+  // ── Dev Tools: Snapshots ──
+  const snapshotCountEl = document.getElementById('snapshotCount');
+  const exportSnapshotsBtn = document.getElementById('exportSnapshotsBtn');
+  const clearSnapshotsBtn = document.getElementById('clearSnapshotsBtn');
+  const devStatus = document.getElementById('devStatus');
+
+  function updateSnapshotCount() {
+    chrome.storage.local.get('devSnapshots', (result) => {
+      const count = (result.devSnapshots || []).length;
+      snapshotCountEl.textContent = count === 0
+        ? 'No snapshots saved.'
+        : `${count} snapshot${count !== 1 ? 's' : ''} saved.`;
+    });
+  }
+  updateSnapshotCount();
+
+  exportSnapshotsBtn.addEventListener('click', () => {
+    chrome.storage.local.get('devSnapshots', (result) => {
+      const snapshots = result.devSnapshots || [];
+      if (snapshots.length === 0) {
+        showStatus(devStatus, 'No snapshots to export.', 'error');
+        return;
+      }
+      const blob = new Blob([JSON.stringify(snapshots, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mi-snapshots-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showStatus(devStatus, `Exported ${snapshots.length} snapshot${snapshots.length !== 1 ? 's' : ''}.`, 'success');
+    });
+  });
+
+  clearSnapshotsBtn.addEventListener('click', () => {
+    chrome.storage.local.get('devSnapshots', (result) => {
+      const count = (result.devSnapshots || []).length;
+      if (count === 0) {
+        showStatus(devStatus, 'Nothing to clear.', 'error');
+        return;
+      }
+      if (!confirm(`Delete ${count} snapshot${count !== 1 ? 's' : ''}? This cannot be undone.`)) return;
+      chrome.storage.local.set({ devSnapshots: [] }, () => {
+        updateSnapshotCount();
+        showStatus(devStatus, 'All snapshots cleared.', 'success');
+      });
+    });
+  });
 });
