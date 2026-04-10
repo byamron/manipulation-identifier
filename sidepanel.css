@@ -18,16 +18,16 @@
   /* Typography */
   --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', ui-monospace, monospace;
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-size-xs: 10px;
-  --font-size-sm: 11px;
-  --font-size-base: 12px;
-  --font-size-md: 13px;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-md: 14px;
 
   /* Colors — white-alpha system */
   --text-primary: hsl(0, 0%, 95%);
-  --text-secondary: hsl(0, 0%, 80%);
-  --text-tertiary: hsl(240, 2%, 64%);
-  --text-muted: hsl(0, 0%, 48%);
+  --text-secondary: hsl(0, 0%, 82%);
+  --text-tertiary: hsl(240, 2%, 70%);
+  --text-muted: hsl(0, 0%, 55%);
 
   --surface-raised: rgba(255, 255, 255, 0.04);
   --surface-active: rgba(255, 255, 255, 0.08);
@@ -45,6 +45,21 @@
   --error-bg: rgba(239, 83, 80, 0.10);
   --error-border: rgba(239, 83, 80, 0.25);
   --error-text: #ef9a9a;
+}
+
+/* Text size preference — shift scale by ±1px */
+body[data-text-size="small"] {
+  --font-size-xs: 10px;
+  --font-size-sm: 11px;
+  --font-size-base: 12px;
+  --font-size-md: 13px;
+}
+
+body[data-text-size="large"] {
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-md: 15px;
 }
 
 body {
@@ -312,14 +327,56 @@ body {
   background: rgba(255, 255, 255, 0.20);
 }
 
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
 .results-summary {
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   color: var(--text-tertiary);
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--panel-border);
   letter-spacing: 0.03em;
+}
+
+.btn-rerun {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid var(--panel-border);
+  color: var(--text-tertiary);
+  padding: 4px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.btn-rerun:hover {
+  background: var(--surface-hover);
+  border-color: var(--panel-border-hover);
+  color: var(--text-secondary);
+}
+
+.btn-rerun:active {
+  background: var(--surface-active);
+  transform: scale(0.95);
+}
+
+.btn-rerun-inline {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
+.explanation-toggle {
+  margin-top: 2px;
+  display: inline-block;
 }
 
 /* ── Category Legend ── */
@@ -461,6 +518,34 @@ body {
   color: var(--text-tertiary);
   margin-top: 2px;
   line-height: 1.5;
+  display: none;
+}
+
+.instance-explanation.explanation-visible {
+  display: block;
+  animation: expandReveal 0.2s ease;
+}
+
+/* Overflow instances (3+) hidden by default */
+.instance-overflow {
+  display: none;
+}
+
+.instance-overflow.instance-visible {
+  display: block;
+  animation: expandReveal 0.2s ease;
+}
+
+/* Instance count badge */
+.instance-count {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  background: var(--surface-active);
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-left: 4px;
+  font-weight: 400;
 }
 
 /* Source-attributed instances (quoted speech reported by article) */
@@ -476,6 +561,10 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 3px;
+}
+
+.show-more-toggle {
+  margin-top: 4px;
 }
 
 /* Learn more expandable */

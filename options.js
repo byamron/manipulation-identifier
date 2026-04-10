@@ -9,12 +9,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const serverUrlInput = document.getElementById('serverUrl');
   const saveServerBtn = document.getElementById('saveServerBtn');
   const serverStatus = document.getElementById('serverStatus');
+  const textSizeSelect = document.getElementById('textSize');
+  const saveDisplayBtn = document.getElementById('saveDisplayBtn');
+  const displayStatus = document.getElementById('displayStatus');
 
   // Load saved settings (and detect upgrade from old Anthropic version)
-  chrome.storage.local.get(['geminiApiKey', 'anthropicApiKey', 'selectedModel', 'serverUrl'], (result) => {
+  chrome.storage.local.get(['geminiApiKey', 'anthropicApiKey', 'selectedModel', 'serverUrl', 'textSize'], (result) => {
     if (result.geminiApiKey) apiKeyInput.value = result.geminiApiKey;
     if (result.selectedModel) modelSelect.value = result.selectedModel;
     if (result.serverUrl) serverUrlInput.value = result.serverUrl;
+    if (result.textSize) textSizeSelect.value = result.textSize;
     updateModeIndicator(result.geminiApiKey);
 
     // Show migration notice for users upgrading from the Anthropic version
@@ -112,6 +116,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const serverUrl = serverUrlInput.value.trim();
     chrome.storage.local.set({ serverUrl }, () => {
       showStatus(serverStatus, 'Server URL saved.', 'success');
+    });
+  });
+
+  // Save display settings
+  saveDisplayBtn.addEventListener('click', () => {
+    const textSize = textSizeSelect.value;
+    chrome.storage.local.set({ textSize }, () => {
+      showStatus(displayStatus, 'Display settings saved.', 'success');
     });
   });
 });

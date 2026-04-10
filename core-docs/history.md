@@ -4,6 +4,46 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 15: Priority 5 — UX Feedback Round (April 2026)
+
+### Apr 9, 2026 — Ship 6 of 8 UX feedback items
+
+**Branch:** `priority-5-work`
+
+**What was done:**
+1. **5.1 Empty state copy** — Removed "Try analyzing a news article or opinion piece with strong claims." Changed to neutral "No manipulation tactics detected on this page." (FB-0005)
+2. **5.2 Re-run button** — Added circular-arrow re-run button in results header and empty state. Re-run clears highlights and immediately starts new analysis. Waits for clear callback to avoid race conditions.
+3. **5.3 Accessibility pass** — Bumped font scale +1px across the board (xs:11, sm:12, base:13, md:14). Improved contrast: `--text-tertiary` from 64% to 70% lightness, `--text-muted` from 48% to 55%. Added text size preference (Small/Medium/Large) in options page stored in `chrome.storage.local`.
+4. **5.4 Highlight reliability fix** — Root cause: `collectText()` skips text inside `.mi-highlight` spans. On re-analysis, if old highlights aren't cleared before text collection, the collected text differs from the original page text, causing the fuzzy matcher to miss quotes. Fix: `handleAnalyze()` in background.js now sends a defensive `CLEAR_HIGHLIGHTS` before `COLLECT_TEXT`. The re-run button also waits for the clear response callback before starting analysis.
+5. **5.5 Main content filtering** — `collectText()` now uses `findMainContent()` to look for `<article>`, `<main>`, `[role="main"]` in order. If found, constrains TreeWalker root to that element. If not found, falls back to `document.body` with secondary content exclusions: `aside`, `nav`, `header`, `footer`, `[role="complementary"]`, `[role="navigation"]`, and elements with class/ID matching patterns (sidebar, related, trending, popular, recommended, widget, ad-container, promo, newsletter, social-share).
+6. **5.7 Progressive disclosure** — Card view now shows tactic name + instance count badge, quotes only (no explanations by default). Explanations revealed on double-click. When 3+ instances exist, shows first 2 with "and N more" expandable button. Definition removed from card header to reduce repetition per FB-0011.
+
+**Not shipped:**
+- **5.6** (false positive reduction) — attribution framework already shipped; remaining work (negative examples, eval measurement) depends on 1.1 prompt tuning.
+- **5.8** (dev feedback capture) — deferred; the eval harness serves the same purpose for prompt tuning without needing a separate feedback capture system.
+
+**Design decisions:**
+- Re-run button in results header (next to summary) rather than in the controls bar. This keeps the controls bar clean and puts re-run in context with results.
+- Text size preference uses CSS custom property overrides via `data-text-size` attribute on body, rather than inline styles. Clean, maintainable, works with all existing CSS.
+- Main content filtering uses a two-tier approach: semantic containers first, then class/ID pattern matching as fallback. This avoids over-filtering on simple pages while correctly scoping on news sites.
+- Progressive disclosure: each instance has a "Why?" toggle that reveals the explanation. This avoids overloading the quote click (which scrolls to the page highlight) and is discoverable. Definition kept in card header — it's one line per tactic and helps users understand what the tactic means.
+
+**Technical decisions:**
+- Defensive clear in background.js before collect text eliminates the race condition without requiring complex synchronization. The clear is a no-op when no highlights exist.
+- `isSecondaryElement()` checks both CSS selectors and regex patterns on class/ID strings. The regex handles `className` being a string or SVGAnimatedString (for SVG elements).
+- Text size stored in `chrome.storage.local` alongside other preferences. Loaded on sidepanel init.
+
+**SAFETY:** Defensive clear in background.js adds a `CLEAR_HIGHLIGHTS` message before `COLLECT_TEXT`. The clear handler in content.js is idempotent (no-op when no highlights exist). Error handling preserved — the clear is wrapped in try/catch since the content script may not be injected yet.
+
+**Tradeoffs:**
+- Double-click for explanation reveal is less discoverable than a visible toggle, but single-click is already used for scroll-to-highlight. The card is still informative without explanations (tactic name + quotes tell the story).
+- Main content filtering may miss content in non-standard layouts that don't use semantic HTML. The fallback to body with exclusions handles this gracefully.
+- The "and N more" threshold of 2 visible instances is a judgment call. Could be 3, but 2 keeps cards compact while still showing the pattern.
+
+**Files changed:** `sidepanel.js`, `sidepanel.css`, `sidepanel.html`, `content.js`, `background.js`, `options.html`, `options.js`
+
+---
+
 ## Phase 14: Analyzing UI & Gemini API Fixes (April 2026)
 
 ### Apr 9, 2026 — Consolidate analyzing indicator into animated button & fix Flash 2.5 errors

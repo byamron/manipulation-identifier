@@ -191,6 +191,18 @@
   </div>
 
   <div class="section">
+    <div class="section-title">Display</div>
+    <label for="textSize">Text Size</label>
+    <select id="textSize">
+      <option value="small">Small</option>
+      <option value="medium" selected>Medium (Default)</option>
+      <option value="large">Large</option>
+    </select>
+    <button id="saveDisplayBtn">Save Display Settings</button>
+    <div class="status" id="displayStatus"></div>
+  </div>
+
+  <div class="section">
     <div class="section-title">Server Proxy (optional)</div>
     <label for="serverUrl">Server URL</label>
     <div class="hint">If set, analysis requests are proxied through this server. When both an API key and server URL are configured, the API key takes priority. Leave blank to use BYOK mode.</div>

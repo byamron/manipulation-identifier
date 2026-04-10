@@ -202,6 +202,12 @@ async function handleAnalyze(tabId, model) {
   await writeStage('collecting');
 
   try {
+    // Clear any existing highlights before collecting text (prevents stale DOM from
+    // skewing text collection — highlight spans are excluded by collectText)
+    try {
+      await chrome.tabs.sendMessage(tabId, { action: MSG.CLEAR_HIGHLIGHTS });
+    } catch { /* content script not yet injected — fine */ }
+
     // Collect text from content script (inject if needed)
     let textResponse;
     try {
