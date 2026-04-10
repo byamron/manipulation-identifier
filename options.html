@@ -159,6 +159,12 @@
     .toggle-visibility:hover {
       color: hsl(0, 0%, 80%);
     }
+    .snapshot-count {
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', ui-monospace, monospace;
+      font-size: 12px;
+      color: hsl(0, 0%, 64%);
+      margin-bottom: 8px;
+    }
   </style>
 </head>
 <body>
@@ -191,12 +197,35 @@
   </div>
 
   <div class="section">
+    <div class="section-title">Display</div>
+    <label for="textSize">Text Size</label>
+    <select id="textSize">
+      <option value="small">Small</option>
+      <option value="medium" selected>Medium (Default)</option>
+      <option value="large">Large</option>
+    </select>
+    <button id="saveDisplayBtn">Save Display Settings</button>
+    <div class="status" id="displayStatus"></div>
+  </div>
+
+  <div class="section">
     <div class="section-title">Server Proxy (optional)</div>
     <label for="serverUrl">Server URL</label>
     <div class="hint">If set, analysis requests are proxied through this server. When both an API key and server URL are configured, the API key takes priority. Leave blank to use BYOK mode.</div>
     <input type="text" id="serverUrl" placeholder="http://localhost:3000">
     <button id="saveServerBtn">Save Server URL</button>
     <div class="status" id="serverStatus"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Dev Tools</div>
+    <div class="hint">Snapshots capture full analysis context (results, page text, model, URL) for dev review and prompt tuning. Save snapshots from the side panel results view.</div>
+    <div class="snapshot-count" id="snapshotCount"></div>
+    <div class="btn-row">
+      <button id="exportSnapshotsBtn">Export as JSON</button>
+      <button id="clearSnapshotsBtn">Clear All</button>
+    </div>
+    <div class="status" id="devStatus"></div>
   </div>
 
   <script src="options.js"></script>

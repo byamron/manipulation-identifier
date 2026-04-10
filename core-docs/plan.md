@@ -2,21 +2,19 @@
 
 ## Current Focus
 
-Priority 1 (Accuracy & Trust) complete. V3 prompt shipped to production with precision-focused philosophy: "only flag significant, clearly manipulative instances — when in doubt, leave it out." Full 119-file eval shows precision nearly doubled from 30% → 55%, with recall holding at 73.5%. See `core-docs/accuracy-plan.md` for the roadmap to reach the 85% precision target.
+Priority 1 (Accuracy & Trust) and Priority 5 (UX Feedback) both complete. V3 prompt shipped with precision-focused philosophy. Full 119-file eval: precision 30% → 55%, recall 73.5%. See `core-docs/accuracy-plan.md` for path to 85% target.
 
-Next priorities: Priority 5 UX feedback items (5.1–5.8), and continued accuracy improvements per `accuracy-plan.md`.
+Next priorities: continued accuracy improvements per `accuracy-plan.md`, remaining 5.6 false positive reduction work.
 
 ## Handoff Notes
 
-- V3 prompt is live in production (background.js + prompts.js + eval/prompts/v3.cjs). Key principle: precision over volume.
-- Full eval results (119 files, Flash Lite): v1 baseline 30% precision → v3 55% precision. False positives cut from 347 → 121.
-- Eval harness migrated to Gemini SDK. `/eval-quick` skill runs progressive 10-file batches. Paid API key is active.
-- Corpus audited: 7 benchmark files corrected (5 annotations added, 1 removed, 2 quotes fixed).
-- Accuracy plan in `core-docs/accuracy-plan.md` — next levers: scorer improvements (tactic-family matching, dedup), Flash 2.5 comparison.
-- Confidence field ("high"|"medium") flows through the full pipeline: parsing, sidepanel UI, page highlights.
-- FB-0013: "Only flag significant, high-confidence manipulation" — core product principle.
-- 77 tests pass across 6 suites.
-- Priority 5 UX feedback items (5.1–5.8) remain open.
+- V3 prompt is live in production (background.js + prompts.js). Key principle: precision over volume (FB-0013).
+- Full eval results (119 files, Flash Lite): v1 30% → v3 55% precision. FPs cut 347 → 121.
+- Priority 5 shipped: 5.1–5.5, 5.7, 5.8. Dev snapshots, re-run button, accessibility, main content filtering, progressive disclosure all live.
+- Eval harness migrated to Gemini SDK. `/eval-quick` skill for progressive testing. Paid API key active.
+- Corpus audited: 7 benchmark files corrected.
+- Confidence field ("high"|"medium") flows through full pipeline.
+- 94 tests pass across 6 suites.
 
 ---
 
@@ -132,55 +130,24 @@ All items completed (Apr 8, 2026). See `history.md` Phase 9 for details.
 
 ### Priority 5 — UX Feedback Round (Apr 9, 2026)
 
+7 of 8 items shipped. **Last remaining: 5.6** (false positive reduction) — attribution framework is done, but remaining work (negative examples, eval measurement) is prompt tuning that belongs in Priority 1.1. Being handled on `roadmap-review` branch.
+
 Issues surfaced during user testing. Ordered by impact.
 
-#### 5.1 Fix empty state copy — don't assume page type
-**Why:** Empty state says "try a news article" but user was already on BBC News. The extension doesn't know what page the user is on and shouldn't guess. (FB-0005)
-**What to do:**
-- Rewrite `showEmpty()` message to use neutral language: "No manipulation tactics detected on this page." Remove the suggestion to try a specific page type.
-- Review all status/error messages for similar assumptions.
-**Files:** `sidepanel.js` (showEmpty)
-**Effort:** Small
+#### 5.1 Fix empty state copy — don't assume page type -- COMPLETE
+**Status:** Shipped. Empty state now says "No manipulation tactics detected on this page." — neutral, no page-type assumptions.
 
-#### 5.2 Add re-run button
-**Why:** After analysis, users must clear then re-analyze to re-run (e.g., after switching models). Need a single-action re-run. (FB-0006)
-**What to do:**
-- Add a circular-arrow icon button next to the Clear button in results/empty states
-- Re-run = clear + immediately start new analysis with current model selection
-- Keep Clear button as-is (returns to ready state without re-analyzing)
-**Files:** `sidepanel.js` (handleAnalyze, showResults, showEmpty), `sidepanel.html`, `sidepanel.css`
-**Effort:** Small
+#### 5.2 Add re-run button -- COMPLETE
+**Status:** Shipped. Circular-arrow re-run button in results header and empty state. Waits for clear callback before starting new analysis to avoid race conditions.
 
-#### 5.3 Accessibility pass — text sizes and contrast
-**Why:** Text is too small in several places (base 12px, minimum 10px). Low contrast on secondary text. (FB-0007)
-**What to do:**
-- Increase CSS variable scale: `--font-size-xs: 11px`, `--font-size-sm: 12px`, `--font-size-base: 13px`, `--font-size-md: 14px`
-- Audit all text for WCAG AA contrast (4.5:1 normal, 3:1 large). Bump `--text-tertiary` and `--text-muted` if needed.
-- Add text size preference in options page (Small / Medium / Large) that shifts the entire scale up/down 1-2px
-- Store preference in `chrome.storage.local`, apply on sidepanel load via a `data-text-size` attribute on body
-**Files:** `sidepanel.css`, `sidepanel.js`, `options.html`
-**Effort:** Medium
+#### 5.3 Accessibility pass — text sizes and contrast -- COMPLETE
+**Status:** Shipped. Font scale bumped +1px (xs:11, sm:12, base:13, md:14). Contrast improved: tertiary to 70% lightness, muted to 55%. Text size preference (Small/Medium/Large) in options page with `data-text-size` body attribute.
 
-#### 5.4 Fix highlighting reliability on re-run
-**Why:** Highlights are hit-or-miss on re-analysis. Likely caused by residual DOM state or race conditions. (FB-0008)
-**What to do:**
-- Investigate: does `clearHighlights()` fully restore the DOM? Are `.mi-highlight` spans unwrapped completely?
-- Check for race conditions: does `collectText()` run before clear completes?
-- Check if re-run creates duplicate event listeners or stale references
-- Add defensive cleanup at start of `highlightResults()`
-- Test systematically: analyze → clear → analyze on 5+ different pages
-**Files:** `content.js` (clearHighlights, highlightResults)
-**Effort:** Medium — requires investigation
+#### 5.4 Fix highlighting reliability on re-run -- COMPLETE
+**Status:** Shipped. Root cause: race condition — `collectText()` skips text inside `.mi-highlight` spans, so if highlights aren't fully cleared before re-collection, text differs. Fix: background.js now sends defensive `CLEAR_HIGHLIGHTS` before `COLLECT_TEXT`; re-run button waits for clear callback.
 
-#### 5.5 Filter main content from secondary content
-**Why:** Sidebars, trending articles, related article widgets get analyzed alongside the main article. Flags manipulation from headlines that aren't part of the article being read. (FB-0009)
-**What to do:**
-- In `collectText()`, look for `<article>`, `<main>`, or `[role="main"]` first. If found, constrain TreeWalker root to that element.
-- If no main content container found, fall back to `document.body` but exclude: `aside`, `nav`, `[role="complementary"]`, `[role="navigation"]`, `header`, `footer`, elements with classes/IDs matching patterns: `sidebar`, `related`, `trending`, `popular`, `recommended`, `widget`, `ad-`, `promo`
-- Test on BBC, CNN, Breitbart, NYT, Fox News, AP News to verify correct content extraction
-**Files:** `content.js` (collectText)
-**Effort:** Medium
-**Impact:** High — directly reduces false positives from non-article content
+#### 5.5 Filter main content from secondary content -- COMPLETE
+**Status:** Shipped. `collectText()` now uses `findMainContent()` to prefer `<article>`, `<main>`, `[role="main"]`. Falls back to body with `isSecondaryElement()` exclusions (aside, nav, header, footer, sidebar/related/trending class patterns).
 
 #### 5.6 Reduce false positives — article context and quoted speech -- PARTIAL
 **Status:** Attribution framework shipped Apr 9, 2026. Prompt now distinguishes author/source. UI dims source-attributed instances. 5 new tests.
@@ -191,27 +158,18 @@ Issues surfaced during user testing. Ordered by impact.
 - Investigate remaining false positive categories beyond quoted speech (e.g., strong language that isn't manipulation in context)
 **Depends on:** Benefits from 1.1 (prompt tuning framework)
 
-#### 5.7 Progressive disclosure for results presentation
-**Why:** Results are repetitive and text-heavy. Multiple instances of the same tactic repeat similar explanations. Too much information shown by default. (FB-0011)
-**What to do:**
-- Default card view: tactic name + count + quotes only (no explanations visible)
-- Expand on click/tap to reveal explanations for each quote
-- When a tactic has 3+ instances, show first 2 quotes with "and N more" expandable
-- Rewrite explanation prompt to avoid repetitive patterns ("the word X is..."). Instruct the model to vary its explanations and relate instances to each other.
-- Consider a brief cohesive summary at the top that contextualizes findings together, rather than pure list
-**Files:** `sidepanel.js` (renderTacticCard), `sidepanel.css`, `background.js` (buildSystemPrompt)
-**Effort:** Medium
+#### 5.7 Progressive disclosure for results presentation -- COMPLETE
+**Status:** Shipped. Explanations hidden by default with "Why?" toggle per instance. Instances capped at 2 with "and N more" expandable. Instance count badge on card header. Definition retained (one line per tactic, not repetitive). Prompt changes for explanation variety deferred to 1.1.
 
-#### 5.8 Improve dev feedback data capture
-**Why:** The feedback form submits minimal data (rating + comment). During development, need richer context: page snapshot, full analysis results, all flagged items, to enable deep review. (FB-0012)
-**What to do:**
-- When submitting feedback, include: full analysis results (all tactics, not just the one rated), page URL, page title, text that was analyzed, model used, timestamp
-- Store locally (JSON file or IndexedDB) rather than requiring server — dev can review offline
-- Consider a "dev export" button in options page that dumps all collected feedback as JSON
-- This is dev-only infrastructure (see FB-0003) — will be stripped before release
-**Files:** `sidepanel.js` (feedback handler), potentially new `dev-feedback.js`
-**Effort:** Medium
-**Note:** Explore whether this is worth building vs. just using the eval harness for the same purpose
+#### 5.8 Dev snapshot capture -- COMPLETE
+**Status:** Shipped on `finish-priority-5` branch, Apr 9, 2026.
+
+**What was built:**
+- "Save Snapshot" button in results header captures full analysis context (URL, title, analyzed text, all results, raw response, model, tokens, timestamps, optional comment)
+- Snapshots stored in `chrome.storage.local` as accumulating array
+- Dev Tools section in options page: snapshot count, Export as JSON, Clear All
+- `background.js` now persists analyzed text in session storage for snapshot access
+- 17 new tests (94 total)
 
 ---
 
@@ -229,11 +187,16 @@ Issues surfaced during user testing. Ordered by impact.
 
 ## Recently Completed
 
-- **Apr 9, 2026**: Priority 1 prompt tuning complete (item 1.1) — three iterations (v1→v2→v3), precision 30% → 55%, FPs cut from 347 → 121. Corpus audited. `/eval-quick` skill for ongoing testing. Accuracy plan for path to 85%.
+- **Apr 9, 2026**: Priority 1 prompt tuning complete (item 1.1) — three iterations (v1→v2→v3), precision 30% → 55%, FPs cut from 347 → 121. Corpus audited. `/eval-quick` skill for ongoing testing.
 - **Apr 9, 2026**: "Analyzed X of Y" indicator (item 1.2) — coverage transparency when text is truncated.
 - **Apr 9, 2026**: Preserve text structure in collection (item 1.3) — paragraph boundaries preserved for better AI context.
-- **Apr 9, 2026**: Quoted speech attribution framework (item 5.6 partial) — author/source distinction in prompt, parsing, side panel, and page highlights. 5 new tests (77 total).
+- **Apr 9, 2026**: Dev snapshot capture (5.8) — Save Snapshot button, options page Dev Tools (export/clear), 17 new tests. 94 total.
+- **Apr 9, 2026**: Priority 5 UX feedback round — 7 of 8 items shipped: 5.1–5.5, 5.7, 5.8.
+- **Apr 9, 2026**: Quoted speech attribution framework (item 5.6 partial) — author/source distinction.
 - **Apr 9, 2026**: Analyzing UI consolidation & Gemini API fixes (Phase 14)
+- **Apr 9, 2026**: Switch LLM provider from Anthropic to Google Gemini (Phase 12)
+- **Apr 9, 2026**: Complete Priority 4 — Infrastructure & Debt (all 6 items)
+- **Apr 8, 2026**: Build eval harness and 119-file test corpus (item 1.0)
 - **Apr 7, 2026**: Priority 3 — Polish & Completeness (3.1–3.7): dark options page, minimal onboarding, human model labels, quote click affordance, improved empty state, category legend, keyboard shortcut hint
 - **Apr 7, 2026**: Priority 2 — Core UX: streaming API responses, category-colored highlights, icon badge, analysis progress stages
 - **Apr 7, 2026**: Fix controls layout for narrow panel, improve text contrast

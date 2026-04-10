@@ -230,6 +230,12 @@ async function handleAnalyze(tabId, model) {
   await writeStage('collecting');
 
   try {
+    // Clear any existing highlights before collecting text (prevents stale DOM from
+    // skewing text collection — highlight spans are excluded by collectText)
+    try {
+      await chrome.tabs.sendMessage(tabId, { action: MSG.CLEAR_HIGHLIGHTS });
+    } catch { /* content script not yet injected — fine */ }
+
     // Collect text from content script (inject if needed)
     let textResponse;
     try {
@@ -258,7 +264,7 @@ async function handleAnalyze(tabId, model) {
 
     await writeStage('processing');
 
-    // Persist results
+    // Persist results (include analyzed text for dev snapshots — item 5.8)
     await chrome.storage.session.set({
       [`results_${tabId}`]: {
         results: result.results,
@@ -267,6 +273,7 @@ async function handleAnalyze(tabId, model) {
         tokensUsed: result.tokensUsed,
         totalChars: textResponse.totalChars,
         analyzedChars: textResponse.analyzedChars,
+        analyzedText: text,
         timestamp: Date.now()
       },
       [`status_${tabId}`]: { status: 'complete', timestamp: Date.now() }

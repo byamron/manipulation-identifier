@@ -145,10 +145,42 @@
 
   // ── Text collection ──
 
+  // Elements to exclude when falling back to full-page collection
+  const SECONDARY_SELECTORS = [
+    'aside', 'nav', 'header', 'footer',
+    '[role="complementary"]', '[role="navigation"]', '[role="banner"]', '[role="contentinfo"]'
+  ].join(',');
+
+  // Class/ID patterns indicating secondary content (sidebars, related articles, etc.)
+  const SECONDARY_PATTERNS = /sidebar|related|trending|popular|recommended|widget|ad-container|promo|newsletter|social-share/i;
+
+  function findMainContent() {
+    // Try semantic main content containers in order of specificity
+    const article = document.querySelector('article');
+    if (article) return article;
+    const main = document.querySelector('main');
+    if (main) return main;
+    const roleMain = document.querySelector('[role="main"]');
+    if (roleMain) return roleMain;
+    return null;
+  }
+
+  function isSecondaryElement(el) {
+    if (el.matches?.(SECONDARY_SELECTORS)) return true;
+    const id = el.id || '';
+    const cls = el.className || '';
+    const testStr = typeof cls === 'string' ? `${id} ${cls}` : id;
+    return SECONDARY_PATTERNS.test(testStr);
+  }
+
   function collectText() {
+    const mainContent = findMainContent();
+    const root = mainContent || document.body;
+    const useExclusions = !mainContent; // Only exclude secondary content in fallback mode
+
     const entries = []; // {text, block} — preserves order, no deduplication
     const walker = document.createTreeWalker(
-      document.body,
+      root,
       NodeFilter.SHOW_TEXT,
       {
         acceptNode(node) {
@@ -170,6 +202,17 @@
           // Skip our own highlights
           if (parent.closest?.('.mi-highlight')) {
             return NodeFilter.FILTER_REJECT;
+          }
+
+          // In fallback mode, skip secondary content containers
+          if (useExclusions) {
+            let ancestor = parent;
+            while (ancestor && ancestor !== root) {
+              if (ancestor.nodeType === 1 && isSecondaryElement(ancestor)) {
+                return NodeFilter.FILTER_REJECT;
+              }
+              ancestor = ancestor.parentNode;
+            }
           }
 
           const text = node.textContent.trim();

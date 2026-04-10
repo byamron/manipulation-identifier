@@ -145,6 +145,106 @@ Priority 1 is about accuracy and trust — the foundation of the product's value
 
 ---
 
+## Phase 17: Dev Snapshot Capture — Item 5.8 (April 2026)
+
+### Apr 9, 2026 — Ship dev snapshot feature for analysis review
+
+**Branch:** `finish-priority-5`
+
+**What was done:**
+1. Added "Save Snapshot" button (floppy disk icon) to the side panel results header, next to the re-run button.
+2. Clicking the button reveals an inline comment input with Save button. Enter to save, Escape to dismiss.
+3. Each snapshot captures the full analysis context: page URL, page title, analyzed text, all tactic results, raw model response, model name, token count, analysis timestamp, save timestamp, and optional user comment.
+4. Snapshots stored in `chrome.storage.local` under `devSnapshots` key as an accumulating array. Each snapshot gets a `crypto.randomUUID()` id.
+5. Added Dev Tools section to the options page showing snapshot count, Export as JSON button (downloads dated file), and Clear All button (with confirmation).
+6. Modified `background.js` to persist the analyzed text (`analyzedText`) in session storage alongside results, so it's available for snapshot capture without re-collecting.
+7. Added 17 tests covering snapshot structure, accumulation, and export round-trip.
+
+**Why:**
+Item 5.8 (FB-0012) identified that during development there's no way to capture rich analysis context for review. The eval harness tests prompts against controlled corpus, but dev snapshots capture real-world observations — "this page had a false positive" or "this headline was missed" — which feed into corpus building and prompt tuning.
+
+**Design decisions:**
+- **chrome.storage.local over IndexedDB**: Simpler API, no schema management, and the data volume is small (each snapshot is ~10KB with full text). IndexedDB would only be needed at hundreds of snapshots, which is unlikely during dev.
+- **Inline comment input (not modal)**: Keeps the flow lightweight — click, type optional note, save. No context switch.
+- **Accumulate array, not keyed by URL**: Multiple snapshots of the same page are valuable (before/after prompt changes, different models). Deduplication would lose this signal.
+- **Export as JSON file, not clipboard**: Clipboard is limited by size; JSON file integrates naturally with the eval corpus workflow (`eval/corpus/`).
+- **No storage quota management**: `chrome.storage.local` has a 10MB quota. At ~10KB per snapshot, that's ~1000 snapshots before concern. Not worth adding eviction logic for dev-only infrastructure.
+
+**Tradeoffs:**
+- Could have built a snapshot viewer/browser in the options page. Decided against it — the JSON export is sufficient for dev review, and building a viewer would be scope creep for dev-only tooling. If the export proves insufficient, a viewer can be added later.
+- Considered re-collecting text on snapshot save instead of storing it in session. Storing it adds ~5KB to session storage per tab but avoids a round-trip to the content script and the possibility that the page has changed since analysis.
+
+**Files changed:** `background.js`, `sidepanel.js`, `sidepanel.css`, `options.html`, `options.js`, `test/devSnapshot.test.js`
+
+---
+
+## Phase 16: Academic Sources & Attribution (April 2026)
+
+### Apr 9, 2026 — Expand SOURCES.md with theoretical grounding and design references
+
+**Branch:** paper-framing-analysis
+
+**What was done:**
+1. Added citation for Starbird et al. 2025 ("What is going on? An evidence-frame framework") — theoretical grounding for how framing-based manipulation operates.
+2. Added citation for Prochaska et al. 2025 ("Deep Storytelling: Collective Sensemaking and Layers of Meaning in U.S. Elections") — context for why manipulation tactics work via persistent meta-narratives.
+3. Added Jigsaw Prebunking Initiative (prebunking.withgoogle.com) as a design reference — inoculation theory influenced the extension's "educate, don't censor" philosophy.
+4. Standardized formatting across all SOURCES.md entries (consistent License labels, citation structure, relevance sections).
+
+**Why:**
+The extension's academic grounding was incomplete. CoCoLoFa and MAFALDA covered the taxonomy expansion (11 to 15 tactics) but the original tactic selection and the project's educational design philosophy had no documented sources. The two CSCW papers provide theoretical context for existing tactics (especially Decontextualization, Cherry Picking, Emotional Language), and Jigsaw documents the design lineage.
+
+**Design decisions:**
+- Organized SOURCES.md into four sections: Taxonomy References, Design References, Theoretical References, Original Content. Each serves a distinct role (what we built from, what inspired the approach, what validates the framework, what's ours).
+- Each theoretical paper includes a "Relevance to this project" section that explicitly scopes what's applicable and what's not (e.g., social-dynamic findings are not implementable in a single-page extension).
+- Assessed both papers for implementable findings. Concluded that they enrich existing tactic definitions (especially Decontextualization) but do not warrant new tactics — the distinctive findings operate at social/multi-text scales beyond the extension's single-page architecture.
+
+**Tradeoffs:**
+- Could have added "Frame Escalation" or "Implicit Framing" as new tactics based on the papers. Decided against it: frame escalation is a social process across multiple posts (not visible on one page), and the papers' own coders had low inter-rater reliability on implicit frames. Adding either would violate the "accuracy over coverage" principle.
+
+**Files changed:** `core-docs/SOURCES.md`
+
+---
+
+## Phase 15: Priority 5 — UX Feedback Round (April 2026)
+
+### Apr 9, 2026 — Ship 6 of 8 UX feedback items
+
+**Branch:** `priority-5-work`
+
+**What was done:**
+1. **5.1 Empty state copy** — Removed "Try analyzing a news article or opinion piece with strong claims." Changed to neutral "No manipulation tactics detected on this page." (FB-0005)
+2. **5.2 Re-run button** — Added circular-arrow re-run button in results header and empty state. Re-run clears highlights and immediately starts new analysis. Waits for clear callback to avoid race conditions.
+3. **5.3 Accessibility pass** — Bumped font scale +1px across the board (xs:11, sm:12, base:13, md:14). Improved contrast: `--text-tertiary` from 64% to 70% lightness, `--text-muted` from 48% to 55%. Added text size preference (Small/Medium/Large) in options page stored in `chrome.storage.local`.
+4. **5.4 Highlight reliability fix** — Root cause: `collectText()` skips text inside `.mi-highlight` spans. On re-analysis, if old highlights aren't cleared before text collection, the collected text differs from the original page text, causing the fuzzy matcher to miss quotes. Fix: `handleAnalyze()` in background.js now sends a defensive `CLEAR_HIGHLIGHTS` before `COLLECT_TEXT`. The re-run button also waits for the clear response callback before starting analysis.
+5. **5.5 Main content filtering** — `collectText()` now uses `findMainContent()` to look for `<article>`, `<main>`, `[role="main"]` in order. If found, constrains TreeWalker root to that element. If not found, falls back to `document.body` with secondary content exclusions: `aside`, `nav`, `header`, `footer`, `[role="complementary"]`, `[role="navigation"]`, and elements with class/ID matching patterns (sidebar, related, trending, popular, recommended, widget, ad-container, promo, newsletter, social-share).
+6. **5.7 Progressive disclosure** — Card view now shows tactic name + instance count badge, quotes only (no explanations by default). Explanations revealed on double-click. When 3+ instances exist, shows first 2 with "and N more" expandable button. Definition removed from card header to reduce repetition per FB-0011.
+
+**Not shipped:**
+- **5.6** (false positive reduction) — attribution framework already shipped; remaining work (negative examples, eval measurement) depends on 1.1 prompt tuning.
+- **5.8** (dev feedback capture) — deferred; the eval harness serves the same purpose for prompt tuning without needing a separate feedback capture system.
+
+**Design decisions:**
+- Re-run button in results header (next to summary) rather than in the controls bar. This keeps the controls bar clean and puts re-run in context with results.
+- Text size preference uses CSS custom property overrides via `data-text-size` attribute on body, rather than inline styles. Clean, maintainable, works with all existing CSS.
+- Main content filtering uses a two-tier approach: semantic containers first, then class/ID pattern matching as fallback. This avoids over-filtering on simple pages while correctly scoping on news sites.
+- Progressive disclosure: each instance has a "Why?" toggle that reveals the explanation. This avoids overloading the quote click (which scrolls to the page highlight) and is discoverable. Definition kept in card header — it's one line per tactic and helps users understand what the tactic means.
+
+**Technical decisions:**
+- Defensive clear in background.js before collect text eliminates the race condition without requiring complex synchronization. The clear is a no-op when no highlights exist.
+- `isSecondaryElement()` checks both CSS selectors and regex patterns on class/ID strings. The regex handles `className` being a string or SVGAnimatedString (for SVG elements).
+- Text size stored in `chrome.storage.local` alongside other preferences. Loaded on sidepanel init.
+
+**SAFETY:** Defensive clear in background.js adds a `CLEAR_HIGHLIGHTS` message before `COLLECT_TEXT`. The clear handler in content.js is idempotent (no-op when no highlights exist). Error handling preserved — the clear is wrapped in try/catch since the content script may not be injected yet.
+
+**Tradeoffs:**
+- Double-click for explanation reveal is less discoverable than a visible toggle, but single-click is already used for scroll-to-highlight. The card is still informative without explanations (tactic name + quotes tell the story).
+- Main content filtering may miss content in non-standard layouts that don't use semantic HTML. The fallback to body with exclusions handles this gracefully.
+- The "and N more" threshold of 2 visible instances is a judgment call. Could be 3, but 2 keeps cards compact while still showing the pattern.
+
+**Files changed:** `sidepanel.js`, `sidepanel.css`, `sidepanel.html`, `content.js`, `background.js`, `options.html`, `options.js`
+
+---
+
 ## Phase 14: Analyzing UI & Gemini API Fixes (April 2026)
 
 ### Apr 9, 2026 — Consolidate analyzing indicator into animated button & fix Flash 2.5 errors

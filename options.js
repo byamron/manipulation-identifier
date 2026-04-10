@@ -9,12 +9,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const serverUrlInput = document.getElementById('serverUrl');
   const saveServerBtn = document.getElementById('saveServerBtn');
   const serverStatus = document.getElementById('serverStatus');
+  const textSizeSelect = document.getElementById('textSize');
+  const saveDisplayBtn = document.getElementById('saveDisplayBtn');
+  const displayStatus = document.getElementById('displayStatus');
 
   // Load saved settings (and detect upgrade from old Anthropic version)
-  chrome.storage.local.get(['geminiApiKey', 'anthropicApiKey', 'selectedModel', 'serverUrl'], (result) => {
+  chrome.storage.local.get(['geminiApiKey', 'anthropicApiKey', 'selectedModel', 'serverUrl', 'textSize'], (result) => {
     if (result.geminiApiKey) apiKeyInput.value = result.geminiApiKey;
     if (result.selectedModel) modelSelect.value = result.selectedModel;
     if (result.serverUrl) serverUrlInput.value = result.serverUrl;
+    if (result.textSize) textSizeSelect.value = result.textSize;
     updateModeIndicator(result.geminiApiKey);
 
     // Show migration notice for users upgrading from the Anthropic version
@@ -112,6 +116,63 @@ document.addEventListener('DOMContentLoaded', () => {
     const serverUrl = serverUrlInput.value.trim();
     chrome.storage.local.set({ serverUrl }, () => {
       showStatus(serverStatus, 'Server URL saved.', 'success');
+    });
+  });
+
+  // Save display settings
+  saveDisplayBtn.addEventListener('click', () => {
+    const textSize = textSizeSelect.value;
+    chrome.storage.local.set({ textSize }, () => {
+      showStatus(displayStatus, 'Display settings saved.', 'success');
+    });
+  });
+
+  // ── Dev Tools: Snapshots ──
+  const snapshotCountEl = document.getElementById('snapshotCount');
+  const exportSnapshotsBtn = document.getElementById('exportSnapshotsBtn');
+  const clearSnapshotsBtn = document.getElementById('clearSnapshotsBtn');
+  const devStatus = document.getElementById('devStatus');
+
+  function updateSnapshotCount() {
+    chrome.storage.local.get('devSnapshots', (result) => {
+      const count = (result.devSnapshots || []).length;
+      snapshotCountEl.textContent = count === 0
+        ? 'No snapshots saved.'
+        : `${count} snapshot${count !== 1 ? 's' : ''} saved.`;
+    });
+  }
+  updateSnapshotCount();
+
+  exportSnapshotsBtn.addEventListener('click', () => {
+    chrome.storage.local.get('devSnapshots', (result) => {
+      const snapshots = result.devSnapshots || [];
+      if (snapshots.length === 0) {
+        showStatus(devStatus, 'No snapshots to export.', 'error');
+        return;
+      }
+      const blob = new Blob([JSON.stringify(snapshots, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mi-snapshots-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showStatus(devStatus, `Exported ${snapshots.length} snapshot${snapshots.length !== 1 ? 's' : ''}.`, 'success');
+    });
+  });
+
+  clearSnapshotsBtn.addEventListener('click', () => {
+    chrome.storage.local.get('devSnapshots', (result) => {
+      const count = (result.devSnapshots || []).length;
+      if (count === 0) {
+        showStatus(devStatus, 'Nothing to clear.', 'error');
+        return;
+      }
+      if (!confirm(`Delete ${count} snapshot${count !== 1 ? 's' : ''}? This cannot be undone.`)) return;
+      chrome.storage.local.set({ devSnapshots: [] }, () => {
+        updateSnapshotCount();
+        showStatus(devStatus, 'All snapshots cleared.', 'success');
+      });
     });
   });
 });
