@@ -336,6 +336,12 @@ body {
   border-bottom: 1px solid var(--panel-border);
 }
 
+.results-header-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 .results-summary {
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
@@ -366,6 +372,96 @@ body {
 .btn-rerun:active {
   background: var(--surface-active);
   transform: scale(0.95);
+}
+
+.btn-snapshot {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: 1px solid var(--panel-border);
+  color: var(--text-tertiary);
+  padding: 4px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.btn-snapshot:hover {
+  background: var(--surface-hover);
+  border-color: var(--panel-border-hover);
+  color: var(--text-secondary);
+}
+
+.btn-snapshot:active {
+  background: var(--surface-active);
+  transform: scale(0.95);
+}
+
+/* Snapshot comment row */
+.snapshot-comment-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  animation: expandReveal 0.15s ease;
+}
+
+.snapshot-comment-input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--panel-border);
+  border-radius: 5px;
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+}
+
+.snapshot-comment-input:focus {
+  outline: none;
+  border-color: var(--panel-border-hover);
+}
+
+.snapshot-comment-input::placeholder {
+  color: var(--text-muted);
+}
+
+.snapshot-save-btn {
+  padding: 5px 10px;
+  border: 1px solid rgba(76, 175, 122, 0.3);
+  border-radius: 5px;
+  background: rgba(76, 175, 122, 0.1);
+  color: #4caf7a;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.snapshot-save-btn:hover {
+  background: rgba(76, 175, 122, 0.18);
+  border-color: rgba(76, 175, 122, 0.45);
+}
+
+.snapshot-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.snapshot-success {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: #4caf7a;
+  padding: 5px 0;
+}
+
+.snapshot-error {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--error-text);
+  padding: 5px 0;
 }
 
 .btn-rerun-inline {

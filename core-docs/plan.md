@@ -2,19 +2,16 @@
 
 ## Current Focus
 
-Priority 5 UX feedback items shipped (6 of 8 items). Remaining: 5.6 (false positive reduction — depends on 1.1 prompt tuning) and 5.8 (dev feedback capture — deferred, eval harness serves same purpose).
+Priority 5 UX feedback items shipped (7 of 8 items). Remaining: 5.6 (false positive reduction — remaining work depends on 1.1 prompt tuning, being handled on `roadmap-review` branch).
 
-Next up: Priority 1.1 (prompt tuning with few-shot examples) which will also address the remaining 5.6 work.
+Next up: Priority 1 (accuracy & trust) is being handled on the `roadmap-review` branch.
 
 ## Handoff Notes
 
-- Priority 5 shipped: 5.1 (empty state), 5.2 (re-run button), 5.3 (accessibility), 5.4 (highlight reliability), 5.5 (main content filtering), 5.7 (progressive disclosure).
-- Main content filtering: `collectText()` now prefers `<article>`, `<main>`, `[role="main"]`. Falls back to body with secondary content exclusion.
-- Re-run button: shows in results and empty states; waits for clear to complete before starting new analysis.
-- Highlight reliability: background.js now defensively clears highlights before collecting text; re-run waits for clear callback.
-- Progressive disclosure: explanations hidden by default (double-click quote to show), instances capped at 2 with "and N more" expandable, definition removed from card header to reduce repetition.
-- Text size preference: Small/Medium/Large in options page, applies via `data-text-size` attribute on body.
-- 77 tests pass.
+- Priority 5 shipped: 5.1 (empty state), 5.2 (re-run button), 5.3 (accessibility), 5.4 (highlight reliability), 5.5 (main content filtering), 5.7 (progressive disclosure), 5.8 (dev snapshot capture).
+- Dev snapshots: "Save Snapshot" button in results header captures full context (URL, title, text, results, model, comment) to `chrome.storage.local`. Export/clear in options page Dev Tools section.
+- `background.js` now stores `analyzedText` in session results for snapshot access.
+- 94 tests pass.
 
 ---
 
@@ -121,6 +118,8 @@ All items completed (Apr 8, 2026). See `history.md` Phase 9 for details.
 
 ### Priority 5 — UX Feedback Round (Apr 9, 2026)
 
+7 of 8 items shipped. **Last remaining: 5.6** (false positive reduction) — attribution framework is done, but remaining work (negative examples, eval measurement) is prompt tuning that belongs in Priority 1.1. Being handled on `roadmap-review` branch.
+
 Issues surfaced during user testing. Ordered by impact.
 
 #### 5.1 Fix empty state copy — don't assume page type -- COMPLETE
@@ -150,16 +149,15 @@ Issues surfaced during user testing. Ordered by impact.
 #### 5.7 Progressive disclosure for results presentation -- COMPLETE
 **Status:** Shipped. Explanations hidden by default with "Why?" toggle per instance. Instances capped at 2 with "and N more" expandable. Instance count badge on card header. Definition retained (one line per tactic, not repetitive). Prompt changes for explanation variety deferred to 1.1.
 
-#### 5.8 Improve dev feedback data capture
-**Why:** The feedback form submits minimal data (rating + comment). During development, need richer context: page snapshot, full analysis results, all flagged items, to enable deep review. (FB-0012)
-**What to do:**
-- When submitting feedback, include: full analysis results (all tactics, not just the one rated), page URL, page title, text that was analyzed, model used, timestamp
-- Store locally (JSON file or IndexedDB) rather than requiring server — dev can review offline
-- Consider a "dev export" button in options page that dumps all collected feedback as JSON
-- This is dev-only infrastructure (see FB-0003) — will be stripped before release
-**Files:** `sidepanel.js` (feedback handler), potentially new `dev-feedback.js`
-**Effort:** Medium
-**Note:** Explore whether this is worth building vs. just using the eval harness for the same purpose
+#### 5.8 Dev snapshot capture -- COMPLETE
+**Status:** Shipped on `finish-priority-5` branch, Apr 9, 2026.
+
+**What was built:**
+- "Save Snapshot" button in results header captures full analysis context (URL, title, analyzed text, all results, raw response, model, tokens, timestamps, optional comment)
+- Snapshots stored in `chrome.storage.local` as accumulating array
+- Dev Tools section in options page: snapshot count, Export as JSON, Clear All
+- `background.js` now persists analyzed text in session storage for snapshot access
+- 17 new tests (94 total)
 
 ---
 
@@ -177,7 +175,8 @@ Issues surfaced during user testing. Ordered by impact.
 
 ## Recently Completed
 
-- **Apr 9, 2026**: Priority 5 UX feedback round — 6 items shipped: empty state copy (5.1), re-run button (5.2), accessibility pass (5.3), highlight reliability fix (5.4), main content filtering (5.5), progressive disclosure (5.7). 77 tests pass.
+- **Apr 9, 2026**: Dev snapshot capture (5.8) — Save Snapshot button, options page Dev Tools (export/clear), 17 new tests. 94 total.
+- **Apr 9, 2026**: Priority 5 UX feedback round — 7 of 8 items shipped: empty state copy (5.1), re-run button (5.2), accessibility pass (5.3), highlight reliability fix (5.4), main content filtering (5.5), progressive disclosure (5.7), dev snapshot capture (5.8).
 - **Apr 9, 2026**: Quoted speech attribution framework (item 5.6 partial) — author/source distinction in prompt, parsing, side panel, and page highlights. 5 new tests (77 total).
 - **Apr 9, 2026**: Switch LLM provider from Anthropic to Google Gemini (Phase 12)
 - **Apr 9, 2026**: Complete Priority 4 — Infrastructure & Debt (all 6 items)
