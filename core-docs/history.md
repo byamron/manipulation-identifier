@@ -4,6 +4,42 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 14: Analyzing UI & Gemini API Fixes (April 2026)
+
+### Apr 9, 2026 — Consolidate analyzing indicator into animated button & fix Flash 2.5 errors
+
+**Branch:** analyzing-btn-gemini-fix
+
+**What was done:**
+1. Replaced the dual "Analyzing" indicators (button text + skeleton cards with timer) with a single animated button. The button shows "Analyzing" with pulsing dots and a shimmer background — no redundant status text below.
+2. Fixed Gemini API error cascade: stopped retrying 429 (rate limit) responses, which were compounding when Flash 2.5 returned initial 500 errors.
+3. Increased `maxOutputTokens` from 4096 to 8192 for Flash 2.5 (a thinking model that needs budget for both thinking and response tokens). Flash Lite stays at 4096.
+
+**Why:**
+- UI: Two "analyzing" indicators were redundant and the static "Analyzing..." text in the button looked stuck. User wanted a single animated indicator.
+- API: Flash 2.5 returned "API server error" (500) on first use, then "Rate limited" (429) on retry. Flash Lite worked fine. The retry logic was retrying 429 errors, which made rate limiting worse instead of better.
+
+**Design decisions:**
+- Button uses CSS shimmer + animated dots (three `<span>` elements with staggered `dot-pulse` animation). Reuses the existing `shimmer` keyframe from skeleton styles for visual consistency.
+- Removed skeleton loading cards entirely — the animated button is sufficient to communicate progress, and streaming results appear below as they arrive.
+- Timeout check (45s) kept as a silent interval, only surfacing an error if exceeded.
+
+**Technical decisions:**
+- 429 errors now fail immediately without retry. Rate limits need time to clear, not more requests.
+- 500 errors still retry (up to 2 times with exponential backoff) since they can be transient.
+- Flash 2.5 gets 8192 maxOutputTokens because it's a thinking model — the thinking tokens consume part of the output budget. 4096 was likely too low, causing the model to fail.
+- Flash Lite keeps 4096 since it doesn't use thinking tokens.
+
+**Tradeoffs:**
+- Not retrying 429 means a single rate limit hit shows an error immediately rather than waiting for retries. This is better UX — the user sees the error faster and knows to wait, rather than staring at a loading state for 6+ seconds before getting the same error.
+- 8192 maxOutputTokens for Flash 2.5 allows more thinking tokens, which could marginally increase cost. But the user only pays for tokens generated, not the budget cap, and thinking improves detection quality.
+
+**SAFETY:** Error handling preserved — 429 errors still surface to the user with the same message. Only the retry behavior changed (immediate fail vs. delayed fail). No error paths removed.
+
+**Files changed:** `sidepanel.js`, `sidepanel.css`, `background.js`
+
+---
+
 ## Phase 13: Attribution Framework (April 2026)
 
 ### Apr 9, 2026 — Quoted speech attribution: distinguish author rhetoric from reported speech

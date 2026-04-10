@@ -8,21 +8,13 @@ Accuracy items (5.5 main content filtering, 5.6 false positive reduction) feed d
 
 ## Handoff Notes
 
+- Analyzing UI consolidated: single animated button replaces skeleton cards + timer text.
+- Flash 2.5 API fix: 429 errors no longer retried (prevents rate-limit cascade), maxOutputTokens raised to 8192 for thinking model.
+- If Flash 2.5 still 500s after this fix, investigate whether the free tier has access to the model or if `thinkingConfig` needs explicit configuration.
 - 8 new feedback entries added (FB-0005 through FB-0012) from user testing session.
-- Empty state copy needs neutral language (FB-0005) — don't assume page type.
-- `collectText()` needs main-content filtering (FB-0009) — currently grabs sidebar/trending text.
-- Highlighting breaks on re-run (FB-0008) — needs investigation.
-- Results presentation overhaul (FB-0011) — progressive disclosure, less repetition.
-- False positive investigation needed (FB-0010) — quotes vs article rhetoric.
-- Feedback form data capture improvements worth exploring for dev use (FB-0012).
-- Priority 4 (Infrastructure & Debt) fully completed — all 6 items shipped.
-- `database.js` deleted, `better-sqlite3` removed. No more SQLite dependency.
-- All feedback/analytics endpoints and UI stripped. Server is analysis-only now.
-- `parseJsonResponse` returns `null` on failure in both background.js and server.js.
-- LLM provider switched from Anthropic to Google Gemini (Phase 12).
-- Eval harness and 119-file test corpus shipped (item 1.0).
-- All Priority 2 (Core UX) and Priority 3 (Polish) items shipped and review-polished.
-- 72 tests pass (15 new for streaming parsing).
+- Attribution framework shipped (Phase 13) — quoted speech vs author rhetoric.
+- Priority 5 items tracked below from UX feedback round.
+- 72 tests pass.
 
 ---
 

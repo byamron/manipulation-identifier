@@ -28,12 +28,11 @@ async function fetchWithRetry(url, options, retries = CONFIG.MAX_RETRIES) {
 
     if (!response.ok) {
       const status = response.status;
-      if (status >= 500 || status === 429) {
-        if (retries > 0) {
-          const backoff = CONFIG.RETRY_DELAY_MS * Math.pow(2, CONFIG.MAX_RETRIES - retries);
-          await delay(backoff);
-          return fetchWithRetry(url, options, retries - 1);
-        }
+      // Retry on server errors only — not 429 (retrying rate limits just compounds the problem)
+      if (status >= 500 && retries > 0) {
+        const backoff = CONFIG.RETRY_DELAY_MS * Math.pow(2, CONFIG.MAX_RETRIES - retries);
+        await delay(backoff);
+        return fetchWithRetry(url, options, retries - 1);
       }
       // Parse error body for better messages
       let errorBody;
@@ -144,6 +143,10 @@ async function callGeminiDirect(text, model, apiKey) {
   const tactics = await loadTactics();
   const url = `${CONFIG.GEMINI_API_BASE}/${model}:generateContent`;
 
+  // Flash 2.5 is a thinking model — needs higher output budget for thinking + response.
+  // Flash Lite doesn't think, so 4096 is sufficient for the JSON response.
+  const maxOutputTokens = model === 'gemini-2.5-flash' ? 8192 : 4096;
+
   const data = await fetchWithRetry(url, {
     method: 'POST',
     headers: {
@@ -153,7 +156,7 @@ async function callGeminiDirect(text, model, apiKey) {
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: buildSystemPrompt(tactics) }] },
       contents: [{ role: 'user', parts: [{ text: buildUserPrompt(text) }] }],
-      generationConfig: { maxOutputTokens: 4096 }
+      generationConfig: { maxOutputTokens }
     })
   });
 
