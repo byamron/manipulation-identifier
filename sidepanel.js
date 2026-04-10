@@ -21,10 +21,14 @@
 
   // ── Init ──
   async function init() {
-    // Load saved model preference
-    chrome.storage.local.get(['selectedModel', 'geminiApiKey', 'serverUrl'], (result) => {
+    // Load saved preferences
+    chrome.storage.local.get(['selectedModel', 'geminiApiKey', 'serverUrl', 'textSize'], (result) => {
       if (result.selectedModel && modelSelect.querySelector(`option[value="${result.selectedModel}"]`)) {
         modelSelect.value = result.selectedModel;
+      }
+      // Apply text size preference
+      if (result.textSize && result.textSize !== 'medium') {
+        document.body.dataset.textSize = result.textSize;
       }
       // Check if setup is needed (no API key and no server URL)
       const hasKey = !!result.geminiApiKey;
@@ -195,6 +199,18 @@
 
     if (!activeTabId || currentState === 'analyzing') return;
 
+    startAnalysis();
+  }
+
+  function handleRerun() {
+    if (!activeTabId || currentState === 'analyzing') return;
+    chrome.runtime.sendMessage({ action: MSG.CLEAR_HIGHLIGHTS, tabId: activeTabId }, () => {
+      if (chrome.runtime.lastError) { /* content script may not be present — proceed anyway */ }
+      startAnalysis();
+    });
+  }
+
+  function startAnalysis() {
     const model = modelSelect.value;
     showAnalyzing();
 
@@ -289,6 +305,9 @@
     const category = TACTIC_CATEGORIES[tactic.tactic] || 'logical';
     const categoryLabel = CATEGORY_LABELS[category] || category;
     const tacticInfo = interactive ? tacticsData?.find(t => t.name === tactic.tactic) : null;
+    const instanceCount = tactic.examples.length;
+    const VISIBLE_LIMIT = 2;
+    const hasOverflow = instanceCount > VISIBLE_LIMIT;
 
     return `
       <div class="tactic-card" tabindex="0" role="article"
@@ -297,22 +316,24 @@
         <div class="card-header">
           <div class="card-category-bar ${category}" title="${escapeHtml(categoryLabel)}"></div>
           <div class="card-content">
-            <div class="card-tactic-name">${escapeHtml(tactic.tactic)}</div>
+            <div class="card-tactic-name">${escapeHtml(tactic.tactic)}${instanceCount > 1 ? ` <span class="instance-count">${instanceCount}</span>` : ''}</div>
             <div class="card-definition">${escapeHtml(tactic.definition)}</div>
           </div>
         </div>
         <div class="card-instances">
           ${tactic.examples.map((ex, i) => `
-            <div class="instance${ex.attribution === 'source' ? ' instance-source' : ''}">
+            <div class="instance${ex.attribution === 'source' ? ' instance-source' : ''}${hasOverflow && i >= VISIBLE_LIMIT ? ' instance-overflow' : ''}">
               ${ex.attribution === 'source' && ex.attributedTo ? `<div class="instance-attribution">In a quote by ${escapeHtml(ex.attributedTo)}</div>` : ''}
               ${ex.attribution === 'source' && !ex.attributedTo ? `<div class="instance-attribution">In quoted speech</div>` : ''}
               <div class="instance-quote${interactive ? '' : ' non-interactive'}"
                    ${interactive ? `data-highlight-tactic="${escapeHtml(tactic.tactic)}" data-instance-index="${i}" title="Click to scroll to this text on the page"` : ''}>
                 "${escapeHtml(ex.text)}"
               </div>
+              ${interactive ? `<button class="explanation-toggle card-action-link">Why?</button>` : ''}
               <div class="instance-explanation">${escapeHtml(ex.explanation)}</div>
             </div>
           `).join('')}
+          ${hasOverflow ? `<button class="card-action-link show-more-toggle">and ${instanceCount - VISIBLE_LIMIT} more</button>` : ''}
         </div>
         ${interactive && tacticInfo ? `
         <div class="card-actions">
@@ -356,12 +377,13 @@
     };
     const totalInstances = results.reduce((sum, t) => sum + t.examples.length, 0);
     const modelLabel = MODEL_LABELS[model] || model;
-    let html = `<div class="results-summary">${results.length} tactic${results.length !== 1 ? 's' : ''} detected &middot; ${totalInstances} instance${totalInstances !== 1 ? 's' : ''}${model ? ` &middot; ${escapeHtml(modelLabel)}` : ''}</div>`;
+    let html = `<div class="results-header"><div class="results-summary">${results.length} tactic${results.length !== 1 ? 's' : ''} detected &middot; ${totalInstances} instance${totalInstances !== 1 ? 's' : ''}${model ? ` &middot; ${escapeHtml(modelLabel)}` : ''}</div><button class="btn-rerun" title="Re-run analysis" aria-label="Re-run analysis"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button></div>`;
     html += `<div class="category-legend"><span class="legend-item"><span class="legend-dot logical"></span>Logical</span><span class="legend-item"><span class="legend-dot rhetorical"></span>Rhetorical</span><span class="legend-item"><span class="legend-dot credibility"></span>Credibility</span></div>`;
     html += results.map(t => renderTacticCard(t, { interactive: true })).join('');
 
     resultsArea.innerHTML = html;
     attachCardListeners();
+    resultsArea.querySelector('.btn-rerun')?.addEventListener('click', handleRerun);
   }
 
   function showStreamingResults(results, model) {
@@ -399,11 +421,12 @@
     updateButton('Clear', true, true);
     statusArea.innerHTML = `
       <div class="status-message">
-        No manipulation tactics detected — this content looks clean.<br><br>
-        Try analyzing a news article or opinion piece with strong claims.
+        No manipulation tactics detected on this page.<br>
+        <button class="btn-rerun btn-rerun-inline" title="Re-run analysis" aria-label="Re-run analysis"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Re-run</button>
       </div>
     `;
     resultsArea.innerHTML = '';
+    statusArea.querySelector('.btn-rerun')?.addEventListener('click', handleRerun);
   }
 
   function showError(message) {
@@ -459,6 +482,29 @@
         if (learnMore) {
           learnMore.classList.toggle('expanded');
           btn.textContent = learnMore.classList.contains('expanded') ? 'Show less' : 'Learn more';
+        }
+      });
+    });
+
+    // Show more instances toggle
+    resultsArea.querySelectorAll('.show-more-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const card = btn.closest('.tactic-card');
+        const overflows = card.querySelectorAll('.instance-overflow');
+        const isExpanded = btn.classList.contains('expanded');
+        overflows.forEach(el => el.classList.toggle('instance-visible', !isExpanded));
+        btn.classList.toggle('expanded', !isExpanded);
+        btn.textContent = !isExpanded ? 'Show fewer' : `and ${overflows.length} more`;
+      });
+    });
+
+    // Instance explanation toggle
+    resultsArea.querySelectorAll('.explanation-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const explanation = btn.nextElementSibling;
+        if (explanation?.classList.contains('instance-explanation')) {
+          const visible = explanation.classList.toggle('explanation-visible');
+          btn.textContent = visible ? 'Hide' : 'Why?';
         }
       });
     });

@@ -2,19 +2,19 @@
 
 ## Current Focus
 
-UX feedback round (Apr 9, 2026) surfaced 8 issues across accuracy, UX, and reliability. These are now tracked as Priority 5 items. Key themes: reduce false positives via better context, improve text collection to focus on main content, add re-run button, fix highlighting reliability, improve results presentation with progressive disclosure, and accessibility pass on text sizes.
+Priority 5 UX feedback items shipped (6 of 8 items). Remaining: 5.6 (false positive reduction — depends on 1.1 prompt tuning) and 5.8 (dev feedback capture — deferred, eval harness serves same purpose).
 
-Accuracy items (5.5 main content filtering, 5.6 false positive reduction) feed directly into item 1.1 (prompt tuning). UX items (5.1–5.4, 5.7–5.8) can proceed independently.
+Next up: Priority 1.1 (prompt tuning with few-shot examples) which will also address the remaining 5.6 work.
 
 ## Handoff Notes
 
-- Analyzing UI consolidated: single animated button replaces skeleton cards + timer text.
-- Flash 2.5 API fix: 429 errors no longer retried (prevents rate-limit cascade), maxOutputTokens raised to 8192 for thinking model.
-- If Flash 2.5 still 500s after this fix, investigate whether the free tier has access to the model or if `thinkingConfig` needs explicit configuration.
-- 8 new feedback entries added (FB-0005 through FB-0012) from user testing session.
-- Attribution framework shipped (Phase 13) — quoted speech vs author rhetoric.
-- Priority 5 items tracked below from UX feedback round.
-- 72 tests pass.
+- Priority 5 shipped: 5.1 (empty state), 5.2 (re-run button), 5.3 (accessibility), 5.4 (highlight reliability), 5.5 (main content filtering), 5.7 (progressive disclosure).
+- Main content filtering: `collectText()` now prefers `<article>`, `<main>`, `[role="main"]`. Falls back to body with secondary content exclusion.
+- Re-run button: shows in results and empty states; waits for clear to complete before starting new analysis.
+- Highlight reliability: background.js now defensively clears highlights before collecting text; re-run waits for clear callback.
+- Progressive disclosure: explanations hidden by default (double-click quote to show), instances capped at 2 with "and N more" expandable, definition removed from card header to reduce repetition.
+- Text size preference: Small/Medium/Large in options page, applies via `data-text-size` attribute on body.
+- 77 tests pass.
 
 ---
 
@@ -123,53 +123,20 @@ All items completed (Apr 8, 2026). See `history.md` Phase 9 for details.
 
 Issues surfaced during user testing. Ordered by impact.
 
-#### 5.1 Fix empty state copy — don't assume page type
-**Why:** Empty state says "try a news article" but user was already on BBC News. The extension doesn't know what page the user is on and shouldn't guess. (FB-0005)
-**What to do:**
-- Rewrite `showEmpty()` message to use neutral language: "No manipulation tactics detected on this page." Remove the suggestion to try a specific page type.
-- Review all status/error messages for similar assumptions.
-**Files:** `sidepanel.js` (showEmpty)
-**Effort:** Small
+#### 5.1 Fix empty state copy — don't assume page type -- COMPLETE
+**Status:** Shipped. Empty state now says "No manipulation tactics detected on this page." — neutral, no page-type assumptions.
 
-#### 5.2 Add re-run button
-**Why:** After analysis, users must clear then re-analyze to re-run (e.g., after switching models). Need a single-action re-run. (FB-0006)
-**What to do:**
-- Add a circular-arrow icon button next to the Clear button in results/empty states
-- Re-run = clear + immediately start new analysis with current model selection
-- Keep Clear button as-is (returns to ready state without re-analyzing)
-**Files:** `sidepanel.js` (handleAnalyze, showResults, showEmpty), `sidepanel.html`, `sidepanel.css`
-**Effort:** Small
+#### 5.2 Add re-run button -- COMPLETE
+**Status:** Shipped. Circular-arrow re-run button in results header and empty state. Waits for clear callback before starting new analysis to avoid race conditions.
 
-#### 5.3 Accessibility pass — text sizes and contrast
-**Why:** Text is too small in several places (base 12px, minimum 10px). Low contrast on secondary text. (FB-0007)
-**What to do:**
-- Increase CSS variable scale: `--font-size-xs: 11px`, `--font-size-sm: 12px`, `--font-size-base: 13px`, `--font-size-md: 14px`
-- Audit all text for WCAG AA contrast (4.5:1 normal, 3:1 large). Bump `--text-tertiary` and `--text-muted` if needed.
-- Add text size preference in options page (Small / Medium / Large) that shifts the entire scale up/down 1-2px
-- Store preference in `chrome.storage.local`, apply on sidepanel load via a `data-text-size` attribute on body
-**Files:** `sidepanel.css`, `sidepanel.js`, `options.html`
-**Effort:** Medium
+#### 5.3 Accessibility pass — text sizes and contrast -- COMPLETE
+**Status:** Shipped. Font scale bumped +1px (xs:11, sm:12, base:13, md:14). Contrast improved: tertiary to 70% lightness, muted to 55%. Text size preference (Small/Medium/Large) in options page with `data-text-size` body attribute.
 
-#### 5.4 Fix highlighting reliability on re-run
-**Why:** Highlights are hit-or-miss on re-analysis. Likely caused by residual DOM state or race conditions. (FB-0008)
-**What to do:**
-- Investigate: does `clearHighlights()` fully restore the DOM? Are `.mi-highlight` spans unwrapped completely?
-- Check for race conditions: does `collectText()` run before clear completes?
-- Check if re-run creates duplicate event listeners or stale references
-- Add defensive cleanup at start of `highlightResults()`
-- Test systematically: analyze → clear → analyze on 5+ different pages
-**Files:** `content.js` (clearHighlights, highlightResults)
-**Effort:** Medium — requires investigation
+#### 5.4 Fix highlighting reliability on re-run -- COMPLETE
+**Status:** Shipped. Root cause: race condition — `collectText()` skips text inside `.mi-highlight` spans, so if highlights aren't fully cleared before re-collection, text differs. Fix: background.js now sends defensive `CLEAR_HIGHLIGHTS` before `COLLECT_TEXT`; re-run button waits for clear callback.
 
-#### 5.5 Filter main content from secondary content
-**Why:** Sidebars, trending articles, related article widgets get analyzed alongside the main article. Flags manipulation from headlines that aren't part of the article being read. (FB-0009)
-**What to do:**
-- In `collectText()`, look for `<article>`, `<main>`, or `[role="main"]` first. If found, constrain TreeWalker root to that element.
-- If no main content container found, fall back to `document.body` but exclude: `aside`, `nav`, `[role="complementary"]`, `[role="navigation"]`, `header`, `footer`, elements with classes/IDs matching patterns: `sidebar`, `related`, `trending`, `popular`, `recommended`, `widget`, `ad-`, `promo`
-- Test on BBC, CNN, Breitbart, NYT, Fox News, AP News to verify correct content extraction
-**Files:** `content.js` (collectText)
-**Effort:** Medium
-**Impact:** High — directly reduces false positives from non-article content
+#### 5.5 Filter main content from secondary content -- COMPLETE
+**Status:** Shipped. `collectText()` now uses `findMainContent()` to prefer `<article>`, `<main>`, `[role="main"]`. Falls back to body with `isSecondaryElement()` exclusions (aside, nav, header, footer, sidebar/related/trending class patterns).
 
 #### 5.6 Reduce false positives — article context and quoted speech -- PARTIAL
 **Status:** Attribution framework shipped Apr 9, 2026. Prompt now distinguishes author/source. UI dims source-attributed instances. 5 new tests.
@@ -180,16 +147,8 @@ Issues surfaced during user testing. Ordered by impact.
 - Investigate remaining false positive categories beyond quoted speech (e.g., strong language that isn't manipulation in context)
 **Depends on:** Benefits from 1.1 (prompt tuning framework)
 
-#### 5.7 Progressive disclosure for results presentation
-**Why:** Results are repetitive and text-heavy. Multiple instances of the same tactic repeat similar explanations. Too much information shown by default. (FB-0011)
-**What to do:**
-- Default card view: tactic name + count + quotes only (no explanations visible)
-- Expand on click/tap to reveal explanations for each quote
-- When a tactic has 3+ instances, show first 2 quotes with "and N more" expandable
-- Rewrite explanation prompt to avoid repetitive patterns ("the word X is..."). Instruct the model to vary its explanations and relate instances to each other.
-- Consider a brief cohesive summary at the top that contextualizes findings together, rather than pure list
-**Files:** `sidepanel.js` (renderTacticCard), `sidepanel.css`, `background.js` (buildSystemPrompt)
-**Effort:** Medium
+#### 5.7 Progressive disclosure for results presentation -- COMPLETE
+**Status:** Shipped. Explanations hidden by default with "Why?" toggle per instance. Instances capped at 2 with "and N more" expandable. Instance count badge on card header. Definition retained (one line per tactic, not repetitive). Prompt changes for explanation variety deferred to 1.1.
 
 #### 5.8 Improve dev feedback data capture
 **Why:** The feedback form submits minimal data (rating + comment). During development, need richer context: page snapshot, full analysis results, all flagged items, to enable deep review. (FB-0012)
@@ -218,11 +177,11 @@ Issues surfaced during user testing. Ordered by impact.
 
 ## Recently Completed
 
+- **Apr 9, 2026**: Priority 5 UX feedback round — 6 items shipped: empty state copy (5.1), re-run button (5.2), accessibility pass (5.3), highlight reliability fix (5.4), main content filtering (5.5), progressive disclosure (5.7). 77 tests pass.
 - **Apr 9, 2026**: Quoted speech attribution framework (item 5.6 partial) — author/source distinction in prompt, parsing, side panel, and page highlights. 5 new tests (77 total).
 - **Apr 9, 2026**: Switch LLM provider from Anthropic to Google Gemini (Phase 12)
 - **Apr 9, 2026**: Complete Priority 4 — Infrastructure & Debt (all 6 items)
 - **Apr 8, 2026**: Build eval harness and 119-file test corpus (item 1.0) — measurement system for prompt tuning
-- **Apr 8, 2026**: Priority 2 review pass — streaming reliability, UX polish, test coverage (13 issues fixed, 15 new tests)
 - **Apr 7, 2026**: Priority 3 — Polish & Completeness (3.1–3.7): dark options page, minimal onboarding, human model labels, quote click affordance, improved empty state, category legend, keyboard shortcut hint
 - **Apr 7, 2026**: Priority 2 — Core UX: streaming API responses, category-colored highlights, icon badge, analysis progress stages
 - **Apr 7, 2026**: Fix controls layout for narrow panel, improve text contrast
