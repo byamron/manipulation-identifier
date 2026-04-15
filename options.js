@@ -175,4 +175,45 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   });
+
+  // ── Experiments: Feature Flags ──
+  // Auto-generated from FEATURE_FLAGS registry in shared.js
+  const flagContainer = document.getElementById('flagContainer');
+
+  function renderFlags() {
+    getFeatureFlags((flags) => {
+      flagContainer.innerHTML = '';
+      for (const [key, def] of Object.entries(FEATURE_FLAGS)) {
+        const isOn = flags[key];
+        const row = document.createElement('div');
+        row.className = 'flag-row';
+        row.innerHTML = `
+          <div class="flag-info">
+            <div class="flag-label">${escapeHtml(def.label)}</div>
+            <div class="flag-description">${escapeHtml(def.description)}</div>
+          </div>
+          <button class="flag-toggle${isOn ? ' active' : ''}" data-flag="${key}"
+                  title="${isOn ? 'On' : 'Off'}" aria-pressed="${isOn}"></button>
+        `;
+        flagContainer.appendChild(row);
+      }
+
+      flagContainer.querySelectorAll('.flag-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const flag = btn.dataset.flag;
+          const newState = !btn.classList.contains('active');
+          btn.classList.toggle('active', newState);
+          btn.title = newState ? 'On' : 'Off';
+          btn.setAttribute('aria-pressed', String(newState));
+          chrome.storage.local.get('featureFlags', (result) => {
+            const stored = result.featureFlags || {};
+            stored[flag] = newState;
+            chrome.storage.local.set({ featureFlags: stored });
+          });
+        });
+      });
+    });
+  }
+
+  renderFlags();
 });

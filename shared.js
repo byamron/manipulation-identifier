@@ -43,3 +43,41 @@ function escapeHtml(unsafe) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+// ── Feature Flags ──
+// Add new flags here — they auto-appear in Settings > Experiments.
+// Registry is the single source of truth: label, description, default value.
+const FEATURE_FLAGS = {
+  legendFilter: {
+    label: 'Category filter',
+    description: 'Click legend dots to show/hide tactic categories',
+    default: true
+  },
+  devSnapshots: {
+    label: 'Snapshot capture',
+    description: 'Show snapshot button in results for dev review',
+    default: true
+  },
+  enhancedMotion: {
+    label: 'Enhanced motion',
+    description: 'Refined hover lifts, card flash glow, snappier button press, category bar response',
+    default: true
+  },
+  compactLayout: {
+    label: 'Compact layout',
+    description: 'Flattened indentation, tighter spacing, better width utilization',
+    default: true
+  }
+};
+
+// Resolve stored flags merged with defaults (new flags get their default automatically)
+function getFeatureFlags(callback) {
+  chrome.storage.local.get('featureFlags', (result) => {
+    const stored = result.featureFlags || {};
+    const merged = {};
+    for (const [key, def] of Object.entries(FEATURE_FLAGS)) {
+      merged[key] = key in stored ? stored[key] : def.default;
+    }
+    callback(merged);
+  });
+}
