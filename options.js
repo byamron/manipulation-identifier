@@ -179,8 +179,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Experiments: Feature Flags ──
   // Auto-generated from FEATURE_FLAGS registry in shared.js
   const flagContainer = document.getElementById('flagContainer');
+  if (typeof FEATURE_FLAGS === 'undefined' || typeof getFeatureFlags !== 'function') {
+    flagContainer.textContent = 'Feature flags unavailable.';
+  }
 
   function renderFlags() {
+    if (typeof FEATURE_FLAGS === 'undefined') return;
     getFeatureFlags((flags) => {
       flagContainer.innerHTML = '';
       for (const [key, def] of Object.entries(FEATURE_FLAGS)) {
