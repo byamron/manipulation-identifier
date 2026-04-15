@@ -20,9 +20,10 @@
   let streamingDebounceTimer = null;
 
   // Feature flag cache — defaults used until storage loads
-  let activeFlags = Object.fromEntries(
-    Object.entries(FEATURE_FLAGS).map(([k, v]) => [k, v.default])
-  );
+  // Guard: if shared.js hasn't loaded (cache/timing), degrade gracefully instead of crashing
+  let activeFlags = typeof FEATURE_FLAGS !== 'undefined'
+    ? Object.fromEntries(Object.entries(FEATURE_FLAGS).map(([k, v]) => [k, v.default]))
+    : {};
 
   // ── Init ──
   async function init() {
@@ -36,9 +37,11 @@
         document.body.dataset.textSize = result.textSize;
       }
       // Load feature flags from storage
-      const storedFlags = result.featureFlags || {};
-      for (const key of Object.keys(FEATURE_FLAGS)) {
-        if (key in storedFlags) activeFlags[key] = storedFlags[key];
+      if (typeof FEATURE_FLAGS !== 'undefined') {
+        const storedFlags = result.featureFlags || {};
+        for (const key of Object.keys(FEATURE_FLAGS)) {
+          if (key in storedFlags) activeFlags[key] = storedFlags[key];
+        }
       }
 
       // Apply CSS-driven feature flags
@@ -124,7 +127,7 @@
     // Storage changes (fire-persist-notify pattern)
     chrome.storage.onChanged.addListener((changes, area) => {
       // Feature flag updates (local storage)
-      if (area === 'local' && changes.featureFlags) {
+      if (area === 'local' && changes.featureFlags && typeof FEATURE_FLAGS !== 'undefined') {
         const newFlags = changes.featureFlags.newValue || {};
         for (const [key, def] of Object.entries(FEATURE_FLAGS)) {
           activeFlags[key] = key in newFlags ? newFlags[key] : def.default;
