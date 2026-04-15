@@ -110,7 +110,7 @@
     analyzeBtn.addEventListener('click', handleAnalyze);
 
     settingsBtn.addEventListener('click', () => {
-      chrome.runtime.openOptionsPage();
+      chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
     });
 
     modelSelect.addEventListener('change', () => {
@@ -350,7 +350,7 @@
     resultsArea.innerHTML = '';
     document.getElementById('setupLink')?.addEventListener('click', (e) => {
       e.preventDefault();
-      chrome.runtime.openOptionsPage();
+      chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
     });
   }
 
