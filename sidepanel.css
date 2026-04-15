@@ -12,7 +12,6 @@
   --panel-border: rgba(255, 255, 255, 0.08);
   --panel-border-hover: rgba(255, 255, 255, 0.14);
   --panel-radius: 10px;
-  --panel-gap: 14px;
   --panel-pad: 14px;
 
   /* Typography */
@@ -182,14 +181,14 @@ body {
 }
 
 .btn-analyze.btn-clear {
-  color: var(--cat-credibility);
-  border-color: rgba(239, 83, 80, 0.30);
-  background: rgba(239, 83, 80, 0.08);
+  color: var(--text-secondary);
+  border-color: var(--panel-border);
+  background: transparent;
 }
 
 .btn-analyze.btn-clear:hover {
-  background: rgba(239, 83, 80, 0.14);
-  border-color: rgba(239, 83, 80, 0.40);
+  background: var(--surface-hover);
+  border-color: var(--panel-border-hover);
 }
 
 .btn-analyze.btn-analyzing {
@@ -271,7 +270,7 @@ body {
 /* Error */
 .error-message {
   padding: 12px var(--panel-pad);
-  margin: 12px var(--panel-pad);
+  margin: 12px 0;
   background: var(--error-bg);
   border: 1px solid var(--error-border);
   border-radius: var(--panel-radius);
@@ -353,37 +352,13 @@ body {
 .analysis-coverage {
   font-size: var(--font-size-xs);
   color: var(--text-muted);
-  text-align: center;
+  text-align: left;
   padding: 4px 0 8px;
   font-family: var(--font-mono);
   letter-spacing: 0.02em;
 }
 
-.btn-rerun {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: none;
-  border: 1px solid var(--panel-border);
-  color: var(--text-tertiary);
-  padding: 4px 6px;
-  border-radius: 5px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-}
-
-.btn-rerun:hover {
-  background: var(--surface-hover);
-  border-color: var(--panel-border-hover);
-  color: var(--text-secondary);
-}
-
-.btn-rerun:active {
-  background: var(--surface-active);
-  transform: scale(0.95);
-}
-
+.btn-rerun,
 .btn-snapshot {
   display: inline-flex;
   align-items: center;
@@ -397,12 +372,16 @@ body {
   transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
 
+.btn-rerun { gap: 4px; }
+
+.btn-rerun:hover,
 .btn-snapshot:hover {
   background: var(--surface-hover);
   border-color: var(--panel-border-hover);
   color: var(--text-secondary);
 }
 
+.btn-rerun:active,
 .btn-snapshot:active {
   background: var(--surface-active);
   transform: scale(0.95);
@@ -476,8 +455,6 @@ body {
 
 .btn-rerun-inline {
   margin-top: 8px;
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
 }
 
 .explanation-toggle {
@@ -500,6 +477,20 @@ body {
   display: flex;
   align-items: center;
   gap: 5px;
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 6px;
+  margin: -2px -6px;
+  border-radius: 4px;
+  transition: opacity 0.2s;
+}
+
+.legend-item:hover {
+  opacity: 0.7;
+}
+
+.legend-item.dimmed {
+  opacity: 0.35;
 }
 
 .legend-dot {
@@ -507,11 +498,47 @@ body {
   height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
+  transition: transform 0.1s, box-shadow 0.2s;
+}
+
+.legend-item:active .legend-dot {
+  transform: scale(0.75);
 }
 
 .legend-dot.logical { background: var(--cat-logical); }
 .legend-dot.rhetorical { background: var(--cat-rhetorical); }
 .legend-dot.credibility { background: var(--cat-credibility); }
+
+/* Legend filter — dimmed dots become hollow rings */
+.legend-item.dimmed .legend-dot.logical {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--cat-logical);
+}
+
+.legend-item.dimmed .legend-dot.rhetorical {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--cat-rhetorical);
+}
+
+.legend-item.dimmed .legend-dot.credibility {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--cat-credibility);
+}
+
+/* Filtered tactic cards — ghost in place, no interaction */
+.tactic-card.category-filtered {
+  opacity: 0.08 !important;
+  pointer-events: none;
+}
+
+/* When filter flag is off, legend is display-only */
+.category-legend:not(.filterable) .legend-item {
+  cursor: default;
+}
+
+.category-legend:not(.filterable) .legend-item:hover {
+  opacity: 1;
+}
 
 /* ── Tactic Card ── */
 .tactic-card {
@@ -520,7 +547,7 @@ body {
   border: 1px solid var(--panel-border);
   margin-bottom: 10px;
   overflow: hidden;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, opacity 0.25s;
   outline: none;
 }
 
@@ -544,7 +571,6 @@ body {
   display: flex;
   align-items: flex-start;
   padding: 12px var(--panel-pad);
-  cursor: pointer;
 }
 
 .card-category-bar {
@@ -594,21 +620,23 @@ body {
 }
 
 .instance-quote {
-  font-size: var(--font-size-base);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
   color: var(--text-secondary);
-  font-style: italic;
   word-break: break-word;
   cursor: pointer;
-  padding: 3px 0;
-  text-decoration: underline;
-  text-decoration-color: rgba(255, 255, 255, 0.25);
-  text-underline-offset: 2px;
-  transition: color 0.12s, text-decoration-color 0.12s;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+  line-height: 1.6;
 }
 
 .instance-quote:hover {
   color: var(--accent);
-  text-decoration-color: var(--accent);
+  border-color: rgba(91, 156, 245, 0.25);
+  background: rgba(91, 156, 245, 0.04);
 }
 
 .instance-quote.non-interactive {
@@ -617,6 +645,8 @@ body {
 
 .instance-quote.non-interactive:hover {
   color: var(--text-secondary);
+  border-color: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .instance-explanation {
@@ -657,7 +687,6 @@ body {
 /* Source-attributed instances (quoted speech reported by article) */
 .instance-source {
   opacity: 0.7;
-  border-left-style: dashed;
 }
 
 /* Medium-confidence instances — visually dimmed */
@@ -707,12 +736,14 @@ body {
   letter-spacing: 0.02em;
 }
 
-.card-action-link:active {
-  background: var(--surface-active);
-}
-
 .card-action-link:hover {
   color: var(--text-secondary);
+  background: var(--surface-hover);
+}
+
+.card-action-link:active {
+  background: var(--surface-active);
+  transform: scale(0.97);
 }
 
 .card-learn-more {
@@ -780,5 +811,113 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ── Enhanced Motion (feature flag: enhancedMotion) ── */
+
+/* Card hover lift — slower shadow, subtle rise */
+.enhanced-motion .tactic-card {
+  transition: border-color 0.15s, box-shadow 0.2s, opacity 0.25s, transform 0.2s;
+}
+
+.enhanced-motion .tactic-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Card flash glow — one-cycle pulse, longer hold */
+@keyframes cardGlowPulse {
+  0% { box-shadow: 0 0 0 1px var(--accent), 0 0 8px rgba(91, 156, 245, 0.1); }
+  40% { box-shadow: 0 0 0 1px var(--accent), 0 0 24px rgba(91, 156, 245, 0.25); }
+  100% { box-shadow: 0 0 0 1px var(--accent), 0 0 16px rgba(91, 156, 245, 0.15); }
+}
+
+.enhanced-motion .tactic-card.card-flash {
+  animation: cardGlowPulse 0.5s ease-out;
+}
+
+/* Button press — faster snap down (0.06s), natural release (inherits 0.12s) */
+.enhanced-motion .btn-analyze:active:not(:disabled) {
+  transform: scale(0.97);
+  transition-duration: 0.06s;
+}
+
+/* Category bar — brighten on hover, widen on focus */
+.enhanced-motion .card-category-bar {
+  transition: width 0.15s, filter 0.15s;
+}
+
+.enhanced-motion .tactic-card:hover .card-category-bar {
+  filter: brightness(1.2);
+}
+
+.enhanced-motion .tactic-card:focus-visible .card-category-bar {
+  width: 4px;
+}
+
+/* ── Compact Layout (feature flag: compactLayout) ── */
+
+/* Flatten card content — instances align with card edge padding, not past the category bar */
+.compact-layout .card-instances {
+  padding-left: var(--panel-pad);
+}
+
+.compact-layout .card-actions {
+  padding-left: var(--panel-pad);
+}
+
+.compact-layout .card-learn-more {
+  padding-left: var(--panel-pad);
+}
+
+/* Replace instance left-border nesting with horizontal separators between instances.
+   Recovers ~24px of horizontal space per instance. */
+.compact-layout .instance {
+  padding-left: 0;
+  border-left: none;
+  margin-bottom: 0;
+}
+
+.compact-layout .instance + .instance {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* Tighter card-to-card spacing */
+.compact-layout .tactic-card {
+  margin-bottom: 8px;
+}
+
+/* Tighter results header area */
+.compact-layout .results-header {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+}
+
+.compact-layout .category-legend {
+  margin-bottom: 8px;
+}
+
+/* Definition: 2-line clamp for density control */
+.compact-layout .card-definition {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Tighter learn-more list indentation */
+.compact-layout .learn-more-text li {
+  margin-left: 10px;
+}
+
+/* Align explanation text with quote content */
+.compact-layout .instance-explanation {
+  padding-left: 9px;
+}
+
+.compact-layout .explanation-toggle {
+  margin-left: 9px;
 }
 

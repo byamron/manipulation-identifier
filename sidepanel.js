@@ -19,10 +19,15 @@
   let streamingRenderedCount = 0;
   let streamingDebounceTimer = null;
 
+  // Feature flag cache — defaults used until storage loads
+  let activeFlags = Object.fromEntries(
+    Object.entries(FEATURE_FLAGS).map(([k, v]) => [k, v.default])
+  );
+
   // ── Init ──
   async function init() {
     // Load saved preferences
-    chrome.storage.local.get(['selectedModel', 'geminiApiKey', 'serverUrl', 'textSize'], (result) => {
+    chrome.storage.local.get(['selectedModel', 'geminiApiKey', 'serverUrl', 'textSize', 'featureFlags'], (result) => {
       if (result.selectedModel && modelSelect.querySelector(`option[value="${result.selectedModel}"]`)) {
         modelSelect.value = result.selectedModel;
       }
@@ -30,6 +35,16 @@
       if (result.textSize && result.textSize !== 'medium') {
         document.body.dataset.textSize = result.textSize;
       }
+      // Load feature flags from storage
+      const storedFlags = result.featureFlags || {};
+      for (const key of Object.keys(FEATURE_FLAGS)) {
+        if (key in storedFlags) activeFlags[key] = storedFlags[key];
+      }
+
+      // Apply CSS-driven feature flags
+      document.body.classList.toggle('enhanced-motion', activeFlags.enhancedMotion);
+      document.body.classList.toggle('compact-layout', activeFlags.compactLayout);
+
       // Check if setup is needed (no API key and no server URL)
       const hasKey = !!result.geminiApiKey;
       const hasServer = !!result.serverUrl;
@@ -108,6 +123,17 @@
 
     // Storage changes (fire-persist-notify pattern)
     chrome.storage.onChanged.addListener((changes, area) => {
+      // Feature flag updates (local storage)
+      if (area === 'local' && changes.featureFlags) {
+        const newFlags = changes.featureFlags.newValue || {};
+        for (const [key, def] of Object.entries(FEATURE_FLAGS)) {
+          activeFlags[key] = key in newFlags ? newFlags[key] : def.default;
+        }
+        // Live-update CSS-driven flags
+        document.body.classList.toggle('enhanced-motion', activeFlags.enhancedMotion);
+        document.body.classList.toggle('compact-layout', activeFlags.compactLayout);
+      }
+
       if (area !== 'session') return;
 
       const resultsKey = `results_${activeTabId}`;
@@ -267,7 +293,13 @@
         snapshots.push(snapshot);
         await chrome.storage.local.set({ devSnapshots: snapshots });
 
-        commentRow.innerHTML = `<span class="snapshot-success">Snapshot saved (${snapshots.length} total)</span>`;
+        // Auto-copy JSON to clipboard for quick paste into editor
+        try {
+          await navigator.clipboard.writeText(JSON.stringify(snapshot, null, 2));
+          commentRow.innerHTML = `<span class="snapshot-success">Saved &amp; copied to clipboard (${snapshots.length} total)</span>`;
+        } catch {
+          commentRow.innerHTML = `<span class="snapshot-success">Snapshot saved (${snapshots.length} total)</span>`;
+        }
         setTimeout(() => commentRow.remove(), 2000);
       } catch (err) {
         commentRow.innerHTML = `<span class="snapshot-error">Save failed: ${escapeHtml(err.message)}</span>`;
@@ -324,7 +356,8 @@
     updateButton('Analyze', true);
     streamingRenderedCount = 0;
     clearTimeout(streamingDebounceTimer);
-    const modifier = /Mac|iPhone|iPad/.test(navigator.platform) ? 'Cmd' : 'Ctrl';
+    const platform = navigator.userAgentData?.platform || navigator.platform || '';
+    const modifier = /mac|iphone|ipad/i.test(platform) ? 'Cmd' : 'Ctrl';
     statusArea.innerHTML = `
       <div class="status-message">
         Click <strong>Analyze</strong> to scan this page for manipulation tactics.<br>
@@ -383,7 +416,8 @@
     return `
       <div class="tactic-card" tabindex="0" role="article"
            aria-label="${escapeHtml(tactic.tactic)}"
-           data-tactic="${escapeHtml(tactic.tactic)}">
+           data-tactic="${escapeHtml(tactic.tactic)}"
+           data-category="${category}">
         <div class="card-header">
           <div class="card-category-bar ${category}" title="${escapeHtml(categoryLabel)}"></div>
           <div class="card-content">
@@ -422,7 +456,7 @@
           ` : ''}
           ${tacticInfo.whatToDo?.length ? `
             <div class="learn-more-section">
-              <div class="learn-more-label">What you can do</div>
+              <div class="learn-more-label">What to look for</div>
               <div class="learn-more-text">
                 <ul>${tacticInfo.whatToDo.map(w => `<li>${escapeHtml(w)}</li>`).join('')}</ul>
               </div>
@@ -453,13 +487,17 @@
     if (totalChars && analyzedChars && totalChars > analyzedChars) {
       html += `<div class="analysis-coverage">Analyzed first ${analyzedChars.toLocaleString()} of ${totalChars.toLocaleString()} characters</div>`;
     }
-    html += `<div class="category-legend"><span class="legend-item"><span class="legend-dot logical"></span>Logical</span><span class="legend-item"><span class="legend-dot rhetorical"></span>Rhetorical</span><span class="legend-item"><span class="legend-dot credibility"></span>Credibility</span></div>`;
+    html += `<div class="category-legend"><span class="legend-item" data-category="logical"><span class="legend-dot logical"></span>Logical</span><span class="legend-item" data-category="rhetorical"><span class="legend-dot rhetorical"></span>Rhetorical</span><span class="legend-item" data-category="credibility"><span class="legend-dot credibility"></span>Credibility</span></div>`;
     html += results.map(t => renderTacticCard(t, { interactive: true })).join('');
 
     resultsArea.innerHTML = html;
     attachCardListeners();
     resultsArea.querySelector('.btn-rerun')?.addEventListener('click', handleRerun);
-    resultsArea.querySelector('.btn-snapshot')?.addEventListener('click', handleSnapshot);
+    if (activeFlags.devSnapshots) {
+      resultsArea.querySelector('.btn-snapshot')?.addEventListener('click', handleSnapshot);
+    } else {
+      resultsArea.querySelector('.btn-snapshot')?.remove();
+    }
   }
 
   function showStreamingResults(results, model) {
@@ -585,6 +623,23 @@
       });
     });
 
+    // Category legend filter (gated by feature flag)
+    if (activeFlags.legendFilter) {
+      const legend = resultsArea.querySelector('.category-legend');
+      if (legend) legend.classList.add('filterable');
+
+      resultsArea.querySelectorAll('.legend-item[data-category]').forEach(item => {
+        item.addEventListener('click', () => {
+          item.classList.toggle('dimmed');
+          const cat = item.dataset.category;
+          const isDimmed = item.classList.contains('dimmed');
+          resultsArea.querySelectorAll(`.tactic-card[data-category="${cat}"]`).forEach(card => {
+            card.classList.toggle('category-filtered', isDimmed);
+          });
+        });
+      });
+    }
+
   }
 
   // ── Scroll to card when highlight clicked on page ──
@@ -596,7 +651,7 @@
     // Flash the card
     card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     card.classList.add('card-flash');
-    setTimeout(() => card.classList.remove('card-flash'), 300);
+    setTimeout(() => card.classList.remove('card-flash'), activeFlags.enhancedMotion ? 500 : 300);
     card.focus();
   }
 
