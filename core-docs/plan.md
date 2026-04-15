@@ -2,19 +2,19 @@
 
 ## Current Focus
 
-Priority 1 (Accuracy & Trust) and Priority 5 (UX Feedback) both complete. V3 prompt shipped with precision-focused philosophy. Full 119-file eval: precision 30% → 55%, recall 73.5%. See `core-docs/accuracy-plan.md` for path to 85% target.
+Design craft pass complete (Phase 18). Feature flag system, interactive legend filter, enhanced motion, compact layout, and UI polish all shipped on `design-craft-audit` branch.
 
-Next priorities: continued accuracy improvements per `accuracy-plan.md`, remaining 5.6 false positive reduction work.
+Next priorities: continued accuracy improvements per `accuracy-plan.md`, remaining 5.6 false positive reduction work, investigate unsupported-page bug on valid news sites.
 
 ## Handoff Notes
 
-- V3 prompt is live in production (background.js + prompts.js). Key principle: precision over volume (FB-0013).
-- Full eval results (119 files, Flash Lite): v1 30% → v3 55% precision. FPs cut 347 → 121.
-- Priority 5 shipped: 5.1–5.5, 5.7, 5.8. Dev snapshots, re-run button, accessibility, main content filtering, progressive disclosure all live.
-- Eval harness migrated to Gemini SDK. `/eval-quick` skill for progressive testing. Paid API key active.
-- Corpus audited: 7 benchmark files corrected.
-- Confidence field ("high"|"medium") flows through full pipeline.
-- 94 tests pass across 6 suites.
+- Feature flag system live: `FEATURE_FLAGS` registry in `shared.js`, auto-generated toggles in Settings > Experiments. 4 flags shipped (legendFilter, devSnapshots, enhancedMotion, compactLayout), all default on.
+- CSS-driven flags (enhancedMotion, compactLayout) live-update via body class — no reload needed.
+- Snapshot now auto-copies JSON to clipboard on save.
+- Instance quotes now use monospace code-block treatment (was italic + underline).
+- Compact layout recovers ~24px horizontal space per instance quote.
+- V3 prompt still live. Eval infrastructure unchanged. 94 tests pass across 7 suites.
+- Known issue: extension sometimes shows "Cannot analyze this page" on valid news sites — needs investigation (likely tab query race or content script injection failure).
 
 ---
 
@@ -187,6 +187,7 @@ Issues surfaced during user testing. Ordered by impact.
 
 ## Recently Completed
 
+- **Apr 14, 2026**: Design craft pass (Phase 18) — feature flag system, interactive category legend filter, enhanced motion (hover lifts, glow pulse, snappier press, bar response), compact layout (flattened indentation, horizontal separators), UI polish (neutral clear button, monospace quotes, clipboard snapshot, alignment fixes, deprecated API fix). PR #24.
 - **Apr 9, 2026**: Priority 1 prompt tuning complete (item 1.1) — three iterations (v1→v2→v3), precision 30% → 55%, FPs cut from 347 → 121. Corpus audited. `/eval-quick` skill for ongoing testing.
 - **Apr 9, 2026**: "Analyzed X of Y" indicator (item 1.2) — coverage transparency when text is truncated.
 - **Apr 9, 2026**: Preserve text structure in collection (item 1.3) — paragraph boundaries preserved for better AI context.

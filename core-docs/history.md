@@ -4,6 +4,85 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 18: Design Craft Pass (April 2026)
+
+### Apr 14, 2026 — Feature flag system, interactive legend filter, enhanced motion, compact layout, UI polish
+
+**Branch:** `design-craft-audit` (from `cd591ca`, commit `1a39eb6`)
+
+**Summary:** Design craft audit driven by 8-lens critique (fidgetability, morphing, hospitality, motion, reduction, metaphor integrity). Built a registry-driven feature flag system for A/B testing new features. Shipped 4 flagged features (legend filter, snapshot gating, enhanced motion, compact layout) and a set of direct UI fixes (clear button color, quote treatment, alignment, deprecated API).
+
+**What was done:**
+
+1. **Feature flag system:**
+   - `FEATURE_FLAGS` registry in `shared.js` — single source of truth (label, description, default)
+   - Adding a new flag = one entry; toggle auto-appears in Settings > Experiments
+   - `getFeatureFlags()` merges stored values with defaults (new flags auto-appear with defaults)
+   - Options page: auto-generated toggle switches from registry, immediate save on click
+   - Side panel: flags loaded on init, cached in `activeFlags`, updated via storage change listener
+   - CSS-driven flags (`enhancedMotion`, `compactLayout`) toggle body classes live — no reload needed
+
+2. **Category legend filter** (`legendFilter` flag, default: on):
+   - Click legend dots to toggle tactic category visibility
+   - Dimmed: dot becomes hollow ring (inset box-shadow), label drops to 35% opacity
+   - Filtered cards: 8% opacity in place (no layout shift), pointer-events disabled
+   - Dot scales to 75% on press for tactile feedback
+   - Non-filterable legend (flag off): cursor reverts to default, hover has no effect
+
+3. **Enhanced motion** (`enhancedMotion` flag, default: on):
+   - Card hover: `translateY(-1px)` lift with deeper shadow (`0 4px 16px`), 0.2s transition
+   - Card flash: `cardGlowPulse` animation (0.5s ease-out) replaces static transition, hold extended 300→500ms
+   - Analyze button: `scale(0.97)` with 0.06s snap-down, inherits 0.12s release (physical button feel)
+   - Category bar: `brightness(1.2)` on hover, widens 3→4px on keyboard focus
+
+4. **Compact layout** (`compactLayout` flag, default: on):
+   - Card instances/actions/learn-more padding: `26px` → `var(--panel-pad)` (14px)
+   - Instance left-border + padding removed; replaced with horizontal `1px` separators between instances
+   - Recovers ~24px of horizontal space for quote text (~300px → ~324px usable in 400px panel)
+   - Tighter card-to-card spacing (10→8px), header/legend margins tightened
+   - Definition: 2-line `-webkit-line-clamp` for density control
+   - Explanation text and "Why?" button aligned with quote content edge (9px indent)
+
+5. **Direct UI fixes (not flagged — always active):**
+   - Clear button: neutral color (was incorrectly using `--cat-credibility` red)
+   - Instance quotes: monospace code-block treatment with subtle border/bg (was italic + underline)
+   - "What you can do" → "What to look for" (tool-like framing, not teacher-mode)
+   - Snapshot: auto-copies JSON to clipboard on save via `navigator.clipboard.writeText()`
+   - Re-run button sizing unified (removed extra font-family/font-size overrides on inline variant)
+   - Card header: removed `cursor: pointer` (no click handler exists — broken affordance)
+   - Error message: fixed double horizontal margin (`margin: 12px var(--panel-pad)` → `12px 0`)
+   - Analysis coverage: `text-align: center` → `left` (consistency)
+   - `navigator.platform` → `navigator.userAgentData?.platform` with fallback (deprecated API)
+   - Removed unused `--panel-gap` CSS variable
+   - Removed inert `border-left-style: dashed` on `.instance-source`
+   - Consolidated duplicate `.btn-rerun`/`.btn-snapshot` CSS into shared selector
+
+**Why:**
+
+The interface was functional but static — nothing responded to touch, transitions were innerHTML replacements, and each nesting level consumed horizontal space. A staff-level design audit identified that the biggest craft gaps were: (1) the category legend was static decoration earning no screen space, (2) motion was adequate but not physical, (3) instance indentation stacked 62px of left margin in a 400px panel, and (4) several visual inconsistencies (red clear button, italic quotes in a DevTools aesthetic, broken cursor affordance). The feature flag system was built first to support rapid A/B testing of each change.
+
+**Design decisions:**
+
+- **Registry-driven flags over ad-hoc booleans.** One object in `shared.js` drives the entire system: options UI, side panel behavior, and CSS classes. Adding a flag is a single entry — no plumbing in settings page or consumer code beyond gating the feature itself.
+- **CSS body-class flags for layout/motion.** `enhancedMotion` and `compactLayout` use `.enhanced-motion` and `.compact-layout` body classes. CSS overrides at the end of the file scope all enhanced styles. This means toggling a flag in settings updates the UI immediately — no re-analysis or reload needed.
+- **Fade-in-place filtering over collapse.** Filtered cards ghost to 8% opacity instead of being removed. Preserves spatial memory, avoids layout shift, makes the filter feel reversible and lightweight.
+- **Monospace code-block quotes over italic + underline.** The DevTools metaphor calls for code-inspection styling, not book-annotation styling. The code block (`font-mono`, subtle bg, 1px border) fits the inspector aesthetic while the italic + underline fought it.
+- **Horizontal instance separators over vertical left-border.** The left-border consumed 12px per instance (2px border + 10px padding). Horizontal `1px` separators between instances cost zero horizontal space and provide the same visual grouping.
+
+**Tradeoffs:**
+
+- **All flags default to `on`.** This means users get the new behavior immediately. If a flag causes issues, it can be toggled off in settings. The alternative (default off, opt-in) would mean most users never see the improvements.
+- **`!important` on `.category-filtered` opacity.** The card entrance animation uses `forwards` fill mode which holds `opacity: 1`. Normal cascade can't override animation fills, so `!important` is required. Architecturally fragile if more animation states are added.
+- **Compact layout changes definition clamp.** The 2-line clamp on `.card-definition` may truncate longer definitions with no way to expand them (unlike "Learn more" which has its own toggle). Acceptable because most definitions are already 1-2 lines, and the full definition is visible with the flag off.
+
+**SAFETY:** All changes are presentation-only. No analysis pipeline, API calls, or data storage modified. Feature flags default to `on` but stored values survive extension updates (new flags get defaults automatically via merge logic).
+
+**Test results:** 94 tests pass across 7 suites. No regressions.
+
+**Files changed:** `shared.js`, `sidepanel.css`, `sidepanel.js`, `options.html`, `options.js`
+
+---
+
 ## Phase 15: Priority 1 — Accuracy & Trust (April 2026)
 
 ### Apr 9, 2026 — Prompt tuning v1→v2→v3, confidence scoring, eval infrastructure, corpus audit
