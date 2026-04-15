@@ -12,7 +12,7 @@
   --panel-border: rgba(255, 255, 255, 0.08);
   --panel-border-hover: rgba(255, 255, 255, 0.14);
   --panel-radius: 10px;
-  --panel-pad: 14px;
+  --panel-pad: 16px;
 
   /* Typography */
   --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', ui-monospace, monospace;
@@ -81,7 +81,7 @@ body {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding: 12px var(--panel-pad);
+  padding: 14px var(--panel-pad);
   background: transparent;
   border-bottom: 1px solid var(--panel-border);
   flex-shrink: 0;
@@ -191,6 +191,17 @@ body {
   border-color: var(--panel-border-hover);
 }
 
+.controls-action-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.controls-action-row .btn-analyze {
+  flex: 1;
+  width: auto;
+}
+
 .btn-analyze.btn-analyzing {
   background: linear-gradient(90deg,
     rgba(255, 255, 255, 0.04) 25%,
@@ -217,6 +228,13 @@ body {
   40% { opacity: 1; }
 }
 
+.braille-spinner {
+  display: inline-block;
+  width: 1.2em;
+  text-align: center;
+  font-family: var(--font-mono);
+}
+
 /* ── Status Area ── */
 .status-area {
   padding: 0 var(--panel-pad);
@@ -224,7 +242,7 @@ body {
 }
 
 .status-message {
-  padding: 16px 0;
+  padding: 20px 0;
   text-align: left;
   color: var(--text-tertiary);
   font-size: var(--font-size-base);
@@ -348,16 +366,6 @@ body {
   letter-spacing: 0.03em;
 }
 
-/* ── Analysis Coverage ── */
-.analysis-coverage {
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-  text-align: left;
-  padding: 4px 0 8px;
-  font-family: var(--font-mono);
-  letter-spacing: 0.02em;
-}
-
 .btn-rerun,
 .btn-snapshot {
   display: inline-flex;
@@ -453,10 +461,6 @@ body {
   padding: 5px 0;
 }
 
-.btn-rerun-inline {
-  margin-top: 8px;
-}
-
 .explanation-toggle {
   margin-top: 2px;
   display: inline-block;
@@ -525,10 +529,8 @@ body {
   box-shadow: inset 0 0 0 1.5px var(--cat-credibility);
 }
 
-/* Filtered tactic cards — ghost in place, no interaction */
 .tactic-card.category-filtered {
-  opacity: 0.08 !important;
-  pointer-events: none;
+  display: none;
 }
 
 /* When filter flag is off, legend is display-only */
@@ -545,7 +547,7 @@ body {
   background: var(--surface-raised);
   border-radius: var(--panel-radius);
   border: 1px solid var(--panel-border);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   overflow: hidden;
   transition: border-color 0.15s, box-shadow 0.15s, opacity 0.25s;
   outline: none;
@@ -561,16 +563,10 @@ body {
   box-shadow: 0 0 0 1px rgba(91, 156, 245, 0.25), 0 2px 12px rgba(0, 0, 0, 0.25);
 }
 
-.tactic-card.card-flash {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent), 0 0 16px rgba(91, 156, 245, 0.15);
-  transition: border-color 0.1s, box-shadow 0.1s;
-}
-
 .card-header {
   display: flex;
   align-items: flex-start;
-  padding: 12px var(--panel-pad);
+  padding: 14px var(--panel-pad);
 }
 
 .card-category-bar {
@@ -592,10 +588,10 @@ body {
 }
 
 .card-tactic-name {
-  font-size: var(--font-size-md);
+  font-size: 15px;
   font-weight: 500;
   color: var(--text-primary);
-  margin-bottom: 3px;
+  margin-bottom: 6px;
 }
 
 .card-definition {
@@ -606,7 +602,7 @@ body {
 
 /* Instances */
 .card-instances {
-  padding: 0 var(--panel-pad) 10px 26px;
+  padding: 0 var(--panel-pad) 14px 26px;
 }
 
 .instance {
@@ -621,7 +617,7 @@ body {
 
 .instance-quote {
   font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   color: var(--text-secondary);
   word-break: break-word;
   cursor: pointer;
@@ -825,17 +821,6 @@ body {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
-/* Card flash glow — one-cycle pulse, longer hold */
-@keyframes cardGlowPulse {
-  0% { box-shadow: 0 0 0 1px var(--accent), 0 0 8px rgba(91, 156, 245, 0.1); }
-  40% { box-shadow: 0 0 0 1px var(--accent), 0 0 24px rgba(91, 156, 245, 0.25); }
-  100% { box-shadow: 0 0 0 1px var(--accent), 0 0 16px rgba(91, 156, 245, 0.15); }
-}
-
-.enhanced-motion .tactic-card.card-flash {
-  animation: cardGlowPulse 0.5s ease-out;
-}
-
 /* Button press — faster snap down (0.06s), natural release (inherits 0.12s) */
 .enhanced-motion .btn-analyze:active:not(:disabled) {
   transform: scale(0.97);
@@ -882,34 +867,6 @@ body {
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-/* Tighter card-to-card spacing */
-.compact-layout .tactic-card {
-  margin-bottom: 8px;
-}
-
-/* Tighter results header area */
-.compact-layout .results-header {
-  margin-bottom: 8px;
-  padding-bottom: 8px;
-}
-
-.compact-layout .category-legend {
-  margin-bottom: 8px;
-}
-
-/* Definition: 2-line clamp for density control */
-.compact-layout .card-definition {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Tighter learn-more list indentation */
-.compact-layout .learn-more-text li {
-  margin-left: 10px;
 }
 
 /* Align explanation text with quote content */
