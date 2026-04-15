@@ -10,6 +10,9 @@
   const statusArea = document.getElementById('statusArea');
   const resultsArea = document.getElementById('resultsArea');
   const settingsBtn = document.getElementById('settingsBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const rerunBtn = document.getElementById('rerunBtn');
+  const actionRow = document.getElementById('actionRow');
 
   // ── State ──
   let activeTabId = null;
@@ -24,6 +27,10 @@
   let activeFlags = typeof FEATURE_FLAGS !== 'undefined'
     ? Object.fromEntries(Object.entries(FEATURE_FLAGS).map(([k, v]) => [k, v.default]))
     : {};
+
+  const BRAILLE_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+  let brailleInterval = null;
+  let brailleFrame = 0;
 
   // ── Init ──
   async function init() {
@@ -108,6 +115,13 @@
 
   function setupEventListeners() {
     analyzeBtn.addEventListener('click', handleAnalyze);
+
+    clearBtn.addEventListener('click', () => {
+      chrome.runtime.sendMessage({ action: MSG.CLEAR_HIGHLIGHTS, tabId: activeTabId });
+      showReady();
+    });
+
+    rerunBtn.addEventListener('click', handleRerun);
 
     settingsBtn.addEventListener('click', () => {
       chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
@@ -219,15 +233,7 @@
   // ── Analysis ──
 
   async function handleAnalyze() {
-    if (currentState === 'results' || currentState === 'empty') {
-      // Clear mode
-      chrome.runtime.sendMessage({ action: MSG.CLEAR_HIGHLIGHTS, tabId: activeTabId });
-      showReady();
-      return;
-    }
-
     if (!activeTabId || currentState === 'analyzing') return;
-
     startAnalysis();
   }
 
@@ -359,12 +365,9 @@
     updateButton('Analyze', true);
     streamingRenderedCount = 0;
     clearTimeout(streamingDebounceTimer);
-    const platform = navigator.userAgentData?.platform || navigator.platform || '';
-    const modifier = /mac|iphone|ipad/i.test(platform) ? 'Cmd' : 'Ctrl';
     statusArea.innerHTML = `
       <div class="status-message">
-        Click <strong>Analyze</strong> to scan this page for manipulation tactics.<br>
-        <span class="shortcut-hint">Tip: use <kbd>${modifier}+Shift+M</kbd> to open this panel anytime.</span>
+        Click <strong>Analyze</strong> to scan this page for manipulation tactics.
       </div>
     `;
     resultsArea.innerHTML = '';
@@ -385,16 +388,32 @@
   function showAnalyzing(startTimestamp) {
     currentState = 'analyzing';
 
-    // Animated button — single indicator for analyzing state
-    analyzeBtn.innerHTML = 'Analyzing<span class="analyzing-dots"><span>.</span><span>.</span><span>.</span></span>';
+    // Braille spinner + text
+    brailleFrame = 0;
+    const spinner = document.createElement('span');
+    spinner.className = 'braille-spinner';
+    spinner.textContent = BRAILLE_FRAMES[0];
+    analyzeBtn.innerHTML = '';
+    analyzeBtn.appendChild(spinner);
+    analyzeBtn.appendChild(document.createTextNode(' Analyzing'));
     analyzeBtn.disabled = true;
     analyzeBtn.classList.remove('btn-clear');
     analyzeBtn.classList.add('btn-analyzing');
 
+    // Show analyze button, hide action row
+    analyzeBtn.style.display = '';
+    actionRow.style.display = 'none';
+
+    clearInterval(brailleInterval);
+    brailleInterval = setInterval(() => {
+      brailleFrame = (brailleFrame + 1) % BRAILLE_FRAMES.length;
+      spinner.textContent = BRAILLE_FRAMES[brailleFrame];
+    }, 80);
+
     statusArea.innerHTML = '';
     resultsArea.innerHTML = '';
 
-    // Timeout check (no visible timer — button animation communicates progress)
+    // Timeout check
     const start = startTimestamp || Date.now();
     clearInterval(analyzeTimer);
     analyzeTimer = setInterval(() => {
@@ -486,16 +505,20 @@
     };
     const totalInstances = results.reduce((sum, t) => sum + t.examples.length, 0);
     const modelLabel = MODEL_LABELS[model] || model;
-    let html = `<div class="results-header"><div class="results-summary">${results.length} tactic${results.length !== 1 ? 's' : ''} detected &middot; ${totalInstances} instance${totalInstances !== 1 ? 's' : ''}${model ? ` &middot; ${escapeHtml(modelLabel)}` : ''}</div><div class="results-header-actions"><button class="btn-snapshot" title="Save snapshot for dev review" aria-label="Save snapshot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button><button class="btn-rerun" title="Re-run analysis" aria-label="Re-run analysis"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button></div></div>`;
-    if (totalChars && analyzedChars && totalChars > analyzedChars) {
-      html += `<div class="analysis-coverage">Analyzed first ${analyzedChars.toLocaleString()} of ${totalChars.toLocaleString()} characters</div>`;
-    }
-    html += `<div class="category-legend"><span class="legend-item" data-category="logical"><span class="legend-dot logical"></span>Logical</span><span class="legend-item" data-category="rhetorical"><span class="legend-dot rhetorical"></span>Rhetorical</span><span class="legend-item" data-category="credibility"><span class="legend-dot credibility"></span>Credibility</span></div>`;
+    let html = `<div class="results-header"><div class="results-summary">${results.length} tactic${results.length !== 1 ? 's' : ''} detected &middot; ${totalInstances} instance${totalInstances !== 1 ? 's' : ''}${model ? ` &middot; ${escapeHtml(modelLabel)}` : ''}</div><div class="results-header-actions"><button class="btn-snapshot" title="Save snapshot for dev review" aria-label="Save snapshot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button></div></div>`;
+    const presentCategories = new Set(results.map(t => TACTIC_CATEGORIES[t.tactic] || 'logical'));
+    const legendItems = [
+      ['logical', 'Logical'],
+      ['rhetorical', 'Rhetorical'],
+      ['credibility', 'Credibility']
+    ].filter(([cat]) => presentCategories.has(cat))
+     .map(([cat, label]) => `<span class="legend-item" data-category="${cat}"><span class="legend-dot ${cat}"></span>${label}</span>`)
+     .join('');
+    if (legendItems) html += `<div class="category-legend">${legendItems}</div>`;
     html += results.map(t => renderTacticCard(t, { interactive: true })).join('');
 
     resultsArea.innerHTML = html;
     attachCardListeners();
-    resultsArea.querySelector('.btn-rerun')?.addEventListener('click', handleRerun);
     if (activeFlags.devSnapshots) {
       resultsArea.querySelector('.btn-snapshot')?.addEventListener('click', handleSnapshot);
     } else {
@@ -538,12 +561,10 @@
     updateButton('Clear', true, true);
     statusArea.innerHTML = `
       <div class="status-message">
-        No manipulation tactics detected on this page.<br>
-        <button class="btn-rerun btn-rerun-inline" title="Re-run analysis" aria-label="Re-run analysis"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Re-run</button>
+        No manipulation tactics detected on this page.
       </div>
     `;
     resultsArea.innerHTML = '';
-    statusArea.querySelector('.btn-rerun')?.addEventListener('click', handleRerun);
   }
 
   function showError(message) {
@@ -568,10 +589,21 @@
   // ── Button state ──
 
   function updateButton(text, enabled, isClear = false) {
+    clearInterval(brailleInterval);
     analyzeBtn.textContent = text;
     analyzeBtn.disabled = !enabled;
     analyzeBtn.classList.toggle('btn-clear', isClear);
     analyzeBtn.classList.remove('btn-analyzing');
+
+    if (isClear) {
+      // Results/empty state: show dual buttons, hide analyze
+      analyzeBtn.style.display = 'none';
+      actionRow.style.display = '';
+    } else {
+      // Ready/error/setup state: show analyze, hide action row
+      analyzeBtn.style.display = '';
+      actionRow.style.display = 'none';
+    }
   }
 
   // ── Card interactions ──
@@ -651,11 +683,16 @@
     const card = resultsArea.querySelector(`[data-tactic="${CSS.escape(tactic)}"]`);
     if (!card) return;
 
-    // Flash the card
     card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    card.classList.add('card-flash');
-    setTimeout(() => card.classList.remove('card-flash'), activeFlags.enhancedMotion ? 500 : 300);
     card.focus();
+
+    // Inline style flash — avoids CSS animation conflict with card entrance animation
+    card.style.borderColor = 'var(--accent)';
+    card.style.boxShadow = '0 0 0 1px var(--accent), 0 0 16px rgba(91, 156, 245, 0.15)';
+    setTimeout(() => {
+      card.style.borderColor = '';
+      card.style.boxShadow = '';
+    }, 500);
   }
 
   // ── Start ──
