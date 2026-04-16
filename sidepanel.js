@@ -441,11 +441,11 @@
            data-tactic="${escapeHtml(tactic.tactic)}"
            data-category="${category}">
         <div class="card-header">
-          <div class="card-category-bar ${category}" title="${escapeHtml(categoryLabel)}"></div>
-          <div class="card-content">
+          <div class="card-heading-row">
+            <div class="card-category-bar ${category}" title="${escapeHtml(categoryLabel)}"></div>
             <div class="card-tactic-name">${escapeHtml(tactic.tactic)}${instanceCount > 1 ? ` <span class="instance-count">${instanceCount}</span>` : ''}</div>
-            <div class="card-definition">${escapeHtml(tactic.definition)}</div>
           </div>
+          <div class="card-definition">${escapeHtml(tactic.definition)}</div>
         </div>
         <div class="card-instances">
           ${tactic.examples.map((ex, i) => `
@@ -498,24 +498,40 @@
     statusArea.innerHTML = '';
     streamingRenderedCount = 0;
 
-    // Summary
-    const MODEL_LABELS = {
-      'gemini-2.5-flash': 'Flash 2.5',
-      'gemini-2.5-flash-lite': 'Flash Lite 2.5'
-    };
-    const totalInstances = results.reduce((sum, t) => sum + t.examples.length, 0);
-    const modelLabel = MODEL_LABELS[model] || model;
-    let html = `<div class="results-header"><div class="results-summary">${results.length} tactic${results.length !== 1 ? 's' : ''} detected &middot; ${totalInstances} instance${totalInstances !== 1 ? 's' : ''}${model ? ` &middot; ${escapeHtml(modelLabel)}` : ''}</div><div class="results-header-actions"><button class="btn-snapshot" title="Save snapshot for dev review" aria-label="Save snapshot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button></div></div>`;
-    const presentCategories = new Set(results.map(t => TACTIC_CATEGORIES[t.tactic] || 'logical'));
+    // Dedupe tactics — merge duplicate entries returned by the model
+    // (occasionally the same tactic is returned as multiple entries instead of one entry with multiple instances)
+    const mergedMap = new Map();
+    for (const t of results) {
+      const existing = mergedMap.get(t.tactic);
+      if (existing) {
+        existing.examples.push(...t.examples);
+      } else {
+        mergedMap.set(t.tactic, { ...t, examples: [...t.examples] });
+      }
+    }
+    const deduped = Array.from(mergedMap.values());
+
+    // Count instances per category for filter pills
+    const categoryCounts = {};
+    for (const t of deduped) {
+      const cat = TACTIC_CATEGORIES[t.tactic] || 'logical';
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + t.examples.length;
+    }
+
     const legendItems = [
       ['logical', 'Logical'],
       ['rhetorical', 'Rhetorical'],
       ['credibility', 'Credibility']
-    ].filter(([cat]) => presentCategories.has(cat))
-     .map(([cat, label]) => `<span class="legend-item" data-category="${cat}"><span class="legend-dot ${cat}"></span>${label}</span>`)
+    ].filter(([cat]) => categoryCounts[cat] > 0)
+     .map(([cat, label]) => `<span class="legend-item" data-category="${cat}"><span class="legend-dot ${cat}"></span>${label} (${categoryCounts[cat]})</span>`)
      .join('');
-    if (legendItems) html += `<div class="category-legend">${legendItems}</div>`;
-    html += results.map(t => renderTacticCard(t, { interactive: true })).join('');
+
+    const snapshotBtn = activeFlags.devSnapshots
+      ? `<button class="btn-snapshot" title="Save snapshot for dev review" aria-label="Save snapshot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button>`
+      : '';
+
+    let html = `<div class="results-header"><div class="category-legend">${legendItems}</div>${snapshotBtn}</div>`;
+    html += deduped.map(t => renderTacticCard(t, { interactive: true })).join('');
 
     resultsArea.innerHTML = html;
     attachCardListeners();
