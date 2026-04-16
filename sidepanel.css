@@ -461,11 +461,6 @@ body {
   padding: 5px 0;
 }
 
-.explanation-toggle {
-  margin-top: 2px;
-  display: inline-block;
-}
-
 /* ── Category Legend (filter pills) ── */
 .category-legend {
   display: flex;
@@ -713,9 +708,11 @@ body {
 
 /* Learn more expandable */
 .card-actions {
-  padding: 0 var(--panel-pad) 10px 26px;
+  padding: 10px var(--panel-pad) 12px 26px;
+  margin-top: 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
   display: flex;
-  gap: 12px;
+  gap: 16px;
 }
 
 .card-action-link {
@@ -872,9 +869,6 @@ body {
 /* Align explanation text with quote content */
 .compact-layout .instance-explanation {
   padding-left: 9px;
-}
-
-.compact-layout .explanation-toggle {
-  margin-left: 9px;
+  margin-top: 6px;
 }
 
