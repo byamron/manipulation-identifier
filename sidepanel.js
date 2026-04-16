@@ -457,16 +457,17 @@
                    ${interactive ? `data-highlight-tactic="${escapeHtml(tactic.tactic)}" data-instance-index="${i}" title="Click to scroll to this text on the page"` : ''}>
                 "${escapeHtml(ex.text)}"
               </div>
-              ${interactive ? `<button class="explanation-toggle card-action-link">Why?</button>` : ''}
               <div class="instance-explanation">${escapeHtml(ex.explanation)}</div>
             </div>
           `).join('')}
           ${hasOverflow ? `<button class="card-action-link show-more-toggle">and ${instanceCount - VISIBLE_LIMIT} more</button>` : ''}
         </div>
-        ${interactive && tacticInfo ? `
+        ${interactive ? `
         <div class="card-actions">
-          <button class="card-action-link learn-more-toggle">Learn more</button>
-        </div>
+          <button class="card-action-link why-toggle">Why?</button>
+          ${tacticInfo ? `<button class="card-action-link learn-more-toggle">Learn more</button>` : ''}
+        </div>` : ''}
+        ${interactive && tacticInfo ? `
         <div class="card-learn-more">
           ${tacticInfo.why?.length ? `
             <div class="learn-more-section">
@@ -663,14 +664,15 @@
       });
     });
 
-    // Instance explanation toggle
-    resultsArea.querySelectorAll('.explanation-toggle').forEach(btn => {
+    // Card-level Why? toggle — reveals all instance explanations in the card at once
+    resultsArea.querySelectorAll('.why-toggle').forEach(btn => {
       btn.addEventListener('click', () => {
-        const explanation = btn.nextElementSibling;
-        if (explanation?.classList.contains('instance-explanation')) {
-          const visible = explanation.classList.toggle('explanation-visible');
-          btn.textContent = visible ? 'Hide' : 'Why?';
-        }
+        const card = btn.closest('.tactic-card');
+        const isExpanded = btn.classList.toggle('expanded');
+        card.querySelectorAll('.instance-explanation').forEach(el => {
+          el.classList.toggle('explanation-visible', isExpanded);
+        });
+        btn.textContent = isExpanded ? 'Hide' : 'Why?';
       });
     });
 
