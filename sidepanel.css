@@ -466,14 +466,14 @@ body {
   display: inline-block;
 }
 
-/* ── Category Legend ── */
+/* ── Category Legend (filter pills) ── */
 .category-legend {
   display: flex;
+  flex-wrap: wrap;
   gap: 14px;
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   color: var(--text-muted);
-  margin-bottom: 12px;
   letter-spacing: 0.03em;
 }
 
@@ -565,33 +565,33 @@ body {
 
 .card-header {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   padding: 14px var(--panel-pad);
+}
+
+.card-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
 }
 
 .card-category-bar {
   width: 3px;
-  min-height: 100%;
-  border-radius: 2px;
-  margin-right: 10px;
-  flex-shrink: 0;
   align-self: stretch;
+  min-height: 18px;
+  border-radius: 2px;
+  flex-shrink: 0;
 }
 
 .card-category-bar.logical { background: var(--cat-logical); }
 .card-category-bar.rhetorical { background: var(--cat-rhetorical); }
 .card-category-bar.credibility { background: var(--cat-credibility); }
 
-.card-content {
-  flex: 1;
-  min-width: 0;
-}
-
 .card-tactic-name {
   font-size: 15px;
   font-weight: 500;
   color: var(--text-primary);
-  margin-bottom: 6px;
 }
 
 .card-definition {
