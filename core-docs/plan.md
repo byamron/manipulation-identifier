@@ -8,6 +8,7 @@ Next priorities: continued accuracy improvements per `accuracy-plan.md`, remaini
 
 ## Handoff Notes
 
+- **Flash 2.5 API reliability fixes** (Phase 21, `fix-api-settings-snapshot` branch): Fixed server.js token budget for Flash 2.5 (was 4096, now 8192 — background.js already had the right value). Added model-aware timeouts: `THINKING_MODELS` array and `TIMEOUT_MS_THINKING: 60000` in background.js CONFIG, `fetchWithRetry` accepts `timeoutMs` param, sidepanel.js uses 75s UI guard for thinking models vs 45s default.
 - Feature flag system live: `FEATURE_FLAGS` registry in `shared.js`, auto-generated toggles in Settings > Experiments. 4 flags shipped (legendFilter, devSnapshots, enhancedMotion, compactLayout), all default on.
 - CSS-driven flags (enhancedMotion, compactLayout) live-update via body class — no reload needed.
 - Snapshot now auto-copies JSON to clipboard on save.

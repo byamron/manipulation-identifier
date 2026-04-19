@@ -93,8 +93,11 @@
 
       if (status?.status === 'analyzing') {
         // Check for timeout — use startedAt (stable) not timestamp (per-stage)
+        // Thinking models (Flash 2.5) get a longer timeout than non-thinking models
         const analysisStart = status.startedAt || status.timestamp;
-        if (Date.now() - analysisStart > 45000) {
+        const isThinking = modelSelect.value === 'gemini-2.5-flash';
+        const timeoutMs = isThinking ? 75000 : 45000;
+        if (Date.now() - analysisStart > timeoutMs) {
           showError('Analysis may have timed out. Try again.');
         } else {
           showAnalyzing(analysisStart);
@@ -413,12 +416,14 @@
     statusArea.innerHTML = '';
     resultsArea.innerHTML = '';
 
-    // Timeout check
+    // Timeout check — thinking models (Flash 2.5) get a longer timeout
     const start = startTimestamp || Date.now();
+    const isThinking = modelSelect.value === 'gemini-2.5-flash';
+    const timeoutSec = isThinking ? 75 : 45;
     clearInterval(analyzeTimer);
     analyzeTimer = setInterval(() => {
       const elapsed = Math.floor((Date.now() - start) / 1000);
-      if (elapsed > 45) {
+      if (elapsed > timeoutSec) {
         clearInterval(analyzeTimer);
         showError('Analysis may have timed out. Try again.');
       }

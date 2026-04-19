@@ -4,6 +4,55 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 21: Flash 2.5 API Reliability Fixes (April 2026)
+
+### Apr 19, 2026 — Fix token budget mismatch and add model-aware timeouts for thinking models
+
+**Branch:** `fix-api-settings-snapshot` (from `6930837`)
+
+**Summary:** Flash 2.5 is a thinking model that consumes output tokens for internal reasoning, causing API errors under two conditions: (1) server proxy mode had the wrong token budget (4096 instead of 8192), and (2) all models shared the same 30s timeout regardless of thinking overhead. Fixed both root causes.
+
+**What was done:**
+
+1. **server.js token budget fix:**
+   - `CONFIG.MODELS['gemini-2.5-flash'].tokens` changed from 4096 to 8192
+   - Background.js (BYOK mode) already had 8192; server proxy mode was the only path with the wrong value
+   - Thinking models use output tokens for internal chain-of-thought reasoning, so 4096 total output tokens could cause truncated or malformed responses when the model spent most of the budget on thinking
+
+2. **Model-aware timeouts in background.js:**
+   - Added `TIMEOUT_MS_THINKING: 60000` (60s, vs 30s default `TIMEOUT_MS`) to CONFIG
+   - Added `THINKING_MODELS: ['gemini-2.5-flash']` array to CONFIG for easy future extension
+   - `fetchWithRetry` now accepts a `timeoutMs` parameter, passed through on retries
+   - Both `callGeminiDirect` (BYOK) and `callServerProxy` pass the appropriate timeout based on whether the model is in the `THINKING_MODELS` list
+
+3. **Model-aware timeout checks in sidepanel.js:**
+   - The UI-side "may have timed out" guard now uses 75s for thinking models vs 45s for standard models
+   - Prevents premature timeout warnings while Flash 2.5 is still working through its thinking phase
+
+**Why:**
+
+Flash 2.5 was returning API errors that appeared intermittent. Two independent causes were identified:
+
+- The token budget mismatch in server.js was a real bug — the value should have been updated when Flash 2.5 was added (background.js had the correct value, server.js didn't). This is the higher-confidence fix.
+- The timeout issue is a reasonable assumption for thinking models: they need more time than non-thinking models because internal reasoning happens before response generation begins. The 30s default timeout could abort requests that were still in the thinking phase.
+
+**Design decisions:**
+
+- **`THINKING_MODELS` array rather than per-model timeout fields.** A simple array check (`THINKING_MODELS.includes(model)`) is cleaner than adding a `timeoutMs` property to each model config entry. It also makes the intent explicit — this is about the thinking/non-thinking distinction, not arbitrary per-model tuning. Adding future thinking models (e.g., a hypothetical Gemini 2.5 Pro) requires only one array entry.
+- **`timeoutMs` as a parameter to `fetchWithRetry` rather than reading CONFIG internally.** Keeps `fetchWithRetry` generic — callers decide the timeout based on their context. The function doesn't need to know about model types.
+
+**Tradeoffs:**
+
+- **Best-effort fixes without direct error diagnosis.** The actual API errors weren't captured with enough detail to confirm either root cause definitively. The token budget fix (server.js had the wrong value, period) is certain. The timeout fix is a reasonable inference — thinking models plausibly need more time — but the original errors may not have been timeout-related. Both fixes are low-risk and correct regardless of whether they address the specific errors observed.
+- **60s thinking timeout is a guess.** There's no published guidance on how long Flash 2.5 thinking takes. 60s (2x the standard 30s) provides headroom without being so long that real failures take too long to surface. Can be tuned if empirical data shows it's too short or too long.
+- **75s UI-side guard for thinking models.** The sidepanel timeout (75s) is higher than the fetch timeout (60s) to avoid the UI showing "may have timed out" while the fetch layer is still retrying. The 15s gap matches the existing 15s gap between the standard timeouts (30s fetch, 45s UI).
+
+**SAFETY:** Modifies timeout and error-handling behavior in the API call path. `fetchWithRetry` signature changed (new optional `timeoutMs` parameter, backward-compatible — defaults to existing behavior when omitted). Server proxy token budget changed for Flash 2.5. Sidepanel timeout guard thresholds changed for thinking models. All changes increase tolerance (longer timeouts, more output tokens), reducing the chance of premature failures. No error paths removed.
+
+**Files changed:** `background.js`, `server.js`, `sidepanel.js`
+
+---
+
 ## Phase 20: Side Panel Card Cleanup (April 2026)
 
 ### Apr 19, 2026 — Attribution dedup, confidence labels, contrast boost, alignment fixes
