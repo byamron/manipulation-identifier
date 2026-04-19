@@ -18,7 +18,7 @@ If `.context/review-report.json` exists and `last_reviewed_sha` matches HEAD, on
 
 ## 2. Tests
 
-Run `npx jest --verbose 2>&1`. Record failures. Note untested changed logic.
+Run `npm test 2>&1`. Record failures. Note untested changed logic.
 
 ## 3. Three independent reviews
 

@@ -35,6 +35,16 @@ Increment from the last entry. Use `FB-0001`, `FB-0002`, etc.
 
 <!-- Add new entries below this line, newest first. -->
 
+### FB-0014: Confidence via labels, not dimming
+**Date:** 2026-04-19
+**Source:** user direction
+
+**What was said:** Medium-confidence instances should not be visually dimmed (opacity). Instead, show text labels ("High confidence" / "Medium confidence") at full opacity so the differentiator is the label itself. Labels should only appear when a card has mixed confidence levels — if all instances are the same confidence, the label is redundant noise.
+
+**Synthesized rule:** Communicate confidence differences through text labels, not visual dimming or opacity changes. Only show confidence labels when they carry information (i.e., when there's variation within a tactic card). Avoid repeating the same label on every instance when it adds visual weight without information value.
+
+**Applies to:** ux, sidepanel
+
 ### FB-0013: Only flag significant, high-confidence manipulation
 **Date:** 2026-04-09
 **Source:** user direction
