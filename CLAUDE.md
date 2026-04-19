@@ -52,6 +52,7 @@ Agents are defined in `.claude/agents/` and invoked via `claude --agent <name>` 
 1. **Read before writing.** Check `core-docs/plan.md` for current focus and `core-docs/feedback.md` for past corrections.
 2. **Follow the rules.** Scoped rules in `.claude/rules/` load automatically and enforce documentation discipline, scope control, and safety checks.
 3. **Use agents.** See agent table above. Use `/clear` between agent phases.
+4. **UI feedback is visual.** When working on UI changes, expect feedback via screenshot. Do not prompt the user to describe what they see — wait for the screenshot. Implement changes incrementally so each screenshot round-trip covers a focused diff.
 
 ## Quality Bar
 
