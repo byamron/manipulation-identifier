@@ -3,11 +3,13 @@ importScripts('shared.js');
 // Configuration
 const CONFIG = {
   TIMEOUT_MS: 30000,
+  TIMEOUT_MS_THINKING: 60000, // thinking models (Flash 2.5) need more time for reasoning
   MAX_RETRIES: 2,
   RETRY_DELAY_MS: 1000,
   DEFAULT_MODEL: 'gemini-2.5-flash',
   DEFAULT_SERVER_URL: 'http://localhost:3000',
-  GEMINI_API_BASE: 'https://generativelanguage.googleapis.com/v1beta/models'
+  GEMINI_API_BASE: 'https://generativelanguage.googleapis.com/v1beta/models',
+  THINKING_MODELS: ['gemini-2.5-flash']
 };
 
 // Open side panel on extension icon click
@@ -19,9 +21,9 @@ chrome.runtime.onInstalled.addListener(() => {
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 // Fetch with timeout and retry (retries only on 5xx/429, throws on 4xx)
-async function fetchWithRetry(url, options, retries = CONFIG.MAX_RETRIES) {
+async function fetchWithRetry(url, options, retries = CONFIG.MAX_RETRIES, timeoutMs = CONFIG.TIMEOUT_MS) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), CONFIG.TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(url, { ...options, signal: controller.signal });
@@ -32,7 +34,7 @@ async function fetchWithRetry(url, options, retries = CONFIG.MAX_RETRIES) {
       if (status >= 500 && retries > 0) {
         const backoff = CONFIG.RETRY_DELAY_MS * Math.pow(2, CONFIG.MAX_RETRIES - retries);
         await delay(backoff);
-        return fetchWithRetry(url, options, retries - 1);
+        return fetchWithRetry(url, options, retries - 1, timeoutMs);
       }
       // Parse error body for better messages
       let errorBody;
@@ -51,7 +53,7 @@ async function fetchWithRetry(url, options, retries = CONFIG.MAX_RETRIES) {
       // Network error — retry
       const backoff = CONFIG.RETRY_DELAY_MS * Math.pow(2, CONFIG.MAX_RETRIES - retries);
       await delay(backoff);
-      return fetchWithRetry(url, options, retries - 1);
+      return fetchWithRetry(url, options, retries - 1, timeoutMs);
     }
     throw error;
   } finally {
@@ -171,9 +173,11 @@ async function callGeminiDirect(text, model, apiKey) {
   const tactics = await loadTactics();
   const url = `${CONFIG.GEMINI_API_BASE}/${model}:generateContent`;
 
-  // Flash 2.5 is a thinking model — needs higher output budget for thinking + response.
-  // Flash Lite doesn't think, so 4096 is sufficient for the JSON response.
-  const maxOutputTokens = model === 'gemini-2.5-flash' ? 8192 : 4096;
+  // Flash 2.5 is a thinking model — needs higher output budget for thinking + response,
+  // and a longer timeout since reasoning takes time before the response starts.
+  const isThinking = CONFIG.THINKING_MODELS.includes(model);
+  const maxOutputTokens = isThinking ? 8192 : 4096;
+  const timeoutMs = isThinking ? CONFIG.TIMEOUT_MS_THINKING : CONFIG.TIMEOUT_MS;
 
   const data = await fetchWithRetry(url, {
     method: 'POST',
@@ -186,7 +190,7 @@ async function callGeminiDirect(text, model, apiKey) {
       contents: [{ role: 'user', parts: [{ text: buildUserPrompt(text) }] }],
       generationConfig: { maxOutputTokens }
     })
-  });
+  }, CONFIG.MAX_RETRIES, timeoutMs);
 
   const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!content) throw new Error('No response from Gemini');
@@ -202,11 +206,12 @@ async function callGeminiDirect(text, model, apiKey) {
 
 // Call server proxy
 async function callServerProxy(text, model, serverUrl) {
+  const timeoutMs = CONFIG.THINKING_MODELS.includes(model) ? CONFIG.TIMEOUT_MS_THINKING : CONFIG.TIMEOUT_MS;
   const data = await fetchWithRetry(`${serverUrl.replace(/\/$/, '')}/analyze-content-with-model`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content: text, model: model })
-  });
+  }, CONFIG.MAX_RETRIES, timeoutMs);
 
   return {
     results: data.results || [],

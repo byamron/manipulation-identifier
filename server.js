@@ -17,7 +17,7 @@ const CONFIG = {
   },
   MAX_CONTENT_LENGTH: 5000, // characters
   MODELS: {
-    'gemini-2.5-flash': { tokens: 4096, name: 'gemini-2.5-flash' },
+    'gemini-2.5-flash': { tokens: 8192, name: 'gemini-2.5-flash' },       // thinking model — needs higher budget for reasoning + response
     'gemini-2.5-flash-lite': { tokens: 4096, name: 'gemini-2.5-flash-lite' }
   }
 };
