@@ -434,6 +434,7 @@
     const instanceCount = tactic.examples.length;
     const VISIBLE_LIMIT = 2;
     const hasOverflow = instanceCount > VISIBLE_LIMIT;
+    const hasMixedConfidence = tactic.examples.some(ex => ex.confidence === 'medium') && tactic.examples.some(ex => ex.confidence !== 'medium');
 
     return `
       <div class="tactic-card" tabindex="0" role="article"
@@ -448,18 +449,21 @@
           <div class="card-definition">${escapeHtml(tactic.definition)}</div>
         </div>
         <div class="card-instances">
-          ${tactic.examples.map((ex, i) => `
-            <div class="instance${ex.attribution === 'source' ? ' instance-source' : ''}${ex.confidence === 'medium' ? ' instance-medium' : ''}${hasOverflow && i >= VISIBLE_LIMIT ? ' instance-overflow' : ''}">
-              ${ex.attribution === 'source' && ex.attributedTo ? `<div class="instance-attribution">In a quote by ${escapeHtml(ex.attributedTo)}</div>` : ''}
-              ${ex.attribution === 'source' && !ex.attributedTo ? `<div class="instance-attribution">In quoted speech</div>` : ''}
-              ${ex.confidence === 'medium' ? '<div class="instance-confidence">Medium confidence</div>' : ''}
+          ${tactic.examples.map((ex, i) => {
+            const prevEx = i > 0 ? tactic.examples[i - 1] : null;
+            const repeatAttribution = prevEx && ex.attribution === 'source' && prevEx.attribution === 'source' && ex.attributedTo === prevEx.attributedTo;
+            return `
+            <div class="instance${ex.attribution === 'source' ? ' instance-source' : ''}${hasOverflow && i >= VISIBLE_LIMIT ? ' instance-overflow' : ''}">
+              ${!repeatAttribution && ex.attribution === 'source' && ex.attributedTo ? `<div class="instance-attribution">In a quote by ${escapeHtml(ex.attributedTo)}</div>` : ''}
+              ${!repeatAttribution && ex.attribution === 'source' && !ex.attributedTo ? `<div class="instance-attribution">In quoted speech</div>` : ''}
+              ${hasMixedConfidence ? `<div class="instance-confidence" title="How confident the AI is that this text uses the tactic.">${ex.confidence === 'medium' ? 'Medium confidence' : 'High confidence'}</div>` : ''}
               <div class="instance-quote${interactive ? '' : ' non-interactive'}"
                    ${interactive ? `data-highlight-tactic="${escapeHtml(tactic.tactic)}" data-instance-index="${i}" title="Click to scroll to this text on the page"` : ''}>
                 "${escapeHtml(ex.text)}"
               </div>
               <div class="instance-explanation">${escapeHtml(ex.explanation)}</div>
             </div>
-          `).join('')}
+          `; }).join('')}
           ${hasOverflow ? `<button class="card-action-link show-more-toggle">and ${instanceCount - VISIBLE_LIMIT} more</button>` : ''}
         </div>
         ${interactive ? `

@@ -187,6 +187,7 @@ Issues surfaced during user testing. Ordered by impact.
 
 ## Recently Completed
 
+- **Apr 19, 2026**: Side panel card cleanup (Phase 20) — attribution dedup for same-speaker quotes, mixed-only confidence labels with tooltip, `--text-muted` contrast boost (55%→65%), definition/explanation alignment fixes, review skill test command fix, `.context/` gitignored.
 - **Apr 14, 2026**: Design craft pass (Phase 18) — feature flag system, interactive category legend filter, enhanced motion (hover lifts, glow pulse, snappier press, bar response), compact layout (flattened indentation, horizontal separators), UI polish (neutral clear button, monospace quotes, clipboard snapshot, alignment fixes, deprecated API fix). PR #24.
 - **Apr 9, 2026**: Priority 1 prompt tuning complete (item 1.1) — three iterations (v1→v2→v3), precision 30% → 55%, FPs cut from 347 → 121. Corpus audited. `/eval-quick` skill for ongoing testing.
 - **Apr 9, 2026**: "Analyzed X of Y" indicator (item 1.2) — coverage transparency when text is truncated.

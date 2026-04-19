@@ -6,5 +6,6 @@ server.pid
 .DS_Store
 *.db
 .claude/forge/
+.context/
 eval/results/*.json
 eval/progress.json

@@ -4,6 +4,51 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 20: Side Panel Card Cleanup (April 2026)
+
+### Apr 19, 2026 — Attribution dedup, confidence labels, contrast boost, alignment fixes
+
+**Branch:** `sidepanel-card-cleanup` (from `b0f5ea9`)
+
+**Summary:** Addressed user feedback on side panel card layout: repetitive attribution headers, unreadable grey text, unexplained confidence labels, and misaligned text gridlines. Also fixed review skill test command and gitignored `.context/`.
+
+**What was done:**
+
+1. **Grouped consecutive same-speaker attributions:**
+   - When consecutive instances within a tactic card share the same `attributedTo`, the "IN A QUOTE BY..." header renders only once for the group
+   - Handles edge cases: first instance always shows header, different speakers get separate headers, undefined `attributedTo` grouped correctly
+
+2. **Confidence labels (mixed-only):**
+   - Removed the `instance-medium` opacity dimming (was 0.6) — confidence is now communicated via text labels, not visual dimming
+   - Labels ("High confidence" / "Medium confidence") only appear when a card has mixed confidence levels — all-high cards stay clean
+   - Added tooltip on hover explaining what confidence means
+
+3. **`--text-muted` contrast boost:**
+   - Changed from `hsl(0, 0%, 55%)` to `hsl(0, 0%, 65%)`
+   - Contrast ratio on dark background: ~5.5:1 → ~7.4:1 (both WCAG AA, but new value significantly more readable on small monospace text)
+
+4. **Vertical alignment cleanup (compact layout):**
+   - `.card-definition` gets `padding-left: 13px` to align with tactic name text (past the 3px category bar + 10px gap)
+   - `.compact-layout .instance-explanation` changed from `padding-left: 9px` to `0`, aligning flush with attribution/confidence text
+   - Reduces effective text gridlines from 4+ to 2 (heading block at ~29px, all instance text at 16px) plus quote blocks as visually distinct bordered elements
+
+5. **Review skill fix:** Changed test command from `npx jest --verbose` to `npm test` — the project requires `--experimental-vm-modules` for ESM support, which only the npm script includes.
+
+6. **Added `.context/` to `.gitignore`** — prevents accidental commits of Conductor workspace files (attachments, review checkpoints). Forge uses `.claude/forge/` (separately gitignored), so no side effects.
+
+**Design decisions:**
+
+- **Attribution dedup vs. quote merging:** User noted that consecutive quotes from the same person broken by narrative text should "be treated as one." The UI fix (skip repeated headers) addresses the visual noise without changing the data model. Merging the quotes themselves would require prompt-level changes — out of scope for a UI pass.
+- **Mixed-only confidence labels:** Showing "High confidence" on every instance when all are high adds visual weight without information value. Labels only appear when there's variation within a card, making them informative rather than decorative.
+- **Definition indent (13px):** Aligns definition text with the tactic name, consolidating the heading block. Creates a clear visual break between the heading (name + definition at ~29px) and instance content (at 16px).
+
+**Tradeoffs:**
+
+- Bumping `--text-muted` to 65% narrows the gap with `--text-tertiary` (70%) to just 5 points. Accepted because: they serve different functional roles (labels vs. body text), the slight blue tint on tertiary maintains visual distinction, and the user explicitly reported readability issues.
+- Not showing confidence labels on all-high cards means users don't see confirmation that items are high confidence. Accepted because the absence of a "medium" label implicitly signals high confidence, and the tooltip on mixed-card labels explains this.
+
+---
+
 ## Phase 19: Forge Infrastructure Pass (April 2026)
 
 ### Apr 18, 2026 — Review/ship skill redesign, detection accuracy rule, CLAUDE.md refinements
