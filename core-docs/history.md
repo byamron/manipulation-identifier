@@ -4,6 +4,47 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 19: Forge Infrastructure Pass (April 2026)
+
+### Apr 18, 2026 — Review/ship skill redesign, detection accuracy rule, CLAUDE.md refinements
+
+**Branch:** `optimize-forge-setup` (from `94e0f89`)
+
+**Summary:** Ran Forge analysis across 26 sessions. Filtered 6 raw proposals to 4 (5 generic workflow agents removed by quality gate). Applied 3: new `/review` skill with three-perspective framework, updated `/ship` to use review checkpoints without auto-merge, and a scoped detection accuracy rule. Deleted `/audit` (replaced by `/review`).
+
+**What was done:**
+
+1. **`/review` skill** (new, replaces `/audit`):
+   - Three independent review perspectives: Staff Engineer (correctness, security, patterns), Staff UX Designer (experience, hierarchy, accessibility), Staff Design Engineer (design-to-code fidelity)
+   - Cross-check and consolidation step that deduplicates, resolves tensions, and prioritizes
+   - Saves checkpoint to `.context/review-report.json` so `/ship` can skip redundant re-review
+   - Incremental re-review: only re-checks files changed since last report
+
+2. **`/ship` skill** (updated):
+   - Reads `/review` checkpoint — if clean and current, skips to doc updates
+   - Minimal gate fallback when no review exists (tests + history.md check)
+   - No longer auto-merges — opens PR and stops
+
+3. **Detection accuracy rule** (`.claude/rules/detection-accuracy.md`):
+   - Scoped to `*.js`, `server.js`, `unified-taxonomy.md`
+   - Enforces precision over recall for detection logic changes
+   - Requires benchmark verification before shipping prompt changes
+
+4. **CLAUDE.md**: Added "UI feedback is visual" to How to Work section.
+
+**Design decisions:**
+
+- **Two skills vs. one monolith:** Kept `/review` and `/ship` separate for token efficiency. Review can be re-run after fixes without paying for the ship context. Ship after a clean review is lightweight — just reads the checkpoint.
+- **Three-perspective framework over flat checklist:** User's existing review prompt used independent expert perspectives that then cross-check each other. This catches more issues than a single-pass checklist because different lenses surface different problems, and the consolidation step resolves tensions.
+- **No auto-merge on /ship:** User always reviews before merging. Removing auto-merge makes this explicit in the skill definition.
+
+**Tradeoffs:**
+
+- The three-perspective review is more thorough but costs more tokens than the old `/audit`. Tradeoff accepted because review quality was the user's priority, and the checkpoint system amortizes cost across the review→fix→re-review cycle.
+- Deleted `/audit` entirely rather than keeping it as a lightweight option. The minimal gate in `/ship` step 1b covers the "quick sanity check" use case.
+
+---
+
 ## Phase 18: Design Craft Pass (April 2026)
 
 ### Apr 14, 2026 — Feature flag system, interactive legend filter, enhanced motion, compact layout, UI polish
