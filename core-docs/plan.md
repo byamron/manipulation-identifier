@@ -14,7 +14,7 @@ Next priorities: continued accuracy improvements per `accuracy-plan.md`, remaini
 - Instance quotes now use monospace code-block treatment (was italic + underline).
 - Compact layout recovers ~24px horizontal space per instance quote.
 - V3 prompt still live. Eval infrastructure unchanged. 94 tests pass across 7 suites.
-- Known issue: extension sometimes shows "Cannot analyze this page" on valid news sites — needs investigation (likely tab query race or content script injection failure).
+- Known issue: extension sometimes shows "Cannot analyze this page" on valid news sites. Candidate fix in flight on `debug-bbc-analysis-error` branch (uncommitted as of this note → now committed): (1) loosen URL gate in `checkTabState` so undefined `tab.url` no longer blocks analysis, (2) add `chrome.tabs.onUpdated` listener for same-tab navigation, (3) add `visibilitychange` listener so the panel re-checks the active tab when it becomes visible (Chrome can keep the panel document alive across close/open). Not yet verified in browser. No tests added. No history.md entry yet — promote to a real entry once the fix is confirmed.
 
 ---
 
