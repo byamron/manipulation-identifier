@@ -4,6 +4,43 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 22: Fix "Cannot analyze this page" on valid sites (May 2026)
+
+### May 12, 2026 — Re-check tab state across reloads, same-tab navigation, and panel visibility
+
+**Branch:** `fix-unsupported-page-bug` (from `af8b990`)
+
+**Summary:** The extension intermittently showed "Cannot analyze this page" on valid news sites. Three independent causes converged: a defensive URL guard that treated undefined `tab.url` as unsupported, an init flow that only checked tab state once (so same-tab navigation never re-checked), and a Chrome side panel lifecycle quirk where the panel document survives close/open but `init()` doesn't run again. Fixes all three.
+
+**What was done:**
+
+1. **`checkTabState` URL guard inverted** — was: block when `!tab.url || !/^https?:/.test(tab.url)`. Now: only block when we positively know the URL is non-http (`url && !/^https?:/.test(url)`). Falls back to `tab.pendingUrl` when `tab.url` is unset. Undefined URL is now treated as "unknown, give it a chance," not "unsupported."
+2. **Same-tab navigation listener added** — `chrome.tabs.onUpdated` fires on the active tab when status reaches `complete`, calling `checkTabState`. Previously the only re-check trigger was tab-switch via `chrome.tabs.onActivated`, so navigating within the same tab kept stale state.
+3. **Visibility re-check added** — `document.addEventListener('visibilitychange', ...)` queries the active tab and re-runs `checkTabState` when the panel becomes visible. Closes the gap where Chrome keeps the side panel document alive across close/open cycles but `init()` only runs once.
+
+**Why:**
+
+The bug was filed during Phase 21 ("known issue: extension sometimes shows 'Cannot analyze this page' on valid news sites") and a WIP candidate fix was committed to `debug-analysis-screen` on May 10 but not verified or shipped. Each of the three causes is independently plausible: the URL guard is provably wrong when `tab.url` is briefly undefined (a state Chrome can produce around extension reload and permissions-grant timing); the missing same-tab listener is a real gap (the existing code only listens to tab-switch); and the side panel document lifecycle is documented Chrome behavior. The fix is conservative — it expands the conditions under which analysis is offered, never tightens them.
+
+**Design decisions:**
+
+- **`tab.pendingUrl` fallback over polling.** When a navigation has started but `tab.url` hasn't been written yet, `tab.pendingUrl` carries the target URL. Using it as a fallback is one line and avoids any polling/retry scheme. Trades a small risk (pendingUrl could in theory be misleading mid-redirect) for far simpler logic.
+- **Listen for `status === 'complete'` on `onUpdated`, not every change.** `onUpdated` fires repeatedly during a navigation (loading → URL change → title → complete). Gating on `complete` avoids re-running the state check 3-5 times per navigation, and matches what users see — the page is "done" by then.
+- **Visibility check refreshes `activeTabId`.** Inside the visibilitychange handler we re-query the active tab and update `activeTabId` before calling `checkTabState`. The user may have switched tabs in another window while the panel was hidden; relying on the cached `activeTabId` would re-check the wrong tab.
+- **No test added.** `checkTabState` lives inside the sidepanel.js IIFE alongside Chrome API calls and DOM mutations. The existing test pattern (load source as text + mock `chrome`) would require either a structural test (fragile, asserts code shape not behavior) or extracting `isAnalyzableUrl` into shared.js (scope creep beyond the WIP). Manual browser verification is the right level. The 122-test suite still passes.
+
+**Tradeoffs:**
+
+- **Best-effort fix without a reproducer.** The original "Cannot analyze this page" reports came without timing or URL details. Each of the three changes addresses a plausible cause, but we don't have a deterministic repro to confirm which one was the actual culprit in the wild. All three are independently defensible, low-risk, and don't conflict with each other.
+- **Loosening the URL guard accepts edge cases.** A tab with truly undefined and unrecoverable URL state will now reach the analyze button instead of showing "Cannot analyze." If the user clicks analyze, downstream code will fail with a clearer error than the misleading "unsupported page" message. Net better UX even in the failure path.
+- **Visibility listener adds a small cost on every panel show.** A single `chrome.tabs.query` call when the panel becomes visible. Negligible vs. the value of catching the lifecycle case.
+
+**SAFETY:** Modifies the page-state gating in the side panel. The URL guard now fails open (analyzable) on undefined URLs rather than failing closed (unsupported). New listeners (`chrome.tabs.onUpdated`, `visibilitychange`) only call `checkTabState`, which is idempotent and doesn't mutate persistent state. No error paths removed; the downstream analyze flow still validates URLs before making API calls.
+
+**Files changed:** `sidepanel.js`
+
+---
+
 ## Phase 21: Flash 2.5 API Reliability Fixes (April 2026)
 
 ### Apr 19, 2026 — Fix token budget mismatch and add model-aware timeouts for thinking models

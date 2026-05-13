@@ -2,20 +2,19 @@
 
 ## Current Focus
 
-Design craft pass complete (Phase 18). Feature flag system, interactive legend filter, enhanced motion, compact layout, and UI polish all shipped on `design-craft-audit` branch.
+Phase 22 shipped: "Cannot analyze this page" bug fix on valid news sites (URL guard + same-tab navigation listener + visibility re-check). Awaiting manual browser verification.
 
-Next priorities: continued accuracy improvements per `accuracy-plan.md`, remaining 5.6 false positive reduction work, investigate unsupported-page bug on valid news sites.
+Next priorities: continued accuracy improvements per `accuracy-plan.md`, remaining 5.6 false positive reduction work.
 
 ## Handoff Notes
 
-- **Flash 2.5 API reliability fixes** (Phase 21, `fix-api-settings-snapshot` branch): Fixed server.js token budget for Flash 2.5 (was 4096, now 8192 — background.js already had the right value). Added model-aware timeouts: `THINKING_MODELS` array and `TIMEOUT_MS_THINKING: 60000` in background.js CONFIG, `fetchWithRetry` accepts `timeoutMs` param, sidepanel.js uses 75s UI guard for thinking models vs 45s default.
+- **"Cannot analyze this page" fix** (Phase 22, `fix-unsupported-page-bug` branch): Three-part fix in `sidepanel.js`. (1) `checkTabState` URL guard inverted — only blocks when URL is positively non-http; undefined `tab.url` falls back to `tab.pendingUrl` and is treated as analyzable. (2) `chrome.tabs.onUpdated` listener added to re-check on same-tab navigation. (3) `visibilitychange` listener added to re-check on panel show (handles Chrome's side-panel-document-survives-close lifecycle). No test added — `checkTabState` is IIFE-scoped; manual browser verification required. 122 tests still pass.
 - Feature flag system live: `FEATURE_FLAGS` registry in `shared.js`, auto-generated toggles in Settings > Experiments. 4 flags shipped (legendFilter, devSnapshots, enhancedMotion, compactLayout), all default on.
 - CSS-driven flags (enhancedMotion, compactLayout) live-update via body class — no reload needed.
 - Snapshot now auto-copies JSON to clipboard on save.
 - Instance quotes now use monospace code-block treatment (was italic + underline).
 - Compact layout recovers ~24px horizontal space per instance quote.
-- V3 prompt still live. Eval infrastructure unchanged. 94 tests pass across 7 suites.
-- Known issue: extension sometimes shows "Cannot analyze this page" on valid news sites — needs investigation (likely tab query race or content script injection failure).
+- V3 prompt still live. Eval infrastructure unchanged.
 
 ---
 
@@ -188,6 +187,7 @@ Issues surfaced during user testing. Ordered by impact.
 
 ## Recently Completed
 
+- **May 12, 2026**: Fix "Cannot analyze this page" bug (Phase 22) — `sidepanel.js` URL guard inverted to fail open on undefined URLs, `chrome.tabs.onUpdated` listener for same-tab navigation, `visibilitychange` listener for panel show. Promoted from `debug-analysis-screen` WIP commit `18bc4a8`. Manual browser verification pending.
 - **Apr 19, 2026**: Side panel card cleanup (Phase 20) — attribution dedup for same-speaker quotes, mixed-only confidence labels with tooltip, `--text-muted` contrast boost (55%→65%), definition/explanation alignment fixes, review skill test command fix, `.context/` gitignored.
 - **Apr 14, 2026**: Design craft pass (Phase 18) — feature flag system, interactive category legend filter, enhanced motion (hover lifts, glow pulse, snappier press, bar response), compact layout (flattened indentation, horizontal separators), UI polish (neutral clear button, monospace quotes, clipboard snapshot, alignment fixes, deprecated API fix). PR #24.
 - **Apr 9, 2026**: Priority 1 prompt tuning complete (item 1.1) — three iterations (v1→v2→v3), precision 30% → 55%, FPs cut from 347 → 121. Corpus audited. `/eval-quick` skill for ongoing testing.

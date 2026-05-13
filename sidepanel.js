@@ -80,8 +80,10 @@
   }
 
   function checkTabState(tab) {
-    // Check if tab is analyzable
-    if (!tab.url || !/^https?:/.test(tab.url)) {
+    // tab.url can be undefined in side panel contexts (permissions timing, extension reload).
+    // Only block when we positively know the URL is non-http; treat unknown URLs as analyzable.
+    const url = tab.url || tab.pendingUrl;
+    if (url && !/^https?:/.test(url)) {
       showUnsupported();
       return;
     }
@@ -139,6 +141,25 @@
       activeTabId = activeInfo.tabId;
       const tab = await chrome.tabs.get(activeTabId);
       checkTabState(tab);
+    });
+
+    // Same-tab navigation (user navigates while panel is open)
+    chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+      if (tabId === activeTabId && changeInfo.status === 'complete') {
+        checkTabState(tab);
+      }
+    });
+
+    // Re-check when panel becomes visible — Chrome may keep the panel document alive
+    // across close/open, so init() only runs once but the active tab can change.
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'visible') {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab) {
+          activeTabId = tab.id;
+          checkTabState(tab);
+        }
+      }
     });
 
     // Storage changes (fire-persist-notify pattern)
