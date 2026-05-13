@@ -14,9 +14,11 @@ Detailed documentation of shipped features, organized by development phase.
 
 **What was done:**
 
-1. **`checkTabState` URL guard inverted** — was: block when `!tab.url || !/^https?:/.test(tab.url)`. Now: only block when we positively know the URL is non-http (`url && !/^https?:/.test(url)`). Falls back to `tab.pendingUrl` when `tab.url` is unset. Undefined URL is now treated as "unknown, give it a chance," not "unsupported."
+1. **`isAnalyzableUrl(tab)` extracted to `shared.js`** — pure helper used by `checkTabState`. Returns true for http(s) URLs, true for undefined URL (the bug fix), false for chrome://, file://, about:blank, etc. Falls back to `tab.pendingUrl` when `tab.url` is unset. Original guard (`!tab.url || !/^https?:/.test(tab.url)`) failed closed on undefined — now we fail open, treating "unknown URL" as analyzable rather than unsupported.
 2. **Same-tab navigation listener added** — `chrome.tabs.onUpdated` fires on the active tab when status reaches `complete`, calling `checkTabState`. Previously the only re-check trigger was tab-switch via `chrome.tabs.onActivated`, so navigating within the same tab kept stale state.
-3. **Visibility re-check added** — `document.addEventListener('visibilitychange', ...)` queries the active tab and re-runs `checkTabState` when the panel becomes visible. Closes the gap where Chrome keeps the side panel document alive across close/open cycles but `init()` only runs once.
+3. **Visibility re-check added** — `document.addEventListener('visibilitychange', ...)` queries the active tab and re-runs `checkTabState` when the panel becomes visible. Closes the gap where Chrome keeps the side panel document alive across close/open cycles but `init()` only runs once. Guarded by `if (!activeTabId) return;` to avoid racing with `init()` on first load.
+4. **Diagnostic breadcrumb** — `console.warn` when `checkTabState` is invoked with both `tab.url` and `tab.pendingUrl` undefined. Gives the next debugger a DevTools signal confirming the URL-undefined path was hit if the bug recurs.
+5. **12 unit tests for `isAnalyzableUrl`** — covers http(s), chrome://, file://, about:blank, undefined (regression), empty string, pendingUrl fallback, pendingUrl rejection, tab.url precedence over pendingUrl, URLs with port/path. New file `test/isAnalyzableUrl.test.js`. Total suite: 134 tests, 10 files.
 
 **Why:**
 
@@ -27,7 +29,8 @@ The bug was filed during Phase 21 ("known issue: extension sometimes shows 'Cann
 - **`tab.pendingUrl` fallback over polling.** When a navigation has started but `tab.url` hasn't been written yet, `tab.pendingUrl` carries the target URL. Using it as a fallback is one line and avoids any polling/retry scheme. Trades a small risk (pendingUrl could in theory be misleading mid-redirect) for far simpler logic.
 - **Listen for `status === 'complete'` on `onUpdated`, not every change.** `onUpdated` fires repeatedly during a navigation (loading → URL change → title → complete). Gating on `complete` avoids re-running the state check 3-5 times per navigation, and matches what users see — the page is "done" by then.
 - **Visibility check refreshes `activeTabId`.** Inside the visibilitychange handler we re-query the active tab and update `activeTabId` before calling `checkTabState`. The user may have switched tabs in another window while the panel was hidden; relying on the cached `activeTabId` would re-check the wrong tab.
-- **No test added.** `checkTabState` lives inside the sidepanel.js IIFE alongside Chrome API calls and DOM mutations. The existing test pattern (load source as text + mock `chrome`) would require either a structural test (fragile, asserts code shape not behavior) or extracting `isAnalyzableUrl` into shared.js (scope creep beyond the WIP). Manual browser verification is the right level. The 122-test suite still passes.
+- **`isAnalyzableUrl` lives in `shared.js`, not as a local helper.** `shared.js` is the canonical home for cross-context pure utilities (loaded via `importScripts` in background, `<script>` in sidepanel). The URL-guard logic is exactly that shape — pure, no side effects, useful anywhere a tab is inspected. Placing it next to `escapeHtml` matches the existing pattern.
+- **Diagnostic breadcrumb stays in production.** A `console.warn` is cheap (one log line per state check on the rare undefined-URL path), removable later, and gives the next debugger a confirmation signal. Worth far more than gating behind a debug flag.
 
 **Tradeoffs:**
 
@@ -37,7 +40,7 @@ The bug was filed during Phase 21 ("known issue: extension sometimes shows 'Cann
 
 **SAFETY:** Modifies the page-state gating in the side panel. The URL guard now fails open (analyzable) on undefined URLs rather than failing closed (unsupported). New listeners (`chrome.tabs.onUpdated`, `visibilitychange`) only call `checkTabState`, which is idempotent and doesn't mutate persistent state. No error paths removed; the downstream analyze flow still validates URLs before making API calls.
 
-**Files changed:** `sidepanel.js`
+**Files changed:** `sidepanel.js`, `shared.js`, `test/isAnalyzableUrl.test.js`, `core-docs/history.md`, `core-docs/plan.md`
 
 ---
 

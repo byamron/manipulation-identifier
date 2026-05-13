@@ -80,10 +80,10 @@
   }
 
   function checkTabState(tab) {
-    // tab.url can be undefined in side panel contexts (permissions timing, extension reload).
-    // Only block when we positively know the URL is non-http; treat unknown URLs as analyzable.
-    const url = tab.url || tab.pendingUrl;
-    if (url && !/^https?:/.test(url)) {
+    if (!tab.url && !tab.pendingUrl) {
+      console.warn('[MI] checkTabState: tab.url undefined, treating as analyzable', { tabId: tab.id });
+    }
+    if (!isAnalyzableUrl(tab)) {
       showUnsupported();
       return;
     }
@@ -153,12 +153,13 @@
     // Re-check when panel becomes visible — Chrome may keep the panel document alive
     // across close/open, so init() only runs once but the active tab can change.
     document.addEventListener('visibilitychange', async () => {
-      if (document.visibilityState === 'visible') {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (tab) {
-          activeTabId = tab.id;
-          checkTabState(tab);
-        }
+      if (document.visibilityState !== 'visible') return;
+      // Skip if init() hasn't claimed an active tab yet — it will run checkTabState itself.
+      if (!activeTabId) return;
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab) {
+        activeTabId = tab.id;
+        checkTabState(tab);
       }
     });
 

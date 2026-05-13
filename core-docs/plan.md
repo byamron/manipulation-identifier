@@ -8,7 +8,7 @@ Next priorities: continued accuracy improvements per `accuracy-plan.md`, remaini
 
 ## Handoff Notes
 
-- **"Cannot analyze this page" fix** (Phase 22, `fix-unsupported-page-bug` branch): Three-part fix in `sidepanel.js`. (1) `checkTabState` URL guard inverted — only blocks when URL is positively non-http; undefined `tab.url` falls back to `tab.pendingUrl` and is treated as analyzable. (2) `chrome.tabs.onUpdated` listener added to re-check on same-tab navigation. (3) `visibilitychange` listener added to re-check on panel show (handles Chrome's side-panel-document-survives-close lifecycle). No test added — `checkTabState` is IIFE-scoped; manual browser verification required. 122 tests still pass.
+- **"Cannot analyze this page" fix** (Phase 22, `fix-unsupported-page-bug` branch): Three-part fix. (1) `isAnalyzableUrl(tab)` extracted to `shared.js` and used by `checkTabState` — falls open on undefined URL (the bug fix), falls back to `tab.pendingUrl`. (2) `chrome.tabs.onUpdated` listener added to re-check on same-tab navigation. (3) `visibilitychange` listener added to re-check on panel show, guarded by `activeTabId` check to avoid init race. Diagnostic `console.warn` breadcrumb when URL is undefined. 12 new unit tests cover the URL guard. 134 tests pass total. Manual browser verification still pending.
 - Feature flag system live: `FEATURE_FLAGS` registry in `shared.js`, auto-generated toggles in Settings > Experiments. 4 flags shipped (legendFilter, devSnapshots, enhancedMotion, compactLayout), all default on.
 - CSS-driven flags (enhancedMotion, compactLayout) live-update via body class — no reload needed.
 - Snapshot now auto-copies JSON to clipboard on save.
@@ -187,7 +187,7 @@ Issues surfaced during user testing. Ordered by impact.
 
 ## Recently Completed
 
-- **May 12, 2026**: Fix "Cannot analyze this page" bug (Phase 22) — `sidepanel.js` URL guard inverted to fail open on undefined URLs, `chrome.tabs.onUpdated` listener for same-tab navigation, `visibilitychange` listener for panel show. Promoted from `debug-analysis-screen` WIP commit `18bc4a8`. Manual browser verification pending.
+- **May 12, 2026**: Fix "Cannot analyze this page" bug (Phase 22) — `isAnalyzableUrl(tab)` helper extracted to `shared.js` (fails open on undefined URL, falls back to `pendingUrl`), `chrome.tabs.onUpdated` listener for same-tab navigation, `visibilitychange` listener for panel show with init-race guard, diagnostic breadcrumb, 12 new unit tests. Promoted from `debug-analysis-screen` WIP commit `18bc4a8`. Manual browser verification pending.
 - **Apr 19, 2026**: Side panel card cleanup (Phase 20) — attribution dedup for same-speaker quotes, mixed-only confidence labels with tooltip, `--text-muted` contrast boost (55%→65%), definition/explanation alignment fixes, review skill test command fix, `.context/` gitignored.
 - **Apr 14, 2026**: Design craft pass (Phase 18) — feature flag system, interactive category legend filter, enhanced motion (hover lifts, glow pulse, snappier press, bar response), compact layout (flattened indentation, horizontal separators), UI polish (neutral clear button, monospace quotes, clipboard snapshot, alignment fixes, deprecated API fix). PR #24.
 - **Apr 9, 2026**: Priority 1 prompt tuning complete (item 1.1) — three iterations (v1→v2→v3), precision 30% → 55%, FPs cut from 347 → 121. Corpus audited. `/eval-quick` skill for ongoing testing.

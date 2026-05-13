@@ -35,6 +35,16 @@ const CATEGORY_LABELS = {
   credibility: 'Credibility Attack'
 };
 
+// True if the tab is on a page where content scripts can run. Undefined tab.url
+// (extension reload, permissions timing) falls back to tab.pendingUrl, and an
+// unknown URL is treated as analyzable rather than blocked — the original bug
+// was failing closed on undefined, which surfaced as "Cannot analyze" on valid sites.
+function isAnalyzableUrl(tab) {
+  const url = tab.url || tab.pendingUrl;
+  if (!url) return true;
+  return /^https?:/.test(url);
+}
+
 function escapeHtml(unsafe) {
   return String(unsafe)
     .replace(/&/g, '&amp;')
