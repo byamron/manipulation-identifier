@@ -16,11 +16,21 @@
 
   // ── State ──
   let activeTabId = null;
-  let currentState = 'ready'; // ready | analyzing | results | empty | error | setup | unsupported
+  let currentState = 'ready'; // ready | analyzing | results | empty | error | setup | unsupported | checking
   let analyzeTimer = null;
   let tacticsData = null; // Loaded from tactics.json for "Learn more"
   let streamingRenderedCount = 0;
   let streamingDebounceTimer = null;
+
+  // Diagnostics: track total checkTabState calls and undefined-url warns so we can
+  // tell the ratio if the unsupported-page bug recurs. Stored in session storage
+  // so DevTools or a future diagnostics view can read it across page loads.
+  let checkTabStateCount = 0;
+  let checkTabStateUndefinedCount = 0;
+
+  // Listener refs for teardown on beforeunload. Anonymous functions can't be
+  // removed by chrome.tabs.*.removeListener — store handles up front.
+  const listeners = {};
 
   // Feature flag cache — defaults used until storage loads
   // Guard: if shared.js hasn't loaded (cache/timing), degrade gracefully instead of crashing
@@ -80,9 +90,22 @@
   }
 
   function checkTabState(tab) {
+    checkTabStateCount++;
     if (!tab.url && !tab.pendingUrl) {
-      console.warn('[MI] checkTabState: tab.url undefined, treating as analyzable', { tabId: tab.id });
+      checkTabStateUndefinedCount++;
+      console.warn('[MI] checkTabState: tab.url undefined, treating as analyzable', {
+        tabId: tab.id,
+        undefinedCount: checkTabStateUndefinedCount,
+        totalCount: checkTabStateCount
+      });
     }
+    // Persist counters so a future diagnostics view (or manual DevTools poke at
+    // chrome.storage.session) can read the ratio without re-instrumenting.
+    chrome.storage.session.set({
+      mi_check_tab_state_total: checkTabStateCount,
+      mi_check_tab_state_undefined: checkTabStateUndefinedCount
+    });
+
     if (!isAnalyzableUrl(tab)) {
       showUnsupported();
       return;
@@ -137,31 +160,48 @@
     });
 
     // Tab switching
-    chrome.tabs.onActivated.addListener(async (activeInfo) => {
+    listeners.onActivated = async (activeInfo) => {
       activeTabId = activeInfo.tabId;
       const tab = await chrome.tabs.get(activeTabId);
       checkTabState(tab);
-    });
+    };
+    chrome.tabs.onActivated.addListener(listeners.onActivated);
 
-    // Same-tab navigation (user navigates while panel is open)
-    chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    // Same-tab navigation. The { properties: ['status'] } filter narrows the
+    // notification stream to status changes only (skips title/favicon/audible).
+    listeners.onUpdated = (tabId, changeInfo, tab) => {
       if (tabId === activeTabId && changeInfo.status === 'complete') {
         checkTabState(tab);
       }
-    });
+    };
+    chrome.tabs.onUpdated.addListener(listeners.onUpdated, { properties: ['status'] });
 
     // Re-check when panel becomes visible — Chrome may keep the panel document alive
     // across close/open, so init() only runs once but the active tab can change.
-    document.addEventListener('visibilitychange', async () => {
+    listeners.visibilityChange = async () => {
       if (document.visibilityState !== 'visible') return;
       // Skip if init() hasn't claimed an active tab yet — it will run checkTabState itself.
       if (!activeTabId) return;
+      // Avoid flashing a stale "unsupported" while we re-query: show a neutral
+      // checking state until the result lands. See history Phase 22.
+      if (currentState === 'unsupported') showChecking();
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (tab) {
         activeTabId = tab.id;
         checkTabState(tab);
       }
-    });
+    };
+    document.addEventListener('visibilitychange', listeners.visibilityChange);
+
+    // Future-proof: tear down listeners if the document is ever unloaded.
+    // Side panel documents typically persist, but Chrome can recycle them; without
+    // this, a recycled document would accumulate handlers on subsequent init() runs.
+    listeners.beforeUnload = () => {
+      chrome.tabs.onActivated.removeListener(listeners.onActivated);
+      chrome.tabs.onUpdated.removeListener(listeners.onUpdated);
+      document.removeEventListener('visibilitychange', listeners.visibilityChange);
+    };
+    window.addEventListener('beforeunload', listeners.beforeUnload, { once: true });
 
     // Storage changes (fire-persist-notify pattern)
     chrome.storage.onChanged.addListener((changes, area) => {
@@ -402,9 +442,39 @@
     currentState = 'unsupported';
     updateButton('Analyze', false);
     statusArea.innerHTML = `
-      <div class="status-message">
-        Cannot analyze this page.<br>
-        Navigate to a regular web page to use Manipulation Identifier.
+      <div class="status-message status-unsupported">
+        <div class="status-title">This page can't be analyzed</div>
+        <div class="status-body">
+          Manipulation Identifier works on regular websites (http and https).
+          Browser system pages, the new-tab page, and local files aren't accessible to the extension.
+        </div>
+        <div class="status-actions">
+          <button type="button" class="card-action-link" id="recheckBtn">Try again</button>
+        </div>
+      </div>
+    `;
+    resultsArea.innerHTML = '';
+    document.getElementById('recheckBtn')?.addEventListener('click', async () => {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab) {
+        activeTabId = tab.id;
+        showChecking();
+        // Slight defer so the user sees the state transition rather than a snap.
+        setTimeout(() => checkTabState(tab), 120);
+      }
+    });
+  }
+
+  // Transient state shown while we re-query the active tab. Prevents a flash of
+  // a stale "unsupported" card when the panel becomes visible or the user clicks
+  // Try again. Always followed by checkTabState resolving to a real state.
+  function showChecking() {
+    currentState = 'checking';
+    updateButton('Analyze', false);
+    statusArea.innerHTML = `
+      <div class="status-message status-checking">
+        <span class="braille-spinner" aria-hidden="true">⠋</span>
+        <span>Checking page…</span>
       </div>
     `;
     resultsArea.innerHTML = '';
