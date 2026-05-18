@@ -51,13 +51,17 @@ describe('sidepanel.js contract: unsupported state UX', () => {
     expect(sidepanelSrc).toMatch(/system pages|http and https/i);
   });
 
-  test('exposes a Try again affordance', () => {
+  test('exposes a re-check affordance', () => {
     expect(sidepanelSrc).toMatch(/id=['"]recheckBtn['"]/);
-    expect(sidepanelSrc).toMatch(/Try again/);
+    // Button text "Re-check" (renamed from "Try again" — see Phase 22 post-review).
+    expect(sidepanelSrc).toMatch(/>Re-check</);
   });
 
-  test('Try again button re-queries the active tab', () => {
-    expect(sidepanelSrc).toMatch(/recheckBtn[\s\S]{0,300}chrome\.tabs\.query/);
+  test('Re-check button re-queries the active tab and refetches it inside the defer', () => {
+    // Initial query gets the tab id; the defer's chrome.tabs.get refetches a
+    // fresh tab to avoid acting on a stale reference if the user navigated.
+    expect(sidepanelSrc).toMatch(/recheckBtn[\s\S]{0,400}chrome\.tabs\.query/);
+    expect(sidepanelSrc).toMatch(/recheckBtn[\s\S]{0,600}chrome\.tabs\.get\(tabId\)/);
   });
 
   test('showChecking transient state exists to bridge re-checks', () => {

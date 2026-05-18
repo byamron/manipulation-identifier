@@ -57,6 +57,33 @@ The bug was filed during Phase 21 ("known issue: extension sometimes shows 'Cann
 
 **Files changed:** `sidepanel.js`, `shared.js`, `sidepanel.css`, `test/isAnalyzableUrl.test.js`, `test/sidepanelContract.test.js`, `core-docs/history.md`, `core-docs/plan.md`
 
+### May 12, 2026 — Post-review corrections
+
+Five small follow-ups to PR #32 driven by a careful post-ship code review.
+
+**What was done:**
+
+1. **Visibility-guard rationale corrected.** The `if (!activeTabId) return;` guard in `listeners.visibilityChange` was originally documented as preventing an "init race." On inspection, `setupEventListeners` runs at the end of `init()` — after `activeTabId` is assigned — so the guard is unreachable under the current registration order. Kept the guard as defense-in-depth but rewrote both the in-code comment and the design-decision below to honestly describe it as defensive (protects against a future change moving listener setup earlier) rather than claiming a race that can't happen.
+2. **CSS comment / code mismatch fixed.** `sidepanel.css` had a comment claiming the `.status-message` fade animation was "Gated to enhanced-motion." The selector is actually `.status-message` (unconditional). The history's design decision was correct ("functional motion stays unconditional") — only the CSS comment was wrong. Rewrote the comment to match.
+3. **Try again 120ms staleness eliminated.** The Try again button's `setTimeout(() => checkTabState(tab), 120)` captured a `tab` reference that could go stale if the user navigated during the 120ms defer. Now captures `tab.id`, re-queries via `chrome.tabs.get(tabId)` inside the setTimeout, wrapped in try/catch (the tab may have closed during the defer; visibility/onActivated will re-render correctly).
+4. **"Try again" renamed to "Re-check".** The button doesn't retry a failed analysis — it re-checks the current page state. "Re-check" is more accurate, single-word, and doesn't carry retry semantics that confuse users on genuinely-unsupported pages (where clicking yields the same state).
+5. **Diagnostic write throttle.** `chrome.storage.session.set` for the counters previously fired on every `checkTabState` call (100+/heavy session). Now writes only when the undefined-URL counter increments (the interesting case) OR every 50th total call (denominator checkpoint for healthy sessions). In-memory counters tick on every call, so DevTools inspection of the live page is unaffected.
+
+**Design decisions (correcting Phase 22):**
+
+- **Kept the guard rather than moving listeners earlier.** Moving `setupEventListeners` before `init()`'s `await chrome.tabs.query` would make the guard load-bearing, but introduces a behavior window where listeners can fire on null `activeTabId`. Each listener IS null-safe (verified), but this is a behavior change worth careful browser testing — disproportionate risk for the bug-fix branch. Filed as future consideration.
+- **Write throttle uses an OR condition, not a pure undefined-only filter.** "Only write on undefined increment" would leave the storage empty in healthy sessions, making it impossible to compute a meaningful ratio if the bug recurs. The `count % 50 === 0` checkpoint gives a denominator without saturating the write path.
+- **Try again re-queries via `chrome.tabs.get(tabId)`, not `chrome.tabs.query` again.** Cheaper (single-tab lookup vs. active+window filter) and more direct — we know the tab id we want to refresh.
+
+**Tradeoffs:**
+
+- **The guard is admittedly dead code today.** Reasonable readers may want to delete it. Comment now explicitly says it's defensive against future refactor — the trigger to remove it would be a code archaeologist confident no future refactor will reverse the registration order.
+- **The 120ms defer in the Try again handler is still arbitrary.** Replacing the captured tab with a re-query fixes the correctness issue but doesn't eliminate the magic number. A two-frame `requestAnimationFrame` would be more principled but adds nesting. Acceptable tradeoff for the simplicity.
+
+**SAFETY:** No new error paths or persistence behavior. Counter-write throttle reduces I/O. Try again handler now has a try/catch around `chrome.tabs.get` — swallowing the rare "tab closed during defer" case is correct (visibility/onActivated will re-render).
+
+**Files changed:** `sidepanel.js`, `sidepanel.css`, `test/sidepanelContract.test.js`, `core-docs/history.md`, `core-docs/plan.md`
+
 ---
 
 ## Phase 21: Flash 2.5 API Reliability Fixes (April 2026)

@@ -247,8 +247,9 @@ body {
   color: var(--text-tertiary);
   font-size: var(--font-size-base);
   line-height: 1.7;
-  /* Fade-in when state swaps. Gated to enhanced-motion so the existing motion
-     budget controls it. Snap behavior stays default for reduced-motion users. */
+  /* Fade-in on every state swap. Functional motion — communicates state change,
+     so it stays unconditional rather than gating on the enhanced-motion flag.
+     prefers-reduced-motion override below suppresses it for users who need that. */
   animation: status-fade-in 180ms ease-out;
 }
 

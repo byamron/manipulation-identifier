@@ -91,7 +91,8 @@
 
   function checkTabState(tab) {
     checkTabStateCount++;
-    if (!tab.url && !tab.pendingUrl) {
+    const undefinedUrl = !tab.url && !tab.pendingUrl;
+    if (undefinedUrl) {
       checkTabStateUndefinedCount++;
       console.warn('[MI] checkTabState: tab.url undefined, treating as analyzable', {
         tabId: tab.id,
@@ -99,12 +100,15 @@
         totalCount: checkTabStateCount
       });
     }
-    // Persist counters so a future diagnostics view (or manual DevTools poke at
-    // chrome.storage.session) can read the ratio without re-instrumenting.
-    chrome.storage.session.set({
-      mi_check_tab_state_total: checkTabStateCount,
-      mi_check_tab_state_undefined: checkTabStateUndefinedCount
-    });
+    // Persist counters when an interesting event occurs (undefined-URL hit) OR
+    // every 50th call as a checkpoint so the total has a denominator even in
+    // healthy sessions. In-memory counters tick on every call regardless.
+    if (undefinedUrl || checkTabStateCount % 50 === 0) {
+      chrome.storage.session.set({
+        mi_check_tab_state_total: checkTabStateCount,
+        mi_check_tab_state_undefined: checkTabStateUndefinedCount
+      });
+    }
 
     if (!isAnalyzableUrl(tab)) {
       showUnsupported();
@@ -180,7 +184,9 @@
     // across close/open, so init() only runs once but the active tab can change.
     listeners.visibilityChange = async () => {
       if (document.visibilityState !== 'visible') return;
-      // Skip if init() hasn't claimed an active tab yet — it will run checkTabState itself.
+      // Defensive: registration order makes this unreachable today (setupEventListeners
+      // runs after init() assigns activeTabId), but prevents a null-tab checkTabState
+      // if a future change moves listener setup earlier in init().
       if (!activeTabId) return;
       // Avoid flashing a stale "unsupported" while we re-query: show a neutral
       // checking state until the result lands. See history Phase 22.
@@ -449,19 +455,28 @@
           Browser system pages, the new-tab page, and local files aren't accessible to the extension.
         </div>
         <div class="status-actions">
-          <button type="button" class="card-action-link" id="recheckBtn">Try again</button>
+          <button type="button" class="card-action-link" id="recheckBtn">Re-check</button>
         </div>
       </div>
     `;
     resultsArea.innerHTML = '';
     document.getElementById('recheckBtn')?.addEventListener('click', async () => {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab) {
-        activeTabId = tab.id;
-        showChecking();
-        // Slight defer so the user sees the state transition rather than a snap.
-        setTimeout(() => checkTabState(tab), 120);
-      }
+      if (!tab) return;
+      const tabId = tab.id;
+      activeTabId = tabId;
+      showChecking();
+      // Slight defer so the user sees the state transition rather than a snap.
+      // Re-query inside the timeout so we don't act on a stale tab if the user
+      // navigated during the 120ms window.
+      setTimeout(async () => {
+        try {
+          const freshTab = await chrome.tabs.get(tabId);
+          checkTabState(freshTab);
+        } catch {
+          // Tab closed during the defer — visibility/onActivated will re-render correctly.
+        }
+      }, 120);
     });
   }
 
