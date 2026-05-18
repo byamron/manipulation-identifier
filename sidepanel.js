@@ -188,14 +188,16 @@
       // runs after init() assigns activeTabId), but prevents a null-tab checkTabState
       // if a future change moves listener setup earlier in init().
       if (!activeTabId) return;
-      // Avoid flashing a stale "unsupported" while we re-query: show a neutral
-      // checking state until the result lands. See history Phase 22.
-      if (currentState === 'unsupported') showChecking();
+      // Query first, then transition through showChecking. Reversed from the original
+      // order so we don't strand the user on the checking spinner if the rare empty-tab
+      // case happens (no active tab in the current window).
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab) {
-        activeTabId = tab.id;
-        checkTabState(tab);
-      }
+      if (!tab) return;
+      // Avoid flashing a stale "unsupported" while we render the next state — show a
+      // neutral checking state synchronously between the query and checkTabState.
+      if (currentState === 'unsupported') showChecking();
+      activeTabId = tab.id;
+      checkTabState(tab);
     };
     document.addEventListener('visibilitychange', listeners.visibilityChange);
 
@@ -462,6 +464,9 @@
     resultsArea.innerHTML = '';
     document.getElementById('recheckBtn')?.addEventListener('click', async () => {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      // Empty active-tab is extremely rare (no active tab in current window). Exit
+      // early without transitioning state — user keeps seeing the unsupported card
+      // rather than a stranded spinner.
       if (!tab) return;
       const tabId = tab.id;
       activeTabId = tabId;

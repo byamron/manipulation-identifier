@@ -84,6 +84,27 @@ Five small follow-ups to PR #32 driven by a careful post-ship code review.
 
 **Files changed:** `sidepanel.js`, `sidepanel.css`, `test/sidepanelContract.test.js`, `core-docs/history.md`, `core-docs/plan.md`
 
+### May 12, 2026 — Review-warning follow-ups
+
+Two minor warnings from the post-corrections `/review` pass.
+
+**What was done:**
+
+1. **Visibility handler reordered to query-first.** The previous order was `showChecking()` → `await chrome.tabs.query` → `if (tab) checkTabState`. If the query returned `[]` (extremely rare — no active tab in current window), the user would be stranded on the checking spinner with no resolution path. Now: query first, `if (!tab) return;` before `showChecking()`. The flicker-bridge intent is preserved because `showChecking` still runs synchronously between the query and `checkTabState` — and the query is fast enough (single-digit ms) that bridging *during* the await was never necessary in practice.
+2. **Re-check button intent documented.** Added a comment to the existing `if (!tab) return;` guard in the `recheckBtn` handler explaining why we exit early without transitioning state (avoid stranding a spinner; user keeps seeing the unsupported card, which is the correct fallback).
+3. **New structural test** asserts the visibility handler's ordering: `query → if (!tab) return → showChecking`. Guards against a regression that would re-introduce the stranded-spinner failure mode. 146 tests pass total.
+
+**Design decisions:**
+
+- **Reorder rather than restore-prior-state.** Two viable fixes existed: reorder (proposed here) or transition back to the previous state if the query fails. Reorder is one move; restore-state requires tracking the previous state separately and adding a `showUnsupported` fallback path. Reorder also has the benefit of being verifiable by inspection — you can read the function top-to-bottom and see that `showChecking` only runs when we have a resolution path.
+- **Skipped Warning 3 (120ms magic number).** Already documented as acceptable in the prior post-review subsection's tradeoffs. The `requestAnimationFrame`-pair alternative was considered and rejected for added nesting cost vs. minor principle gain.
+
+**Tradeoffs:**
+
+- **The flicker-during-query case is now unhandled.** If `chrome.tabs.query` ever became slow (it doesn't, in practice), the user could briefly see the stale unsupported card before the new state lands. Acceptable because (a) the query is sync-fast in Chrome, (b) the fade-in animation masks brief stale-state visibility, (c) this is a hypothetical regression, not an observed one.
+
+**Files changed:** `sidepanel.js`, `test/sidepanelContract.test.js`, `core-docs/history.md`
+
 ---
 
 ## Phase 21: Flash 2.5 API Reliability Fixes (April 2026)

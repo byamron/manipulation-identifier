@@ -61,7 +61,7 @@ describe('sidepanel.js contract: unsupported state UX', () => {
     // Initial query gets the tab id; the defer's chrome.tabs.get refetches a
     // fresh tab to avoid acting on a stale reference if the user navigated.
     expect(sidepanelSrc).toMatch(/recheckBtn[\s\S]{0,400}chrome\.tabs\.query/);
-    expect(sidepanelSrc).toMatch(/recheckBtn[\s\S]{0,600}chrome\.tabs\.get\(tabId\)/);
+    expect(sidepanelSrc).toMatch(/recheckBtn[\s\S]{0,900}chrome\.tabs\.get\(tabId\)/);
   });
 
   test('showChecking transient state exists to bridge re-checks', () => {
@@ -71,5 +71,12 @@ describe('sidepanel.js contract: unsupported state UX', () => {
 
   test('visibilitychange handler transitions through showChecking when previous state was unsupported', () => {
     expect(sidepanelSrc).toMatch(/currentState\s*===\s*['"]unsupported['"][\s\S]{0,100}showChecking\(\)/);
+  });
+
+  test('visibility handler short-circuits before showChecking when no active tab', () => {
+    // Guards against a regression where chrome.tabs.query returns [] and the
+    // user is stranded on the checking spinner with no resolution path.
+    // Order must be: query → if (!tab) return → showChecking → checkTabState.
+    expect(sidepanelSrc).toMatch(/visibilityChange[\s\S]{0,800}if\s*\(!tab\)\s*return[\s\S]{0,300}showChecking/);
   });
 });
