@@ -4,6 +4,109 @@ Detailed documentation of shipped features, organized by development phase.
 
 ---
 
+## Phase 22: Fix "Cannot analyze this page" on valid sites (May 2026)
+
+### May 12, 2026 — Re-check tab state across reloads, same-tab navigation, and panel visibility
+
+**Branch:** `fix-unsupported-page-bug` (from `af8b990`)
+
+**Summary:** The extension intermittently showed "Cannot analyze this page" on valid news sites. Three independent causes converged: a defensive URL guard that treated undefined `tab.url` as unsupported, an init flow that only checked tab state once (so same-tab navigation never re-checked), and a Chrome side panel lifecycle quirk where the panel document survives close/open but `init()` doesn't run again. Fixes all three.
+
+**What was done:**
+
+1. **`isAnalyzableUrl(tab)` extracted to `shared.js`** — pure helper used by `checkTabState`. Returns true for http(s) URLs, true for undefined URL (the bug fix), false for chrome://, file://, about:blank, etc. Falls back to `tab.pendingUrl` when `tab.url` is unset. Original guard (`!tab.url || !/^https?:/.test(tab.url)`) failed closed on undefined — now we fail open, treating "unknown URL" as analyzable rather than unsupported.
+2. **Same-tab navigation listener added** — `chrome.tabs.onUpdated` fires on the active tab when status reaches `complete`, calling `checkTabState`. Previously the only re-check trigger was tab-switch via `chrome.tabs.onActivated`, so navigating within the same tab kept stale state.
+3. **Visibility re-check added** — `document.addEventListener('visibilitychange', ...)` queries the active tab and re-runs `checkTabState` when the panel becomes visible. Closes the gap where Chrome keeps the side panel document alive across close/open cycles but `init()` only runs once. Guarded by `if (!activeTabId) return;` to avoid racing with `init()` on first load.
+4. **Diagnostic breadcrumb** — `console.warn` when `checkTabState` is invoked with both `tab.url` and `tab.pendingUrl` undefined. Gives the next debugger a DevTools signal confirming the URL-undefined path was hit if the bug recurs.
+5. **12 unit tests for `isAnalyzableUrl`** — covers http(s), chrome://, file://, about:blank, undefined (regression), empty string, pendingUrl fallback, pendingUrl rejection, tab.url precedence over pendingUrl, URLs with port/path. New file `test/isAnalyzableUrl.test.js`.
+6. **`chrome.tabs.onUpdated` property filter** — `{ properties: ['status'] }` passed as the second argument, narrowing notifications to status changes only. Skips title/favicon/audible churn during a single navigation. Filter inside the callback (`changeInfo.status === 'complete'`) still narrows to the final completion, but the API-level filter reduces wake-up cost.
+7. **Listener teardown on `beforeunload`** — listener references are stored on a `listeners` object up front (anonymous functions can't be removed via `removeListener`). A `beforeunload` handler removes all three on unload. Side panel documents typically persist, but if Chrome ever recycles them this prevents handler accumulation on re-`init()`.
+8. **Diagnostic counters in session storage** — `mi_check_tab_state_total` and `mi_check_tab_state_undefined` track all invocations and the undefined-URL subset, persisted to `chrome.storage.session` so a future diagnostics view (or manual DevTools poke) can read the ratio across sessions. Gives signal beyond the per-invocation console.warn.
+9. **Unsupported state rewrite (UX)** — replaced the dead-end "Cannot analyze this page. Navigate to a regular web page..." with a card-style explanation: bold title ("This page can't be analyzed"), explanatory body naming the causes (system pages, new-tab page, local files), and a "Try again" affordance. Try again re-queries the active tab through `showChecking` → `checkTabState`, so the user can recover without closing the panel.
+10. **`showChecking()` transient state (design eng)** — neutral "Checking page…" with a static braille glyph. Used when (a) `visibilitychange` fires while `currentState === 'unsupported'`, bridging the moment before re-check resolves; and (b) the Try again button is clicked, with a 120ms defer so the user perceives the transition instead of a snap.
+11. **Status-area fade-in transition (design eng)** — `.status-message` animates `status-fade-in` (180ms, ease-out, slight Y translate) on every state swap. Snap behavior preserved under `prefers-reduced-motion`. Functional motion, not enhanced — applies unconditionally rather than under the `enhanced-motion` flag, because state transitions communicate change.
+12. **11 structural contract tests for sidepanel.js** — new file `test/sidepanelContract.test.js` asserts on source patterns: `isAnalyzableUrl` is used, `onUpdated` has the property filter, the visibility handler guards on `activeTabId`, the diagnostic counters write, the breadcrumb logs, listeners tear down, the unsupported card has a Try again button that re-queries, `showChecking` exists, and the visibility handler routes through it. Brittle by design — if you change the contract, you must touch this test. Total suite: 145 tests, 11 files.
+
+**Why:**
+
+The bug was filed during Phase 21 ("known issue: extension sometimes shows 'Cannot analyze this page' on valid news sites") and a WIP candidate fix was committed to `debug-analysis-screen` on May 10 but not verified or shipped. Each of the three causes is independently plausible: the URL guard is provably wrong when `tab.url` is briefly undefined (a state Chrome can produce around extension reload and permissions-grant timing); the missing same-tab listener is a real gap (the existing code only listens to tab-switch); and the side panel document lifecycle is documented Chrome behavior. The fix is conservative — it expands the conditions under which analysis is offered, never tightens them.
+
+**Design decisions:**
+
+- **`tab.pendingUrl` fallback over polling.** When a navigation has started but `tab.url` hasn't been written yet, `tab.pendingUrl` carries the target URL. Using it as a fallback is one line and avoids any polling/retry scheme. Trades a small risk (pendingUrl could in theory be misleading mid-redirect) for far simpler logic.
+- **Listen for `status === 'complete'` on `onUpdated`, not every change.** `onUpdated` fires repeatedly during a navigation (loading → URL change → title → complete). Gating on `complete` avoids re-running the state check 3-5 times per navigation, and matches what users see — the page is "done" by then.
+- **Visibility check refreshes `activeTabId`.** Inside the visibilitychange handler we re-query the active tab and update `activeTabId` before calling `checkTabState`. The user may have switched tabs in another window while the panel was hidden; relying on the cached `activeTabId` would re-check the wrong tab.
+- **`isAnalyzableUrl` lives in `shared.js`, not as a local helper.** `shared.js` is the canonical home for cross-context pure utilities (loaded via `importScripts` in background, `<script>` in sidepanel). The URL-guard logic is exactly that shape — pure, no side effects, useful anywhere a tab is inspected. Placing it next to `escapeHtml` matches the existing pattern.
+- **Diagnostic breadcrumb stays in production.** A `console.warn` is cheap (one log line per state check on the rare undefined-URL path), removable later, and gives the next debugger a confirmation signal. Worth far more than gating behind a debug flag.
+- **Diagnostic counters live in session storage, not local.** Session storage clears on browser restart, which is the right scope — the bug we're tracking is per-session timing. Local storage would conflate runs across days. The counters are also small enough that the storage write on every `checkTabState` is negligible.
+- **Unsupported state adopts card-style, not status-message style.** The original message was a one-off paragraph that didn't match the tactic-card visual language elsewhere in the panel. Moving it to a card with title/body/footer-action makes the dead-end moment feel like part of the same system and gives the Try again button a natural footer position.
+- **`showChecking` rather than holding the previous state.** When visibility fires on an "unsupported" panel, two options existed: hold the unsupported state while re-checking (silent recovery) or show a neutral checking state (visible transition). Chose checking because (a) silent recovery on the bug path flashed "Cannot analyze → analyzable" with no indication of why, which felt buggy, and (b) the visible spinner sets the expectation that something might change.
+- **Try again button uses `setTimeout(120ms)` before re-check.** Pure UX choice — without the delay, the state transition is too fast to perceive; users would click and either nothing visible happens (state was already correct) or it snaps. The 120ms gives the fade-in time to land and reads as intentional.
+- **Functional motion stays unconditional, polish motion stays flag-gated.** The 180ms status fade-in is a state-change communicator (you couldn't tell ready→empty from a no-op without it), so it lives outside `enhanced-motion`. The `enhanced-motion` flag remains for hover lifts and other polish that adds character without conveying state. `prefers-reduced-motion` overrides both.
+
+**Tradeoffs:**
+
+- **Best-effort fix without a reproducer.** The original "Cannot analyze this page" reports came without timing or URL details. Each of the three changes addresses a plausible cause, but we don't have a deterministic repro to confirm which one was the actual culprit in the wild. All three are independently defensible, low-risk, and don't conflict with each other.
+- **Loosening the URL guard accepts edge cases.** A tab with truly undefined and unrecoverable URL state will now reach the analyze button instead of showing "Cannot analyze." If the user clicks analyze, downstream code will fail with a clearer error than the misleading "unsupported page" message. Net better UX even in the failure path.
+- **Visibility listener adds a small cost on every panel show.** A single `chrome.tabs.query` call when the panel becomes visible. Negligible vs. the value of catching the lifecycle case.
+- **Diagnostic counters write to session storage on every `checkTabState`.** This is one extra `chrome.storage.session.set` per state check, which fires on tab switch, navigation complete, and panel visibility. Quantitatively negligible (session storage writes are µs-level and not awaited), but it's a non-zero new write path. Removable once we have enough data to confirm the fix landed.
+- **Structural tests are brittle.** The 11 new tests in `sidepanelContract.test.js` regex-match source patterns rather than asserting on behavior. If the implementation shape changes (rename a function, change a class name, restructure a listener), the tests will fail even if behavior is preserved. This is the right tradeoff for a recurring-bug area — the cost of brittleness is "update one regex per refactor," the cost of no test is "the bug returns in 3 months and no one catches it." Documented at the top of the test file so future maintainers know they're not pure-unit tests.
+- **Architectural items deferred.** The review surfaced three larger items not addressed here: (a) extracting tab-state logic into a `TabStateController` (state machine refactor across ~4 listeners), (b) splitting `sidepanel.js` (749 lines) into `tabState.js` / `events.js` / `render.js`, and (c) adding a Diagnostics view in Settings that surfaces the breadcrumb counters to users. All three are reasonable next steps; all three are too broad to fold into a bug-fix branch without disproportionate regression risk. Filed as future work.
+
+**SAFETY:** Modifies the page-state gating in the side panel. The URL guard now fails open (analyzable) on undefined URLs rather than failing closed (unsupported). New listeners (`chrome.tabs.onUpdated`, `visibilitychange`) only call `checkTabState`, which is idempotent and doesn't mutate persistent state. No error paths removed; the downstream analyze flow still validates URLs before making API calls.
+
+**Files changed:** `sidepanel.js`, `shared.js`, `sidepanel.css`, `test/isAnalyzableUrl.test.js`, `test/sidepanelContract.test.js`, `core-docs/history.md`, `core-docs/plan.md`
+
+### May 12, 2026 — Post-review corrections
+
+Five small follow-ups to PR #32 driven by a careful post-ship code review.
+
+**What was done:**
+
+1. **Visibility-guard rationale corrected.** The `if (!activeTabId) return;` guard in `listeners.visibilityChange` was originally documented as preventing an "init race." On inspection, `setupEventListeners` runs at the end of `init()` — after `activeTabId` is assigned — so the guard is unreachable under the current registration order. Kept the guard as defense-in-depth but rewrote both the in-code comment and the design-decision below to honestly describe it as defensive (protects against a future change moving listener setup earlier) rather than claiming a race that can't happen.
+2. **CSS comment / code mismatch fixed.** `sidepanel.css` had a comment claiming the `.status-message` fade animation was "Gated to enhanced-motion." The selector is actually `.status-message` (unconditional). The history's design decision was correct ("functional motion stays unconditional") — only the CSS comment was wrong. Rewrote the comment to match.
+3. **Try again 120ms staleness eliminated.** The Try again button's `setTimeout(() => checkTabState(tab), 120)` captured a `tab` reference that could go stale if the user navigated during the 120ms defer. Now captures `tab.id`, re-queries via `chrome.tabs.get(tabId)` inside the setTimeout, wrapped in try/catch (the tab may have closed during the defer; visibility/onActivated will re-render correctly).
+4. **"Try again" renamed to "Re-check".** The button doesn't retry a failed analysis — it re-checks the current page state. "Re-check" is more accurate, single-word, and doesn't carry retry semantics that confuse users on genuinely-unsupported pages (where clicking yields the same state).
+5. **Diagnostic write throttle.** `chrome.storage.session.set` for the counters previously fired on every `checkTabState` call (100+/heavy session). Now writes only when the undefined-URL counter increments (the interesting case) OR every 50th total call (denominator checkpoint for healthy sessions). In-memory counters tick on every call, so DevTools inspection of the live page is unaffected.
+
+**Design decisions (correcting Phase 22):**
+
+- **Kept the guard rather than moving listeners earlier.** Moving `setupEventListeners` before `init()`'s `await chrome.tabs.query` would make the guard load-bearing, but introduces a behavior window where listeners can fire on null `activeTabId`. Each listener IS null-safe (verified), but this is a behavior change worth careful browser testing — disproportionate risk for the bug-fix branch. Filed as future consideration.
+- **Write throttle uses an OR condition, not a pure undefined-only filter.** "Only write on undefined increment" would leave the storage empty in healthy sessions, making it impossible to compute a meaningful ratio if the bug recurs. The `count % 50 === 0` checkpoint gives a denominator without saturating the write path.
+- **Try again re-queries via `chrome.tabs.get(tabId)`, not `chrome.tabs.query` again.** Cheaper (single-tab lookup vs. active+window filter) and more direct — we know the tab id we want to refresh.
+
+**Tradeoffs:**
+
+- **The guard is admittedly dead code today.** Reasonable readers may want to delete it. Comment now explicitly says it's defensive against future refactor — the trigger to remove it would be a code archaeologist confident no future refactor will reverse the registration order.
+- **The 120ms defer in the Try again handler is still arbitrary.** Replacing the captured tab with a re-query fixes the correctness issue but doesn't eliminate the magic number. A two-frame `requestAnimationFrame` would be more principled but adds nesting. Acceptable tradeoff for the simplicity.
+
+**SAFETY:** No new error paths or persistence behavior. Counter-write throttle reduces I/O. Try again handler now has a try/catch around `chrome.tabs.get` — swallowing the rare "tab closed during defer" case is correct (visibility/onActivated will re-render).
+
+**Files changed:** `sidepanel.js`, `sidepanel.css`, `test/sidepanelContract.test.js`, `core-docs/history.md`, `core-docs/plan.md`
+
+### May 12, 2026 — Review-warning follow-ups
+
+Two minor warnings from the post-corrections `/review` pass.
+
+**What was done:**
+
+1. **Visibility handler reordered to query-first.** The previous order was `showChecking()` → `await chrome.tabs.query` → `if (tab) checkTabState`. If the query returned `[]` (extremely rare — no active tab in current window), the user would be stranded on the checking spinner with no resolution path. Now: query first, `if (!tab) return;` before `showChecking()`. The flicker-bridge intent is preserved because `showChecking` still runs synchronously between the query and `checkTabState` — and the query is fast enough (single-digit ms) that bridging *during* the await was never necessary in practice.
+2. **Re-check button intent documented.** Added a comment to the existing `if (!tab) return;` guard in the `recheckBtn` handler explaining why we exit early without transitioning state (avoid stranding a spinner; user keeps seeing the unsupported card, which is the correct fallback).
+3. **New structural test** asserts the visibility handler's ordering: `query → if (!tab) return → showChecking`. Guards against a regression that would re-introduce the stranded-spinner failure mode. 146 tests pass total.
+
+**Design decisions:**
+
+- **Reorder rather than restore-prior-state.** Two viable fixes existed: reorder (proposed here) or transition back to the previous state if the query fails. Reorder is one move; restore-state requires tracking the previous state separately and adding a `showUnsupported` fallback path. Reorder also has the benefit of being verifiable by inspection — you can read the function top-to-bottom and see that `showChecking` only runs when we have a resolution path.
+- **Skipped Warning 3 (120ms magic number).** Already documented as acceptable in the prior post-review subsection's tradeoffs. The `requestAnimationFrame`-pair alternative was considered and rejected for added nesting cost vs. minor principle gain.
+
+**Tradeoffs:**
+
+- **The flicker-during-query case is now unhandled.** If `chrome.tabs.query` ever became slow (it doesn't, in practice), the user could briefly see the stale unsupported card before the new state lands. Acceptable because (a) the query is sync-fast in Chrome, (b) the fade-in animation masks brief stale-state visibility, (c) this is a hypothetical regression, not an observed one.
+
+**Files changed:** `sidepanel.js`, `test/sidepanelContract.test.js`, `core-docs/history.md`
+
+---
+
 ## Phase 21: Flash 2.5 API Reliability Fixes (April 2026)
 
 ### Apr 19, 2026 — Fix token budget mismatch and add model-aware timeouts for thinking models

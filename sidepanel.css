@@ -247,6 +247,60 @@ body {
   color: var(--text-tertiary);
   font-size: var(--font-size-base);
   line-height: 1.7;
+  /* Fade-in on every state swap. Functional motion — communicates state change,
+     so it stays unconditional rather than gating on the enhanced-motion flag.
+     prefers-reduced-motion override below suppresses it for users who need that. */
+  animation: status-fade-in 180ms ease-out;
+}
+
+@keyframes status-fade-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-message { animation: none; }
+}
+
+/* Unsupported state card — adopts the same card-style language as tactic cards
+   (raised surface, subtle border, footer action row) so the dead-end moment
+   feels like part of the same system rather than a one-off message. */
+.status-unsupported {
+  padding: 16px;
+  margin: 12px 0;
+  background: var(--surface-raised);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+}
+
+.status-unsupported .status-title {
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.status-unsupported .status-body {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.status-unsupported .status-actions {
+  display: flex;
+  gap: 16px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* Transient "Checking page…" — visually quiet, doesn't compete with real states. */
+.status-checking {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
 }
 
 .status-message strong {

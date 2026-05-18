@@ -16,11 +16,21 @@
 
   // ── State ──
   let activeTabId = null;
-  let currentState = 'ready'; // ready | analyzing | results | empty | error | setup | unsupported
+  let currentState = 'ready'; // ready | analyzing | results | empty | error | setup | unsupported | checking
   let analyzeTimer = null;
   let tacticsData = null; // Loaded from tactics.json for "Learn more"
   let streamingRenderedCount = 0;
   let streamingDebounceTimer = null;
+
+  // Diagnostics: track total checkTabState calls and undefined-url warns so we can
+  // tell the ratio if the unsupported-page bug recurs. Stored in session storage
+  // so DevTools or a future diagnostics view can read it across page loads.
+  let checkTabStateCount = 0;
+  let checkTabStateUndefinedCount = 0;
+
+  // Listener refs for teardown on beforeunload. Anonymous functions can't be
+  // removed by chrome.tabs.*.removeListener — store handles up front.
+  const listeners = {};
 
   // Feature flag cache — defaults used until storage loads
   // Guard: if shared.js hasn't loaded (cache/timing), degrade gracefully instead of crashing
@@ -80,8 +90,27 @@
   }
 
   function checkTabState(tab) {
-    // Check if tab is analyzable
-    if (!tab.url || !/^https?:/.test(tab.url)) {
+    checkTabStateCount++;
+    const undefinedUrl = !tab.url && !tab.pendingUrl;
+    if (undefinedUrl) {
+      checkTabStateUndefinedCount++;
+      console.warn('[MI] checkTabState: tab.url undefined, treating as analyzable', {
+        tabId: tab.id,
+        undefinedCount: checkTabStateUndefinedCount,
+        totalCount: checkTabStateCount
+      });
+    }
+    // Persist counters when an interesting event occurs (undefined-URL hit) OR
+    // every 50th call as a checkpoint so the total has a denominator even in
+    // healthy sessions. In-memory counters tick on every call regardless.
+    if (undefinedUrl || checkTabStateCount % 50 === 0) {
+      chrome.storage.session.set({
+        mi_check_tab_state_total: checkTabStateCount,
+        mi_check_tab_state_undefined: checkTabStateUndefinedCount
+      });
+    }
+
+    if (!isAnalyzableUrl(tab)) {
       showUnsupported();
       return;
     }
@@ -135,11 +164,52 @@
     });
 
     // Tab switching
-    chrome.tabs.onActivated.addListener(async (activeInfo) => {
+    listeners.onActivated = async (activeInfo) => {
       activeTabId = activeInfo.tabId;
       const tab = await chrome.tabs.get(activeTabId);
       checkTabState(tab);
-    });
+    };
+    chrome.tabs.onActivated.addListener(listeners.onActivated);
+
+    // Same-tab navigation. The { properties: ['status'] } filter narrows the
+    // notification stream to status changes only (skips title/favicon/audible).
+    listeners.onUpdated = (tabId, changeInfo, tab) => {
+      if (tabId === activeTabId && changeInfo.status === 'complete') {
+        checkTabState(tab);
+      }
+    };
+    chrome.tabs.onUpdated.addListener(listeners.onUpdated, { properties: ['status'] });
+
+    // Re-check when panel becomes visible — Chrome may keep the panel document alive
+    // across close/open, so init() only runs once but the active tab can change.
+    listeners.visibilityChange = async () => {
+      if (document.visibilityState !== 'visible') return;
+      // Defensive: registration order makes this unreachable today (setupEventListeners
+      // runs after init() assigns activeTabId), but prevents a null-tab checkTabState
+      // if a future change moves listener setup earlier in init().
+      if (!activeTabId) return;
+      // Query first, then transition through showChecking. Reversed from the original
+      // order so we don't strand the user on the checking spinner if the rare empty-tab
+      // case happens (no active tab in the current window).
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab) return;
+      // Avoid flashing a stale "unsupported" while we render the next state — show a
+      // neutral checking state synchronously between the query and checkTabState.
+      if (currentState === 'unsupported') showChecking();
+      activeTabId = tab.id;
+      checkTabState(tab);
+    };
+    document.addEventListener('visibilitychange', listeners.visibilityChange);
+
+    // Future-proof: tear down listeners if the document is ever unloaded.
+    // Side panel documents typically persist, but Chrome can recycle them; without
+    // this, a recycled document would accumulate handlers on subsequent init() runs.
+    listeners.beforeUnload = () => {
+      chrome.tabs.onActivated.removeListener(listeners.onActivated);
+      chrome.tabs.onUpdated.removeListener(listeners.onUpdated);
+      document.removeEventListener('visibilitychange', listeners.visibilityChange);
+    };
+    window.addEventListener('beforeunload', listeners.beforeUnload, { once: true });
 
     // Storage changes (fire-persist-notify pattern)
     chrome.storage.onChanged.addListener((changes, area) => {
@@ -380,9 +450,51 @@
     currentState = 'unsupported';
     updateButton('Analyze', false);
     statusArea.innerHTML = `
-      <div class="status-message">
-        Cannot analyze this page.<br>
-        Navigate to a regular web page to use Manipulation Identifier.
+      <div class="status-message status-unsupported">
+        <div class="status-title">This page can't be analyzed</div>
+        <div class="status-body">
+          Manipulation Identifier works on regular websites (http and https).
+          Browser system pages, the new-tab page, and local files aren't accessible to the extension.
+        </div>
+        <div class="status-actions">
+          <button type="button" class="card-action-link" id="recheckBtn">Re-check</button>
+        </div>
+      </div>
+    `;
+    resultsArea.innerHTML = '';
+    document.getElementById('recheckBtn')?.addEventListener('click', async () => {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      // Empty active-tab is extremely rare (no active tab in current window). Exit
+      // early without transitioning state — user keeps seeing the unsupported card
+      // rather than a stranded spinner.
+      if (!tab) return;
+      const tabId = tab.id;
+      activeTabId = tabId;
+      showChecking();
+      // Slight defer so the user sees the state transition rather than a snap.
+      // Re-query inside the timeout so we don't act on a stale tab if the user
+      // navigated during the 120ms window.
+      setTimeout(async () => {
+        try {
+          const freshTab = await chrome.tabs.get(tabId);
+          checkTabState(freshTab);
+        } catch {
+          // Tab closed during the defer — visibility/onActivated will re-render correctly.
+        }
+      }, 120);
+    });
+  }
+
+  // Transient state shown while we re-query the active tab. Prevents a flash of
+  // a stale "unsupported" card when the panel becomes visible or the user clicks
+  // Try again. Always followed by checkTabState resolving to a real state.
+  function showChecking() {
+    currentState = 'checking';
+    updateButton('Analyze', false);
+    statusArea.innerHTML = `
+      <div class="status-message status-checking">
+        <span class="braille-spinner" aria-hidden="true">⠋</span>
+        <span>Checking page…</span>
       </div>
     `;
     resultsArea.innerHTML = '';

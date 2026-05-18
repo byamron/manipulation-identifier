@@ -2,20 +2,19 @@
 
 ## Current Focus
 
-Design craft pass complete (Phase 18). Feature flag system, interactive legend filter, enhanced motion, compact layout, and UI polish all shipped on `design-craft-audit` branch.
+Phase 22 shipped: "Cannot analyze this page" bug fix on valid news sites (URL guard + same-tab navigation listener + visibility re-check). Awaiting manual browser verification.
 
-Next priorities: continued accuracy improvements per `accuracy-plan.md`, remaining 5.6 false positive reduction work, investigate unsupported-page bug on valid news sites.
+Next priorities: continued accuracy improvements per `accuracy-plan.md`, remaining 5.6 false positive reduction work.
 
 ## Handoff Notes
 
-- **Flash 2.5 API reliability fixes** (Phase 21, `fix-api-settings-snapshot` branch): Fixed server.js token budget for Flash 2.5 (was 4096, now 8192 — background.js already had the right value). Added model-aware timeouts: `THINKING_MODELS` array and `TIMEOUT_MS_THINKING: 60000` in background.js CONFIG, `fetchWithRetry` accepts `timeoutMs` param, sidepanel.js uses 75s UI guard for thinking models vs 45s default.
+- **"Cannot analyze this page" fix** (Phase 22, `fix-unsupported-page-bug` branch): Comprehensive eng + UX + design-eng pass. Core fix: `isAnalyzableUrl(tab)` in `shared.js` fails open on undefined URL, `chrome.tabs.onUpdated` with `{ properties: ['status'] }` filter for same-tab navigation, `visibilitychange` listener with defensive `activeTabId` guard. Hardening: listener teardown on `beforeunload`, diagnostic console.warn + throttled session-storage counters (write on undefined-URL hit or every 50th call). UX: unsupported state rewritten as a card with cause-and-remedy + "Re-check" button → re-queries fresh tab through `showChecking` transient state, with try/catch for tab-closed-during-defer. Design eng: 180ms status fade-in (respects `prefers-reduced-motion`), `showChecking` bridges the visibility-flicker case. Tests: 12 new unit tests for `isAnalyzableUrl` + 11 structural contract tests in `test/sidepanelContract.test.js`. 145 tests pass total. Manual browser verification pending.
 - Feature flag system live: `FEATURE_FLAGS` registry in `shared.js`, auto-generated toggles in Settings > Experiments. 4 flags shipped (legendFilter, devSnapshots, enhancedMotion, compactLayout), all default on.
 - CSS-driven flags (enhancedMotion, compactLayout) live-update via body class — no reload needed.
 - Snapshot now auto-copies JSON to clipboard on save.
 - Instance quotes now use monospace code-block treatment (was italic + underline).
 - Compact layout recovers ~24px horizontal space per instance quote.
-- V3 prompt still live. Eval infrastructure unchanged. 94 tests pass across 7 suites.
-- Known issue: extension sometimes shows "Cannot analyze this page" on valid news sites — needs investigation (likely tab query race or content script injection failure).
+- V3 prompt still live. Eval infrastructure unchanged.
 
 ---
 
@@ -176,6 +175,11 @@ Issues surfaced during user testing. Ordered by impact.
 
 ## Future Considerations (not planned yet)
 
+- **Move event listener registration earlier in `init()`**: `setupEventListeners` currently runs at the end of `init()`, after `activeTabId` is assigned. The `visibilitychange` handler's `if (!activeTabId) return;` guard is consequently unreachable today — it's kept as defensive code. Moving listener registration to the start of `init()` (before the `await chrome.tabs.query`) would make the guard load-bearing and close a hypothetical window where events could fire during init. Each listener is null-safe, but this is a behavior change worth careful browser testing. Surfaced during Phase 22 post-review.
+- **`TabStateController` extraction**: `sidepanel.js` now has four entry points calling `checkTabState` (`init`, `onActivated`, `onUpdated`, `visibilitychange`) plus a fifth state-mutation path via `chrome.storage.onChanged`. The state machine — *when to re-check, what state to transition to* — is implicit across these. Factor out into a `TabStateController` module with explicit transitions. Surfaced during Phase 22 review.
+- **Split `sidepanel.js`**: 749 lines, mixed concerns (DOM, listeners, render, state). Splitting into `tabState.js` / `events.js` / `render.js` would make each piece independently unit-testable without the structural-test workaround. Surfaced during Phase 22 review.
+- **Diagnostics view in Settings**: Phase 22 added session-storage counters (`mi_check_tab_state_total`, `mi_check_tab_state_undefined`) and a console.warn breadcrumb. A Settings > Diagnostics panel would surface these to users so support flows don't require "open DevTools, screenshot the console." Useful for any future intermittent bug.
+- **First-run onboarding on chrome://newtab**: Many users install the extension and first open the panel on the new-tab page, which triggers the unsupported state. The Phase 22 rewrite explains *why*, but a dedicated onboarding flow that fires only on first run would beat hitting the unsupported state during the first impression. Verify interaction with FB-0002 (existing onboarding).
 - **Reintroduce user feedback (privacy-compatible)**: The original feedback system was stripped in Priority 4 (see `history.md` Phase 11, "Feedback System Teardown" section for full context on what existed and why it was removed). Any reintroduction must work in BYOK mode (no server), respect privacy-by-default, and close the feedback loop (data must actually improve detection). See the teardown doc for specific design considerations.
 - **Extract shared `parseJsonResponse`**: Three copies exist (server.js, background.js, test). Extract to a standalone module that server.js can `import`, background.js can `importScripts`, and tests can import directly.
 - **BYOK regex fallback parity**: BYOK mode silently returns empty results on malformed JSON (`|| []`), while server-proxy mode falls back to the regex parser. Consider adding the regex fallback to BYOK or surfacing a user-visible error.
@@ -188,6 +192,7 @@ Issues surfaced during user testing. Ordered by impact.
 
 ## Recently Completed
 
+- **May 12, 2026**: Fix "Cannot analyze this page" bug (Phase 22) — full eng/UX/design-eng pass. URL guard inverted via `isAnalyzableUrl(tab)` in `shared.js`, `onUpdated` listener with property filter, `visibilitychange` with race guard. Hardening: listener teardown, diagnostic counters in session storage, breadcrumb. UX: unsupported state rewritten with cause + "Try again" button (card-style treatment). Design eng: 180ms fade transition, `showChecking` to prevent visibility flicker. 23 new tests across 2 files (145 total). Promoted from `debug-analysis-screen` WIP commit `18bc4a8`. Manual browser verification pending.
 - **Apr 19, 2026**: Side panel card cleanup (Phase 20) — attribution dedup for same-speaker quotes, mixed-only confidence labels with tooltip, `--text-muted` contrast boost (55%→65%), definition/explanation alignment fixes, review skill test command fix, `.context/` gitignored.
 - **Apr 14, 2026**: Design craft pass (Phase 18) — feature flag system, interactive category legend filter, enhanced motion (hover lifts, glow pulse, snappier press, bar response), compact layout (flattened indentation, horizontal separators), UI polish (neutral clear button, monospace quotes, clipboard snapshot, alignment fixes, deprecated API fix). PR #24.
 - **Apr 9, 2026**: Priority 1 prompt tuning complete (item 1.1) — three iterations (v1→v2→v3), precision 30% → 55%, FPs cut from 347 → 121. Corpus audited. `/eval-quick` skill for ongoing testing.
